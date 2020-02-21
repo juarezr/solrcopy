@@ -1,0 +1,75 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Launch-with-Params",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=solrbulk",
+                    "--package=solrbulk"
+                ]
+            },
+            "preLaunchTask":  "createTempFolder",
+            "program": "${cargo:program}",
+            "args": [
+                "--from", "http://solr-telematics.ceabsservicos.com.br:8983/solr", 
+                "--core", "mileage", 
+                "--where", "ownerId:173826 AND periodCode:1", 
+                /* "--where", "ownerId:173826 AND periodCode:1", */
+                "--order", "date:asc", "id:asc", "vehiclePlate:asc",
+                /* "--select", "id,date,vehiclePlate",  */
+                "--limit", "200", 
+                "--batch", "16", 
+                "--into", "./tmp",
+                "--verbose", 
+            ],
+            "env": { 
+                "RUST_BACKTRACE": "full"
+            },
+            "cwd": "${workspaceFolder}",
+        }
+        , {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Build",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=solrbulk",
+                    "--package=solrbulk"
+                ],
+                "filter": {
+                    "name": "solrbulk",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+        ,{
+            "type": "lldb",
+            "request": "launch",
+            "name": "Unit-tests",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=solrbulk",
+                    "--package=solrbulk"
+                ],
+                "filter": {
+                    "name": "solrbulk",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
