@@ -4,6 +4,8 @@ Tools for backup and restore of information stored in cores of Apache Solr
 
 ## Status
 
+![Rust](https://github.com/juarezr/solrbulk/workflows/Rust/badge.svg)
+
  - Work in Progress
  - Backup:
     * Working
