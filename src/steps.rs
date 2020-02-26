@@ -66,7 +66,7 @@ pub struct SolrCore {
     pub fields: Vec<String>,
 }
 
-impl GetArgs {
+impl Backup {
 
     pub fn get_steps(&self, core_info: &SolrCore) -> Steps {
 
@@ -159,7 +159,7 @@ mod test {
 
     impl Arguments {
 
-        pub fn get(&self) ->  Result<&GetArgs, BoxedError> {
+        pub fn get(&self) ->  Result<&Backup, BoxedError> {
             match &self {
                 Self::Backup(get) => Ok(&get),
                 _ => raise("command must be 'backup' !"),

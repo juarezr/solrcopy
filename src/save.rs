@@ -6,13 +6,13 @@ use std::io::Write;
 
 use chrono::{DateTime, Utc};
 
-use super::args::*;
 use super::fails::*;
 use super::steps::*;
+use super::args::Backup;
 
 // region Archiver 
 
-impl GetArgs {
+impl Backup {
 
     pub fn get_writer(&self) -> Result<Archiver, BoxedError> {
 

@@ -1,7 +1,7 @@
 
 use regex::Regex;
 
-use super::args::GetArgs;
+use super::args::Backup;
 use super::steps::SolrCore;
 use super::fails::*;
 use super::helpers::*;
@@ -20,7 +20,7 @@ fn http_get_as_text(url: &str) -> Result<String, reqwest::Error> {
 
 impl SolrCore {
 
-    pub fn inspect_core(gets: &GetArgs) -> Result<SolrCore, BoxedError> {
+    pub fn inspect_core(gets: &Backup) -> Result<SolrCore, BoxedError> {
 
         let diagnostics_query_url = gets.get_query_for_diagnostics();
 
@@ -43,7 +43,7 @@ impl SolrCore {
         }
     }
 
-    fn parse_core_schema(gets: &GetArgs, json: &str) -> Result<Self, BoxedError> {
+    fn parse_core_schema(gets: &Backup, json: &str) -> Result<Self, BoxedError> {
 
         let core_name = &gets.from;
 

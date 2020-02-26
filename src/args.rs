@@ -81,7 +81,7 @@ impl FromStr for SortField {
 
 #[derive(StructOpt, Debug)]
 /// Dumps records from a Apache Solr core into local backup files
-pub struct GetArgs {
+pub struct Backup {
     /// Case sensitive name of the Solr core for extracting records
     #[structopt(short, long)]
     pub from: String,
@@ -115,12 +115,12 @@ pub struct GetArgs {
     pub name: Option<String>,
 
     #[structopt(flatten)]
-    pub options: CommonArgs,    
+    pub options: Options,    
 }
 
 #[derive(StructOpt, Debug)]
 /// Dumps and restores records from a Apache Solr core into local backup files
-pub struct PutArgs {
+pub struct Restore {
     /// Case sensitive name of the Solr core to upload records/data
     #[structopt(short, long)]
     pub into: String,
@@ -134,20 +134,20 @@ pub struct PutArgs {
     pub pattern: Option<String>,
 
     #[structopt(flatten)]
-    pub options: CommonArgs,    
+    pub options: Options,    
 }
 
 #[derive(StructOpt, Debug)]
 pub enum Arguments {
     /// Dumps records from a Apache Solr core into local backup files
-    Backup (GetArgs),
+    Backup (Backup),
     /// Restore records from local backup files into a Apache Solr core
-    Restore(PutArgs),
+    Restore(Restore),
 }
 
 #[derive(StructOpt, Debug)]
 /// Dumps and restores records from a Apache Solr core into local backup files
-pub struct CommonArgs {
+pub struct Options {
 
     /// Url pointing to the Solr base address like: http://solr-server:8983/solr
     #[structopt(short, long, env = "SOLR_URL", parse(try_from_str = parse_solr_url))]
