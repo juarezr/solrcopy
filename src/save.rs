@@ -12,16 +12,15 @@ use super::steps::*;
 
 // region Archiver 
 
-impl Arguments {
+impl GetArgs {
 
     pub fn get_writer(&self) -> Result<Archiver, BoxedError> {
 
-        let get = self.get()?;
-        let name = match &get.name {
+        let name = match &self.name {
             Some(text) => text,
-            None => &get.from,
+            None => &self.from,
         };
-        let res = Archiver::write_on(&get.into, &name);
+        let res = Archiver::write_on(&self.into, &name);
         Ok(res)
     }
 }

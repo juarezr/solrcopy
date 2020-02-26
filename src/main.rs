@@ -22,12 +22,11 @@ use args::Arguments;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let parsed = Arguments::parse_from_args()?;
-    if parsed.verbose {
-        // TODO: use a logger and combine with --verbose
-        println!("  {:?}", parsed);
-    }
 
-    backup::backup_main(parsed)
+    match parsed {
+        Arguments::Backup(gets) => backup::backup_main(gets),
+        Arguments::Restore(_puts) => unimplemented!(),
+    }
 }
 
 // end of file

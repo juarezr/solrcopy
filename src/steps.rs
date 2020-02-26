@@ -58,29 +58,28 @@ impl Steps {
 
 // region Solr Uri 
 
-impl Arguments {
+// region Solr Core
+
+#[derive(Debug)]
+pub struct SolrCore {
+    pub num_found: u64,
+    pub fields: Vec<String>,
+}
+
+impl GetArgs {
 
     pub fn get_steps(&self, core_info: &SolrCore) -> Steps {
 
-        let gets = self.get().unwrap();
-
         let fl = Self::get_query_fields(&core_info.fields);
-        let query = gets.get_query_url(self.url.as_ref(), fl);
-        let rows = core_info.num_found.min(gets.limit.unwrap_or(std::u64::MAX));
+        let query = self.get_query_url(fl);
+        let rows = core_info.num_found.min(self.limit.unwrap_or(std::u64::MAX));
 
         Steps {
             curr: 0,
             limit : rows,
-            batch: gets.batch,
+            batch: self.batch,
             url : query
         }
-    }
- 
-    pub fn get_query_url(&self, selected: String) -> String {
-
-        let gets = self.get().unwrap();
-
-        gets.get_query_url(self.url.as_ref(), selected)
     }
 
     pub fn get_query_for_diagnostics(&self) -> String {
@@ -98,11 +97,8 @@ impl Arguments {
             "&fl=".append(&all)
         }
    }
-}
 
-impl Get {
-
-    pub fn get_query_url(&self, solr_url: &str, selected: String) -> String {
+    pub fn get_query_url(&self, selected: String) -> String {
 
         let query = self.filter.clone()
             .unwrap_or("*:*".to_string())
@@ -122,7 +118,7 @@ impl Get {
         };
 
         let parts: Vec<String> = vec!(
-            solr_url.with_suffix("/"),
+            self.options.url.with_suffix("/"),
             self.from.clone(),
             "/select?wt=json&indent=off&omitHeader=true".to_string(),
             format!("&q={}", query),
@@ -155,21 +151,45 @@ pub fn progress_with<S, It: Iterator<Item = S>>(steps: It, total: u64) -> Progre
 
 #[cfg(test)]
 mod test {
-    use crate::args::Arguments;
-    use crate::args::SolrCore;
+    use crate::steps::SolrCore;
+    use crate::args::*;
+    use crate::args::test::*;
     use crate::helpers::*;
+    use crate::fails::*;
+
+    impl Arguments {
+
+        pub fn get(&self) ->  Result<&GetArgs, BoxedError> {
+            match &self {
+                Self::Backup(get) => Ok(&get),
+                _ => raise("command must be 'backup' !"),
+            }
+        }
+    
+    }
+
+    impl SolrCore {
+
+        pub fn mockup() -> Self {
+            SolrCore {
+                num_found: 100,
+                fields: vec!(TEST_SELECT_FIELDS.split(COMMA).collect())
+            }
+        }
+    }
 
     #[test]
     fn check_iterator_for_params_get() {
 
         let parsed = Arguments::mockup_args_get();
+        let gets = parsed.get().unwrap();
 
         let core_info = SolrCore::mockup();
 
-        let query = parsed.get_query_url(EMPTY_STRING);
+        let query = gets.get_query_url(EMPTY_STRING);
 
         let mut i = 0;
-        for step in parsed.get_steps(&core_info) {
+        for step in gets.get_steps(&core_info) {
 
             let url = step.url;
             assert_eq!(url.is_empty(), false);

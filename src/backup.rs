@@ -1,10 +1,16 @@
 
-use super::args::{Arguments, SolrCore};
+use super::args::GetArgs;
+use super::steps::SolrCore;
 
-pub (crate) fn backup_main(parsed: Arguments) -> Result<(), Box<dyn std::error::Error>> {
+pub (crate) fn backup_main(parsed: GetArgs) -> Result<(), Box<dyn std::error::Error>> {
+
+    if parsed.options.verbose {
+        // TODO: use a logger and combine with --verbose
+        println!("  {:?}", parsed);
+    }
 
     let core_info = SolrCore::inspect_core(&parsed)?;
-    if parsed.verbose {
+    if parsed.options.verbose {
         println!("  {:?}", core_info);
     }
 

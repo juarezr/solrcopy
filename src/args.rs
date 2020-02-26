@@ -81,7 +81,7 @@ impl FromStr for SortField {
 
 #[derive(StructOpt, Debug)]
 /// Dumps records from a Apache Solr core into local backup files
-pub struct Get {
+pub struct GetArgs {
     /// Case sensitive name of the Solr core for extracting records
     #[structopt(short, long)]
     pub from: String,
@@ -113,11 +113,14 @@ pub struct Get {
     /// Name for writing backup zip files  
     #[structopt(short, long, parse(try_from_str = parse_file_prefix))]
     pub name: Option<String>,
+
+    #[structopt(flatten)]
+    pub options: CommonArgs,    
 }
 
 #[derive(StructOpt, Debug)]
 /// Dumps and restores records from a Apache Solr core into local backup files
-pub struct Put {
+pub struct PutArgs {
     /// Case sensitive name of the Solr core to upload records/data
     #[structopt(short, long)]
     pub into: String,
@@ -129,22 +132,22 @@ pub struct Put {
     /// Pattern for matching backup zip files in `from` folder for restoring
     #[structopt(short, long)]
     pub pattern: Option<String>,
+
+    #[structopt(flatten)]
+    pub options: CommonArgs,    
 }
 
 #[derive(StructOpt, Debug)]
-pub enum Command {
+pub enum Arguments {
     /// Dumps records from a Apache Solr core into local backup files
-    Backup (Get),
+    Backup (GetArgs),
     /// Restore records from local backup files into a Apache Solr core
-    Restore(Put),
+    Restore(PutArgs),
 }
 
 #[derive(StructOpt, Debug)]
 /// Dumps and restores records from a Apache Solr core into local backup files
-pub struct Arguments {
-
-    #[structopt(subcommand)]  // Note that we mark a field as a subcommand
-    pub command: Command,
+pub struct CommonArgs {
 
     /// Url pointing to the Solr base address like: http://solr-server:8983/solr
     #[structopt(short, long, env = "SOLR_URL", parse(try_from_str = parse_solr_url))]
@@ -167,25 +170,10 @@ impl Arguments {
         Ok(res)
     }
 
-    pub fn get(&self) ->  Result<&Get, BoxedError> {
-        match &self.command {
-            Command::Backup(get) => Ok(&get),
-            _ => raise("command must be 'backup' !"),
-        }
-    }
-
-    #[allow(dead_code)]
-    pub fn put(&self) ->  Result<&Put, BoxedError> {
-        match &self.command {
-            Command::Restore(put) => Ok(&put),
-            _ => raise("command must be 'restore' !"),
-        }
-    }
-
     pub fn dir(&self) ->  Result<&PathBuf, BoxedError> {
-        let dir = match &self.command {
-            Command::Backup(get) => &get.into,
-            Command::Restore(put) => &put.from,
+        let dir = match &self {
+            Self::Backup(get) => &get.into,
+            Self::Restore(put) => &put.from,
         };
         Ok(dir)
     }
@@ -228,14 +216,6 @@ fn parse_file_prefix(src: &str) -> Result<String, String> {
 
 // endregion
 
-// region Solr Core
-
-#[derive(Debug)]
-pub struct SolrCore {
-    pub num_found: u64,
-    pub fields: Vec<String>,
-}
-
 // endregion
 
 #[cfg(test)]
@@ -243,9 +223,7 @@ pub mod test {
 
     // region Mockup
 
-    use crate::args::{Arguments, Command};
-    use crate::args::SolrCore;
-    use crate::helpers::*;
+    use crate::args::{Arguments};
 
     use structopt::StructOpt;
 
@@ -263,18 +241,8 @@ pub mod test {
             Arguments::from_iter(TEST_ARGS_PUT)
         }
     }
-
-    impl SolrCore {
-
-        pub fn mockup() -> Self {
-            SolrCore {
-                num_found: 100,
-                fields: vec!(TEST_SELECT_FIELDS.split(COMMA).collect())
-            }
-        }
-    }
  
-    const TEST_SELECT_FIELDS: &'static str = "id,date,vehiclePlate";
+    pub const TEST_SELECT_FIELDS: &'static str = "id,date,vehiclePlate";
    
     const TEST_ARGS_HELP: &'static [&'static str] = &["solrbulk", "--help" ];
    
@@ -286,9 +254,8 @@ pub mod test {
 
     const TEST_ARGS_GET: &'static [&'static str] = &[
             "solrbulk",
-            "--url", "http://solr-telematics.ceabsservicos.com.br:8983/solr", 
-            "--verbose", 
             "backup", 
+            "--url", "http://solr-telematics.ceabsservicos.com.br:8983/solr", 
             "--from", "mileage", 
             "--into", "./tmp",
             "--where", "ownerId:173826 AND periodCode:1", 
@@ -297,12 +264,13 @@ pub mod test {
             "--name", "output_filename",
             "--limit", "42", 
             "--batch", "5", 
+            "--verbose", 
         ];
 
     const TEST_ARGS_PUT: &'static [&'static str] = &[
         "solrbulk", 
-        "--url", "http://solr-telematics.ceabsservicos.com.br:8983/solr", 
         "restore", 
+        "--url", "http://solr-telematics.ceabsservicos.com.br:8983/solr", 
         "--from", "./tmp",
         "--into", "mileage", 
         "--verbose", 
@@ -314,17 +282,15 @@ pub mod test {
     fn check_params_backup() {
 
         let parsed = Arguments::mockup_args_get();
-
-        // assert_eq!(parsed.url, TEST_ARGS_GET[3]);
-        assert_eq!(parsed.verbose, true);
-
-        match parsed.command {
-            Command::Backup(get) => {
+        match parsed {
+            Arguments::Backup(get) => {
+                assert_eq!(get.options.url, TEST_ARGS_GET[3]);
                 assert_eq!(get.from, TEST_ARGS_GET[5]);
                 assert_eq!(get.into.to_str().unwrap(), TEST_ARGS_GET[7]);
                 assert_eq!(get.filter, Some(TEST_ARGS_GET[9].to_string()));
                 assert_eq!(get.limit, Some(42));
                 assert_eq!(get.batch, 5);
+                assert_eq!(get.options.verbose, true);
                 },
             _ => panic!("command must be 'backup' !"),
         };
@@ -334,14 +300,12 @@ pub mod test {
     fn check_params_restore() {
 
         let parsed = Arguments::mockup_args_put();
-
-        assert_eq!(parsed.url, TEST_ARGS_PUT[3]);
-        assert_eq!(parsed.verbose, true);
-
-        match parsed.command {
-            Command::Restore(put) => {
-                assert_eq!(put.from.to_str().unwrap(), TEST_ARGS_GET[3]);
-                assert_eq!(put.into, TEST_ARGS_GET[5]);
+        match parsed {
+            Arguments::Restore(put) => {
+                assert_eq!(put.options.url, TEST_ARGS_PUT[3]);
+                assert_eq!(put.from.to_str().unwrap(), TEST_ARGS_PUT[5]);
+                assert_eq!(put.into, TEST_ARGS_PUT[7]);
+                assert_eq!(put.options.verbose, true);
                 },
             _ => panic!("command must be 'restore' !"),
         };
