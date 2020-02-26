@@ -4,7 +4,7 @@
     {
       "label": "createTempFolder",
       "type": "shell",
-      "command": "mkdir -p ./tmp",
+      "command": "test -d ./tmp && echo Found temp dir || mkdir -p ./tmp",
     }
   ]
 }
