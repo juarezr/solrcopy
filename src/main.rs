@@ -16,6 +16,7 @@ mod steps;
 mod fetch;
 mod save;
 mod backup;
+mod restore;
 
 use args::Arguments;
 
@@ -25,7 +26,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match parsed {
         Arguments::Backup(gets) => backup::backup_main(gets),
-        Arguments::Restore(_puts) => unimplemented!(),
+        Arguments::Restore(puts) => restore::restore_main(puts),
     }
 }
 

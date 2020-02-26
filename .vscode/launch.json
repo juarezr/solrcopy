@@ -7,7 +7,7 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Launch-with-Params",
+            "name": "Launch-backup",
             "cargo": {
                 "args": [
                     "build",
@@ -37,20 +37,27 @@
         , {
             "type": "lldb",
             "request": "launch",
-            "name": "Build",
+            "name": "Launch-restore",
             "cargo": {
                 "args": [
                     "build",
                     "--bin=solrbulk",
                     "--package=solrbulk"
-                ],
-                "filter": {
-                    "name": "solrbulk",
-                    "kind": "bin"
-                }
+                ]
             },
-            "args": [],
-            "cwd": "${workspaceFolder}"
+            "preLaunchTask":  "createTempFolder",
+            "program": "${cargo:program}",
+            "args": [
+                "restore", 
+                "--url", "http://solr-telematics.ceabsservicos.com.br:8983/solr", 
+                "--from", "./tmp", 
+                "--into", "mileage",
+                "--verbose", 
+            ],
+            "env": { 
+                "RUST_BACKTRACE": "full"
+            },
+            "cwd": "${workspaceFolder}",
         }
         ,{
             "type": "lldb",
