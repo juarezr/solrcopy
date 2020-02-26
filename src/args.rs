@@ -80,8 +80,66 @@ impl FromStr for SortField {
 
 #[derive(StructOpt, Debug)]
 /// Dumps records from a Apache Solr core into local backup files
-/// 
-/// The backup files can be futher reimported using solringest
+pub struct GetArguments {
+    /// Case sensitive name of the Solr core for extracting records
+    #[structopt(short, long)]
+    pub from: String,
+
+    /// Solr Query filter for filtering returned records  
+    #[structopt(short = "w", long = "where")]
+    pub filter: Option<String>,
+
+    /// Solr core fields names for restricting columns for retrieval
+    #[structopt(short, long)]
+    pub select: Vec<String>,
+
+    /// Solr core fields names for sorting records for retrieval (like: field1:desc)
+    #[structopt(short, long)]
+    pub order: Vec<SortField>,
+
+    /// Maximum number of records for retrieving from the core
+    #[structopt(short, long)]
+    pub limit: Option<u64>,
+
+    /// Number of records for reading from solr in each step
+    #[structopt(short, long, default_value = "4096")]
+    pub batch: u64,
+
+     /// Existing folder for writing the dump files
+    #[structopt(short, long, parse(from_os_str), env = "SOLRDUMP_DIR")]
+    pub into: std::path::PathBuf,
+
+    /// Name for writing backup zip files  
+    #[structopt(short, long, parse(try_from_str = parse_file_prefix))]
+    pub name: Option<String>,
+}
+
+#[derive(StructOpt, Debug)]
+/// Dumps and restores records from a Apache Solr core into local backup files
+pub struct PutArguments {
+    /// Case sensitive name of the Solr core to upload records/data
+    #[structopt(short, long)]
+    pub into: String,
+
+     /// Existing folder for searching and reading the zip backup files
+    #[structopt(short, long, parse(from_os_str), env = "SOLRDUMP_DIR")]
+    pub from: std::path::PathBuf,
+
+    /// Pattern for matching backup zip files in `from` folder for restoring
+    #[structopt(short, long)]
+    pub pattern: Option<String>,
+}
+
+#[derive(StructOpt)]
+enum Command {
+    /// Dumps records from a Apache Solr core into local backup files
+    Backup (GetArguments),
+    /// Restore records from local backup files into a Apache Solr core
+    Restore(PutArguments),
+}
+
+#[derive(StructOpt, Debug)]
+/// Dumps and restores records from a Apache Solr core into local backup files
 pub struct Arguments {
     /// Url pointing to the Solr base address like: http://solr-server:8983/solr
     #[structopt(short, long, env = "SOLR_URL", parse(try_from_str = parse_solr_url))]
