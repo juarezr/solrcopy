@@ -109,8 +109,8 @@ impl Arguments {
         };
 
         let parts: Vec<String> = vec!(
-            self.from.with_suffix("/"),
-            self.core.clone(),
+            self.url.with_suffix("/"),
+            self.from.clone(),
             "/select?wt=json&indent=off&omitHeader=true".to_string(),
             format!("&q={}", query),
             sort,

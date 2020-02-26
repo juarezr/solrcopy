@@ -85,11 +85,11 @@ impl FromStr for SortField {
 pub struct Arguments {
     /// Url pointing to the Solr base address like: http://solr-server:8983/solr
     #[structopt(short, long, env = "SOLR_URL", parse(try_from_str = parse_solr_url))]
-    pub from: String,
+    pub url: String,
 
     /// Case sensitive name of the Solr core to extract data
     #[structopt(short, long)]
-    pub core: String,
+    pub from: String,
 
     /// Query filter for Solr filter returned records  
     #[structopt(short = "w", long = "where")]
@@ -221,8 +221,8 @@ pub mod test {
 
     const TEST_ARGS1: &'static [&'static str] = &[
             "solrdump", 
-            "--from", "http://solr-telematics.ceabsservicos.com.br:8983/solr", 
-            "--core", "mileage", 
+            "--url", "http://solr-telematics.ceabsservicos.com.br:8983/solr", 
+            "--from", "mileage", 
             "--where", "ownerId:173826 AND periodCode:1", 
             "--order", "date:asc", "id:desc", "vehiclePlate:asc",
             "--select", TEST_SELECT_FIELDS, 
@@ -238,8 +238,8 @@ pub mod test {
 
         let parsed = Arguments::mockup_args1();
 
-        assert_eq!(parsed.from, TEST_ARGS1[2]);
-        assert_eq!(parsed.core, TEST_ARGS1[4]);
+        assert_eq!(parsed.url, TEST_ARGS1[2]);
+        assert_eq!(parsed.from, TEST_ARGS1[4]);
         assert_eq!(parsed.filter, Some(TEST_ARGS1[6].to_string()));
         assert_eq!(parsed.limit, Some(42));
         assert_eq!(parsed.batch, 5);

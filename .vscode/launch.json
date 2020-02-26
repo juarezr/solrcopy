@@ -18,10 +18,9 @@
             "preLaunchTask":  "createTempFolder",
             "program": "${cargo:program}",
             "args": [
-                "--from", "http://solr-telematics.ceabsservicos.com.br:8983/solr", 
-                "--core", "mileage", 
-                "--where", "ownerId:173826 AND periodCode:1", 
-                /* "--where", "ownerId:173826 AND periodCode:1", */
+                "--url", "http://solr-telematics.ceabsservicos.com.br:8983/solr", 
+                "--from", "mileage", 
+                "--where", "ownerId:173826", 
                 "--order", "date:asc", "id:asc", "vehiclePlate:asc",
                 /* "--select", "id,date,vehiclePlate",  */
                 "--limit", "200", 

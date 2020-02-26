@@ -44,7 +44,7 @@ impl SolrCore {
 
     fn parse_core_schema(args: &Arguments, json: &str) -> Result<Self, BoxedError> {
 
-        let core_name = &args.core;
+        let core_name = &args.from;
 
         let total_rows = Self::parse_num_found(json)?;
         if total_rows < 1 { 

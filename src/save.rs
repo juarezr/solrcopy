@@ -18,7 +18,7 @@ impl Arguments {
 
         let name = match &self.name {
             Some(text) => text,
-            None => &self.core,
+            None => &self.from,
         };
         let res = Archiver::write_on(&self.into, &name);
         Ok(res)
