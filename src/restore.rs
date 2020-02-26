@@ -6,6 +6,7 @@ use std::fs::File;
 use std::io::prelude::*;
 
 use super::args::Restore;
+use super::update::*;
 use super::fails::*;
 
 pub (crate) fn restore_main(params: Restore) -> Result<(), Box<dyn std::error::Error>> {
@@ -23,6 +24,8 @@ pub (crate) fn restore_main(params: Restore) -> Result<(), Box<dyn std::error::E
 
 fn unzip_archives(params: Restore, found: Vec<PathBuf>) -> Result<(), BoxedError> {
     
+    // TODO: print progress
+    
     for path in found {
         let zipfile = File::open(&path)?;
         let mut archive = ZipArchive::new(zipfile)?;
@@ -32,13 +35,9 @@ fn unzip_archives(params: Restore, found: Vec<PathBuf>) -> Result<(), BoxedError
             let mut compressed = archive.by_index(i).unwrap();
             let mut buffer = String::new();
             compressed.read_to_string(&mut buffer)?;
-            put_content(&params, &mut buffer)?;
+            put_content(&params, buffer)?;
         }
     }
-    Ok(())
-}
-
-fn put_content(_params: &Restore, _found: &mut String) -> Result<(), BoxedError> {
     Ok(())
 }
 

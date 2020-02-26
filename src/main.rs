@@ -18,6 +18,7 @@ mod fetch;
 mod save;
 mod backup;
 mod restore;
+mod update;
 
 use args::Arguments;
 
