@@ -15,5 +15,6 @@ reqwest = { version = "0.10.1", features = ["blocking"] }
 zip = "0.5.4"
 indicatif = "0.14.0"
 chrono = "0.4"
+glob = "0.3.0"
 
 # end of the file

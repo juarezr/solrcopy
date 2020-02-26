@@ -8,6 +8,7 @@ extern crate url;
 extern crate reqwest;
 extern crate zip;
 extern crate chrono;
+extern crate glob;
 
 mod fails;
 mod helpers;

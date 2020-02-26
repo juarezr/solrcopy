@@ -52,6 +52,7 @@
                 "--url", "http://solr-telematics.ceabsservicos.com.br:8983/solr", 
                 "--from", "./tmp", 
                 "--into", "mileage",
+                // "--pattern", "*.zip",
                 "--verbose", 
             ],
             "env": { 
