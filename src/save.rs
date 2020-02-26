@@ -4,6 +4,8 @@ use zip::ZipWriter;
 
 use std::io::Write;
 
+use chrono::{DateTime, Utc};
+
 use super::args::*;
 use super::fails::*;
 use super::steps::*;
@@ -24,17 +26,20 @@ type Compressor = ZipWriter<std::fs::File>;
 pub struct Archiver {
     writer: Option<Compressor>,
     folder: std::path::PathBuf,
-    core: String,
+    name: String,
     sequence: u64,
 }
 
 impl Archiver {
 
     fn write_on(dir: &std::path::PathBuf, core_name: &str) -> Self {
+        let now: DateTime<Utc> = Utc::now();
+        let time = now.format("%Y-%m-%d_%H-%M-%S");
+        let name = format!("{}_{}", core_name, time);
         Archiver { 
             writer: None,
             folder: dir.to_owned(),
-            core: core_name.to_string(),
+            name: name,
             sequence: 0,
         }
     }
@@ -44,7 +49,7 @@ impl Archiver {
         self.close_archive()?;
 
         self.sequence +=1;
-        let file_name = format!("{}-{:05}.zip", &self.core, &self.sequence);
+        let file_name = format!("{}_{:05}.zip", &self.name, &self.sequence);
         let zip_path = std::path::Path::new(&self.folder);
         let zip_name = std::path::Path::new(&file_name);
         let zip_file = zip_path.join(&zip_name);

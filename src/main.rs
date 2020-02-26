@@ -7,6 +7,7 @@ extern crate regex;
 extern crate url;
 extern crate reqwest;
 extern crate zip;
+extern crate chrono;
 
 mod fails;
 mod helpers;
