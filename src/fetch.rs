@@ -44,7 +44,8 @@ impl SolrCore {
 
     fn parse_core_schema(args: &Arguments, json: &str) -> Result<Self, BoxedError> {
 
-        let core_name = &args.from;
+        let gets = args.get()?;
+        let core_name = &gets.from;
 
         let total_rows = Self::parse_num_found(json)?;
         if total_rows < 1 { 
@@ -53,14 +54,14 @@ impl SolrCore {
 
         let parsed_fields = Self::parse_field_names(&json);
 
-        let core_fields = if args.select.is_empty() {
+        let core_fields = if gets.select.is_empty() {
             match parsed_fields {
                 None => throw(format!("Missing fields to parse in Solr Core '{}'!", core_name))?,
                 Some(fields) => fields,
             }
         } else {
             // TODO: check if args.select fields matches parsed_fields
-            args.select.clone()
+            gets.select.clone()
         };
         let res = SolrCore {
             num_found: total_rows,

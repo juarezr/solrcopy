@@ -16,11 +16,12 @@ impl Arguments {
 
     pub fn get_writer(&self) -> Result<Archiver, BoxedError> {
 
-        let name = match &self.name {
+        let get = self.get()?;
+        let name = match &get.name {
             Some(text) => text,
-            None => &self.from,
+            None => &get.from,
         };
-        let res = Archiver::write_on(&self.into, &name);
+        let res = Archiver::write_on(&get.into, &name);
         Ok(res)
     }
 }

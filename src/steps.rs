@@ -62,19 +62,29 @@ impl Arguments {
 
     pub fn get_steps(&self, core_info: &SolrCore) -> Steps {
 
+        let gets = self.get().unwrap();
+
         let fl = Self::get_query_fields(&core_info.fields);
-        let query = self.get_query_url(fl);
-        let rows = core_info.num_found.min(self.limit.unwrap_or(std::u64::MAX));
+        let query = gets.get_query_url(self.url.as_ref(), fl);
+        let rows = core_info.num_found.min(gets.limit.unwrap_or(std::u64::MAX));
 
         Steps {
             curr: 0,
             limit : rows,
-            batch: self.batch,
+            batch: gets.batch,
             url : query
         }
     }
-    
+ 
+    pub fn get_query_url(&self, selected: String) -> String {
+
+        let gets = self.get().unwrap();
+
+        gets.get_query_url(self.url.as_ref(), selected)
+    }
+
     pub fn get_query_for_diagnostics(&self) -> String {
+
         let url = self.get_query_url(EMPTY_STRING);
         format!("{}&start=0&rows=1", url)
     }
@@ -88,8 +98,11 @@ impl Arguments {
             "&fl=".append(&all)
         }
    }
+}
 
-    pub fn get_query_url(&self, selected: String) -> String {
+impl Get {
+
+    pub fn get_query_url(&self, solr_url: &str, selected: String) -> String {
 
         let query = self.filter.clone()
             .unwrap_or("*:*".to_string())
@@ -109,7 +122,7 @@ impl Arguments {
         };
 
         let parts: Vec<String> = vec!(
-            self.url.with_suffix("/"),
+            solr_url.with_suffix("/"),
             self.from.clone(),
             "/select?wt=json&indent=off&omitHeader=true".to_string(),
             format!("&q={}", query),
@@ -147,9 +160,10 @@ mod test {
     use crate::helpers::*;
 
     #[test]
-    fn check_iterator_for_params1() {
+    fn check_iterator_for_params_get() {
 
-        let parsed = Arguments::mockup_args1();
+        let parsed = Arguments::mockup_args_get();
+
         let core_info = SolrCore::mockup();
 
         let query = parsed.get_query_url(EMPTY_STRING);
