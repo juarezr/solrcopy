@@ -272,7 +272,8 @@ pub mod test {
         "restore", 
         "--url", "http://solr-telematics.ceabsservicos.com.br:8983/solr", 
         "--from", "./tmp",
-        "--into", "mileage", 
+        "--into", "mileage",
+        "--pattern", "*.zip",
         "--verbose", 
     ];
 
@@ -305,6 +306,7 @@ pub mod test {
                 assert_eq!(put.options.url, TEST_ARGS_PUT[3]);
                 assert_eq!(put.from.to_str().unwrap(), TEST_ARGS_PUT[5]);
                 assert_eq!(put.into, TEST_ARGS_PUT[7]);
+                assert_eq!(put.pattern.unwrap(), TEST_ARGS_PUT[9]);
                 assert_eq!(put.options.verbose, true);
                 },
             _ => panic!("command must be 'restore' !"),

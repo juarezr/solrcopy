@@ -158,18 +158,15 @@ mod test {
     use crate::fails::*;
 
     impl Arguments {
-
         pub fn get(&self) ->  Result<&Backup, BoxedError> {
             match &self {
-                Self::Backup(get) => Ok(&get),
+                Self::Backup(gets) => Ok(&gets),
                 _ => raise("command must be 'backup' !"),
             }
         }
-    
     }
 
     impl SolrCore {
-
         pub fn mockup() -> Self {
             SolrCore {
                 num_found: 100,
