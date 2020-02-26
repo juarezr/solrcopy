@@ -255,7 +255,7 @@ pub mod test {
     const TEST_ARGS_GET: &'static [&'static str] = &[
             "solrbulk",
             "backup", 
-            "--url", "http://solr-telematics.ceabsservicos.com.br:8983/solr", 
+            "--url", "http://solr-server.com:8983/solr", 
             "--from", "mileage", 
             "--into", "./tmp",
             "--where", "ownerId:173826 AND periodCode:1", 
@@ -270,7 +270,7 @@ pub mod test {
     const TEST_ARGS_PUT: &'static [&'static str] = &[
         "solrbulk", 
         "restore", 
-        "--url", "http://solr-telematics.ceabsservicos.com.br:8983/solr", 
+        "--url", "http://solr-server.com:8983/solr", 
         "--from", "./tmp",
         "--into", "mileage",
         "--pattern", "*.zip",
