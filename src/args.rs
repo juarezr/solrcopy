@@ -115,6 +115,10 @@ pub struct Arguments {
     #[structopt(short, long, parse(from_os_str), env = "SOLRDUMP_DIR")]
     pub into: std::path::PathBuf,
 
+    /// Name for output zip files  
+    #[structopt(short, long, parse(try_from_str = parse_file_prefix))]
+    pub name: Option<String>,
+
     /// Show details of the execution
     #[structopt(short, long)]
     pub verbose: bool,
@@ -155,6 +159,16 @@ fn parse_solr_url(src: &str) -> Result<String, String> {
         }
     }
     Ok(url2)
+}
+
+fn parse_file_prefix(src: &str) -> Result<String, String> {
+    lazy_static! {
+        static ref REGFN: Regex = Regex::new("^(\\w+)$").unwrap();
+    }
+    match REGFN.get_group(src, 1) {
+        None => Err(format!("Wrong output filename: '{}'. Considere using letters and numbers.", src)),
+        Some(group1) => Ok(group1.to_string())
+    }
 }
 
 // endregion
@@ -213,6 +227,7 @@ pub mod test {
             "--order", "date:asc", "id:desc", "vehiclePlate:asc",
             "--select", TEST_SELECT_FIELDS, 
             "--into", "./test",
+            "--name", "output_filename",
             "--limit", "42", 
             "--batch", "5", 
             "--verbose", 
