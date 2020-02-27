@@ -11,8 +11,8 @@
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=solrbulk",
-                    "--package=solrbulk"
+                    "--bin=solrcopy",
+                    "--package=solrcopy"
                 ]
             },
             "preLaunchTask":  "createTempFolder",
@@ -41,19 +41,17 @@
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=solrbulk",
-                    "--package=solrbulk"
+                    "--bin=solrcopy",
+                    "--package=solrcopy"
                 ]
             },
             "preLaunchTask":  "createTempFolder",
             "program": "${cargo:program}",
             "args": [
                 "restore", 
-                // "--url", "http://solr-telematics.ceabsservicos.com.br:8983/solr", 
                 "--url", "http://solr-server.com:8983/solr", 
                 "--from", "./tmp", 
                 "--into", "mileage",
-                // "--pattern", "*.zip",
                 "--verbose", 
             ],
             "env": { 
@@ -69,11 +67,11 @@
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=solrbulk",
-                    "--package=solrbulk"
+                    "--bin=solrcopy",
+                    "--package=solrcopy"
                 ],
                 "filter": {
-                    "name": "solrbulk",
+                    "name": "solrcopy",
                     "kind": "bin"
                 }
             },

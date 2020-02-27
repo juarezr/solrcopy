@@ -107,7 +107,7 @@ pub struct Backup {
     pub batch: u64,
 
      /// Existing folder for writing the dump files
-    #[structopt(short, long, parse(from_os_str), env = "SOLRDUMP_DIR")]
+    #[structopt(short, long, parse(from_os_str), env = "SOLROUT_DIR")]
     pub into: PathBuf,
 
     /// Name for writing backup zip files  
@@ -126,7 +126,7 @@ pub struct Restore {
     pub into: String,
 
      /// Existing folder for searching and reading the zip backup files
-    #[structopt(short, long, parse(from_os_str), env = "SOLRDUMP_DIR")]
+    #[structopt(short, long, parse(from_os_str), env = "SOLROUT_DIR")]
     pub from: PathBuf,
 
     /// Pattern for matching backup zip files in `from` folder for restoring
@@ -244,16 +244,16 @@ pub mod test {
  
     pub const TEST_SELECT_FIELDS: &'static str = "id,date,vehiclePlate";
    
-    const TEST_ARGS_HELP: &'static [&'static str] = &["solrbulk", "--help" ];
+    const TEST_ARGS_HELP: &'static [&'static str] = &["solrcopy", "--help" ];
    
-    const TEST_ARGS_VERSION: &'static [&'static str] = &["solrbulk", "--version" ];
+    const TEST_ARGS_VERSION: &'static [&'static str] = &["solrcopy", "--version" ];
    
-    const TEST_ARGS_GET_HELP: &'static [&'static str] = &["solrbulk", "help", "backup" ];
+    const TEST_ARGS_GET_HELP: &'static [&'static str] = &["solrcopy", "help", "backup" ];
    
-    const TEST_ARGS_PUT_HELP: &'static [&'static str] = &["solrbulk", "help", "restore" ];
+    const TEST_ARGS_PUT_HELP: &'static [&'static str] = &["solrcopy", "help", "restore" ];
 
     const TEST_ARGS_GET: &'static [&'static str] = &[
-            "solrbulk",
+            "solrcopy",
             "backup", 
             "--url", "http://solr-server.com:8983/solr", 
             "--from", "mileage", 
@@ -268,7 +268,7 @@ pub mod test {
         ];
 
     const TEST_ARGS_PUT: &'static [&'static str] = &[
-        "solrbulk", 
+        "solrcopy", 
         "restore", 
         "--url", "http://solr-server.com:8983/solr", 
         "--from", "./tmp",

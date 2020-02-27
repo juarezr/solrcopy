@@ -1,27 +1,27 @@
-# solrbulk
+# solrcopy
 
 Command line tool for backup and restore of information stored in cores of Apache Solr.
 
 ## Usage
 
-1. Use the command `solrbulk backup` for dumping data/records from a Solr core into local zip files.
+1. Use the command `solrcopy backup` for dumping data/records from a Solr core into local zip files.
    1. Use the switch `--filter` for filtering the rows extracted by using a [Solr](https://lucene.apache.org/solr/guide/8_4/the-standard-query-parser.html) [Query](https://lucene.apache.org/solr/guide/8_4/the-standard-query-parser.html)
    2. Use the switch `--order` for specifing the sorting of rows extracted.
    3. Use the switch `--limit` for restricting the number of rows extracted.
    4. Use the switch `--select` for restricting the columns extracted.
-2. Use the command `solrbulk restore` for uploading the extracted data/records from local zip files into the same Solr core or another with same field names as extracted.
+2. Use the command `solrcopy restore` for uploading the extracted data/records from local zip files into the same Solr core or another with same field names as extracted.
    1. The rows are updated in the target core in the same format that they were extracted.
    2. The rows are inserted/updated based on their `uniqueKey` field defined in core.
-   3. If you want to change the rows/columns use the swithes in `solrbulk backup` for extracting more than one slice of records to be updated.
+   3. If you want to change the rows/columns use the swithes in `solrcopy backup` for extracting more than one slice of records to be updated.
 
 ## Invocation
 
 ``` bash
-$ solrbulk --help
-solrbulk 0.2.0
+$ solrcopy --help
+solrcopy 0.2.1
 
 USAGE:
-    solrbulk <SUBCOMMAND>
+    solrcopy <SUBCOMMAND>
 
 FLAGS:
     -h, --help       Prints help information
@@ -34,12 +34,12 @@ SUBCOMMANDS:
 ```
 
 ``` bash
-$ solrbulk help backup
-solrbulk-backup 0.2.0
+$ solrcopy help backup
+solrcopy-backup 0.2.1
 Dumps records from a Apache Solr core into local backup files
 
 USAGE:
-    solrbulk backup [FLAGS] [OPTIONS] --from <from> --into <into> --url <url>
+    solrcopy backup [FLAGS] [OPTIONS] --from <from> --into <into> --url <url>
 
 FLAGS:
     -h, --help       Prints help information
@@ -58,16 +58,16 @@ OPTIONS:
     -u, --url <url>             Url pointing to the Solr base address like: http://solr-server:8983/solr [env:
                                 SOLR_URL=]
 
-$ solrbulk backup --url http://my-solr-server.com::8983/sol --from my-solr-core --where 'field1:123 AND field2:456' --order id:asc date:asc --limit 10000 --select id date name price otherfield --into ./my-core-folder
+$ solrcopy backup --url http://my-solr-server.com::8983/sol --from my-solr-core --where 'field1:123 AND field2:456' --order id:asc date:asc --limit 10000 --select id date name price otherfield --into ./my-core-folder
 ```
 
 ``` bash
-$ solrbulk help restore
-solrbulk-restore 0.2.0
+$ solrcopy help restore
+solrcopy-restore 0.2.1
 Restore records from local backup files into a Apache Solr core
 
 USAGE:
-    solrbulk restore [FLAGS] [OPTIONS] --from <from> --into <into> --url <url>
+    solrcopy restore [FLAGS] [OPTIONS] --from <from> --into <into> --url <url>
 
 FLAGS:
     -h, --help       Prints help information
@@ -80,20 +80,20 @@ OPTIONS:
     -p, --pattern <pattern>    Pattern for matching backup zip files in `from` folder for restoring
     -u, --url <url>            Url pointing to the Solr base address like: http://solr-server:8983/solr [env: SOLR_URL=]
 
-$ solrbulk restore --url http://my-solr-server.com::8983/sol  --from ./my-core-folder --into my-solr-core
+$ solrcopy restore --url http://my-solr-server.com::8983/sol  --from ./my-core-folder --into my-solr-core
 ```
 
 ## Status
 
-![Rust](https://github.com/juarezr/solrbulk/workflows/Rust/badge.svg)
+![Rust](https://github.com/juarezr/solrcopy/workflows/Rust/badge.svg)
 
-- Work in Progress
-- Backup:
-  - Working
+- solrcopy backup/restore
+  - Kind of working
   - Needs finishing some `TODO`
-- Restore:
-  - Working / lightly tested
-  - Needs finishing some `TODO`
+  - Lightly tested
+- Packaging:
+  - Not started yet
+- Check the issues in github
 - Patches welcome!
 
 ## Known Issues
@@ -112,3 +112,8 @@ For setup of a development:
    - vadimcn.vscode-lldb
    - rust-lang.rust
    - swellaby.vscode-rust-test-adapter
+
+## Related
+
+1. [solrbulk](https://github.com/miku/solrbulk)
+2. [solrdump](https://github.com/ubleipzig/solrdump)
