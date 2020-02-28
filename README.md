@@ -85,7 +85,7 @@ $ solrcopy restore --url http://my-solr-server.com::8983/sol  --from ./my-core-f
 
 ## Status
 
-![Rust](https://github.com/juarezr/solrcopy/workflows/Rust/badge.svg)
+![Build Test Lints](https://github.com/juarezr/solrcopy/workflows/build-test-and-lint.yml/badge.svg)
 
 - solrcopy backup/restore
   - Kind of working
