@@ -5,7 +5,7 @@ Command line tool for backup and restore of information stored in cores of Apach
 ## Usage
 
 1. Use the command `solrcopy backup` for dumping data/records from a Solr core into local zip files.
-   1. Use the switch `--filter` for filtering the rows extracted by using a [Solr](https://lucene.apache.org/solr/guide/8_4/the-standard-query-parser.html) [Query](https://lucene.apache.org/solr/guide/8_4/the-standard-query-parser.html)
+   1. Use the switch `--where` for filtering the rows extracted by using a [Solr](https://lucene.apache.org/solr/guide/8_4/the-standard-query-parser.html) [Query](https://lucene.apache.org/solr/guide/8_4/the-standard-query-parser.html)
    2. Use the switch `--order` for specifing the sorting of rows extracted.
    3. Use the switch `--limit` for restricting the number of rows extracted.
    4. Use the switch `--select` for restricting the columns extracted.
