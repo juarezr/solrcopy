@@ -19,7 +19,6 @@
             "program": "${cargo:program}",
             "args": [
                 "backup", 
-                // "--url", "http://solr-telematics.ceabsservicos.com.br:8983/solr", 
                 "--url", "http://solr-server.com:8983/solr", 
                 "--from", "mileage", 
                 "--where", "ownerId:173826", 
