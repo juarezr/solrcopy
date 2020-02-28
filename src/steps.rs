@@ -150,10 +150,10 @@ pub fn progress_with<S, It: Iterator<Item = S>>(steps: It, total: u64) -> Progre
 // endregion 
 
 #[cfg(test)]
-mod test {
+mod tests {
     use crate::steps::SolrCore;
     use crate::args::*;
-    use crate::args::test::*;
+    use crate::args::tests::*;
     use crate::helpers::*;
     use crate::fails::*;
 

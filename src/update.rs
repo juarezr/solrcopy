@@ -19,6 +19,8 @@ pub fn put_content(params: &Restore, content: String) -> Result<(), BoxedError> 
 
 fn http_post_to(url: &str, content: String) -> Result<String, reqwest::Error> {
     
+    // TODO: authentication
+
     let client = Client::new();
     let response = client.post(url)
         .headers(construct_headers())
@@ -37,7 +39,6 @@ fn construct_headers() -> HeaderMap {
 }
 
 // endregion 
-
 
 impl Restore {
 

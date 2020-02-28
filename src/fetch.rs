@@ -113,7 +113,7 @@ impl SolrCore {
 // endregion 
 
 #[cfg(test)]
-pub mod test {
+pub mod tests {
     use crate::fetch::*;
 
     const CORE_1ROW: &str = "{\"response\":{\"numFound\":87,\"start\":0,\"docs\":[{\"date\":\"2018-08-03T00:00:00Z\",\"deviceId\":\"\",\"vehiclePlate\":\"A\\B\",\"ownerId\":\"173826\",\"deviceSerialNumber\":\"205525330\",\"regionType\":\"state\",\"clientId\":[\"2\"],\"proposalNumber\":\"635383717\",\"distanceTraveled\":20030,\"minutesTraveled\":48,\"contracted\":false,\"periodCode\":\"1\",\"groupId\":[\"2\"],\"vehicleNumber\":\"\",\"timeTraveled\":\"00:47:39\",\"identification\":\"Jack Daniesls\",\"policyNumber\":\"172645\",\"id\":\"633040_1533254400_1_5\",\"trackableObjectId\":\"633040\",\"periodType\":\"daily\",\"docNumber\":\"1235232435\",\"regionCode\":\"5\",\"_ttl_\":\"+6MONTHS\",\"_expiration_date_\":\"2019-02-06T16:34:09.326Z\",\"_version_\":1608068103504134147}]}}";

@@ -50,11 +50,11 @@ impl Error for Failed {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use crate::fails::*;
    
     #[test]
-    fn check_throw() {
+    fn check_throw_and_raise() {
 
         assert_eq!(throw::<usize>("fail".to_string()).is_ok(), false );
         assert_eq!(raise::<usize>("fail").is_ok(), false );

@@ -63,7 +63,7 @@ impl Restore {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use crate::args::*;
     use crate::fails::*;
 

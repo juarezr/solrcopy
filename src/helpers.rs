@@ -143,11 +143,16 @@ impl RegexHelpers for Regex {
     }    
 }
 
-#[test]
-fn check_starts_with_any() {
-    let ok = &["true", "test"];
-    let s1: &str = "test";
-    assert_eq!(s1.starts_with_any(ok), true);
-    let s2 : String = String::from("test");
-    assert_eq!(s2.starts_with_any(ok), true);
+#[cfg(test)]
+mod tests {
+    use crate::helpers::*;
+
+    #[test]
+    fn check_starts_with_any() {
+        let ok = &["true", "test"];
+        let s1: &str = "test";
+        assert_eq!(s1.starts_with_any(ok), true);
+        let s2 : String = String::from("test");
+        assert_eq!(s2.starts_with_any(ok), true);
+    }
 }
