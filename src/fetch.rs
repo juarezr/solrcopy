@@ -26,20 +26,17 @@ impl SolrCore {
 
         let json = http_get_as_text(&diagnostics_query_url)?;
         
-        let res = SolrCore::parse_core_schema(&gets, &json);
-        res
+        SolrCore::parse_core_schema(&gets, &json)
     }
 
-    pub fn get_rows_from<'a>(url: &'a str) -> Result<String, BoxedError> {
+    pub fn get_rows_from(url: &str) -> Result<String, BoxedError> {
 
         let json = http_get_as_text(url)?;
 
         let rows = SolrCore::parse_rows_from_query(&json);
-        if rows.is_none() {
-            throw(format!("Error parsing rows fetched in solr query results: {}", &url))?
-        } else {
-            let res = rows.unwrap();
-            Ok(res)
+        match rows {
+            None => throw(format!("Error parsing rows fetched in solr query results: {}", &url))?,
+            Some(res) => Ok(res),
         }
     }
 
@@ -93,15 +90,15 @@ impl SolrCore {
             Some(row1) => {
                 let matches = REGFN.get_groups(row1, 1);
                 let filtered = matches.iter()
-                        .filter(|s| { !s.starts_with("_") })
-                        .map(|s| { s.to_string() })
+                        .filter(|s| { !s.starts_with('_') })
+                        .map(|&s| { s.to_string() })
                         .collect::<Vec<String>>();
                 Some(filtered)
             }
         }
     }
         
-    fn parse_rows_from_query<'a>(json: &'a str) -> Option<String> {
+    fn parse_rows_from_query(json: &str) -> Option<String> {
         lazy_static! {
             static ref REGNF: Regex = Regex::new("(\\[.+\\])").unwrap(); // (\[.+\]) or  (\[.+\])(?:\}\})$
         }

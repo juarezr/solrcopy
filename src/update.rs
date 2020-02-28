@@ -27,8 +27,7 @@ fn http_post_to(url: &str, content: String) -> Result<String, reqwest::Error> {
         .body(content)
         .send()?;
 
-    let res = response.text();
-    res
+    response.text()
 }
 
 fn construct_headers() -> HeaderMap {

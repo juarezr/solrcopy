@@ -39,11 +39,11 @@ impl Archiver {
     fn write_on(dir: &std::path::PathBuf, core_name: &str) -> Self {
         let now: DateTime<Utc> = Utc::now();
         let time = now.format("%Y-%m-%d_%H-%M-%S");
-        let name = format!("{}_{}", core_name, time);
+        let out = format!("{}_{}", core_name, time);
         Archiver { 
             writer: None,
             folder: dir.to_owned(),
-            name: name,
+            name: out,
             sequence: 0,
         }
     }

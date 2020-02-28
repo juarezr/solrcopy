@@ -28,8 +28,7 @@ pub (crate) fn backup_main(parsed: Backup) -> Result<(), Box<dyn std::error::Err
             let query_url = &step.url;
             let results = SolrCore::get_rows_from(&query_url);
 
-            if results.is_ok() {
-                let rows = results.unwrap();
+            if let Ok(rows) = results {
                 archiver.write_file(&step, &rows).unwrap();
             }
             // TODO: print a warning about unbalanced shard in solr could configurations

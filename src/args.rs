@@ -59,15 +59,15 @@ impl FromStr for SortField {
                     Err(s.to_string())
                 },
                 Some(x) => {
-                    let field = x.get(1).unwrap().as_str().to_string();
-                    let ord = if x.len() == 4 && x.get(4).unwrap().as_str() == "desc" { 
+                    let sort_field = x.get(1).unwrap().as_str().to_string();
+                    let sort_dir = if x.len() == 4 && x.get(4).unwrap().as_str() == "desc" { 
                         SortDirection::Desc 
                     } else {
                         SortDirection::Asc 
                     };
                     Ok(SortField {
-                        field: field,
-                        direction: ord,
+                        field: sort_field,
+                        direction: sort_dir,
                     })
                 }
             }
@@ -184,7 +184,7 @@ fn parse_solr_url(src: &str) -> Result<String, String> {
     let url2 = if src.starts_with_any(&["http://", "https://"]) { src.to_owned() } else { "http://".append(src) };
     let parsing = Url::parse(src);
     if let Err(reason) = parsing {
-        return Err(format!("Error parsing Solr: {}", reason).to_string());
+        return Err(format!("Error parsing Solr: {}", reason));
     }
     let parsed = parsing.unwrap();
     if parsed.scheme() != "http" {

@@ -2,10 +2,10 @@
 
 use regex::Regex;
 
-pub const EMPTY_STR: &'static str = "";
+pub const EMPTY_STR: &str = "";
 pub const EMPTY_STRING: String = String::new();
 
-pub const COMMA: &'static str = ",";
+pub const COMMA: &str = ",";
 
 pub trait StringHelpers {
 
@@ -57,15 +57,14 @@ impl StringHelpers for str {
         let mut res = String::with_capacity(self.len() + suffix.len());
         res.push_str(self);
         res.push_str(suffix);
-        return res;
+        res
     }
 
     fn append_all(&self, suffixes: &[&str]) -> String {
         let mut all: Vec<&str> = Vec::with_capacity(suffixes.len() + 1);
         all.push(&self);
         all.extend(suffixes.iter());
-        let res = all.concat();
-        return res;
+        all.concat()
     }
 
     fn with_prefix(&self, prefix: &str) -> String {
@@ -74,7 +73,7 @@ impl StringHelpers for str {
         } 
         let mut res = prefix.to_owned();
         res.push_str(&self);
-        return res;
+        res
     }
 
     fn with_suffix(&self, suffix: &str) -> String {
@@ -84,7 +83,7 @@ impl StringHelpers for str {
         let mut res = String::with_capacity(self.len() + suffix.len());
         res.push_str(self);
         res.push_str(suffix);
-        return res;
+        res
     }    
 }
 
@@ -122,24 +121,21 @@ impl RegexHelpers for Regex {
         let caps = matches.map(|cap| { cap.get(group_number) } );
         let filt = caps.filter(|opt| {  opt.is_some() } );
         let maps = filt.map(|opt| { opt.unwrap().as_str() } );
-        let res = maps.collect::<Vec<_>>();
-        res
+        maps.collect::<Vec<_>>()
     }    
     
     fn get_matches<'a>(&self, json: &'a str) -> Vec<&'a str> {
 
         let matches = self.find_iter(json);
         let maps = matches.map(|m| { m.as_str() } );
-        let res = maps.collect::<Vec<_>>();
-        res
+        maps.collect::<Vec<_>>()
     }    
     
     fn get_match_values(&self, json: &str) -> Vec<String> {
 
         let matches = self.find_iter(json);
         let maps = matches.map(|m| { m.as_str().to_string() } );
-        let res = maps.collect::<Vec<_>>();
-        res
+        maps.collect::<Vec<_>>()
     }    
 }
 

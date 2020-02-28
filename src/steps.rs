@@ -71,7 +71,7 @@ impl Backup {
     pub fn get_steps(&self, core_info: &SolrCore) -> Steps {
 
         let fl = Self::get_query_fields(&core_info.fields);
-        let query = self.get_query_url(fl);
+        let query = self.get_query_url(&fl);
         let rows = core_info.num_found.min(self.limit.unwrap_or(std::u64::MAX));
 
         Steps {
@@ -84,11 +84,11 @@ impl Backup {
 
     pub fn get_query_for_diagnostics(&self) -> String {
 
-        let url = self.get_query_url(EMPTY_STRING);
+        let url = self.get_query_url(EMPTY_STR);
         format!("{}&start=0&rows=1", url)
     }
 
-    pub fn get_query_fields(selected: &Vec<String>) -> String {
+    pub fn get_query_fields(selected: &[String]) -> String {
 
         if selected.is_empty() { 
             EMPTY_STRING
@@ -98,16 +98,17 @@ impl Backup {
         }
    }
 
-    pub fn get_query_url(&self, selected: String) -> String {
+    pub fn get_query_url(&self, selected: &str) -> String {
 
         let query = self.filter.clone()
-            .unwrap_or("*:*".to_string())
+            .as_deref()
+            .unwrap_or("*:*")
             .replace(" or ", " OR ")
             .replace(" and ", " AND ")
             .replace(" not ", " NOT ")
             .replace(" ", "%20");
 
-        let sort: String = if self.order.len() <= 0 { 
+        let sort: String = if self.order.is_empty() { 
             EMPTY_STRING
         } else {
             let all: Vec<String> = self.order.iter()
@@ -117,13 +118,13 @@ impl Backup {
             "&sort=".append(&joined)
         };
 
-        let parts: Vec<String> = vec!(
+        let parts = vec!(
             self.options.url.with_suffix("/"),
             self.from.clone(),
             "/select?wt=json&indent=off&omitHeader=true".to_string(),
             format!("&q={}", query),
             sort,
-            selected,
+            selected.to_string(),
         );
         parts.concat()
     }
@@ -138,11 +139,9 @@ pub fn progress_with<S, It: Iterator<Item = S>>(steps: It, total: u64) -> Progre
     let bar_style = indicatif::ProgressStyle::default_bar()
         .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:40.cyan/blue}] {pos}/{len}  {percent}% ({eta})");
 
-    let bar = ProgressBar::new(total)
+    let pbar = ProgressBar::new(total)
         .with_style(bar_style);
-    
-    let progr = steps.into_iter().progress_with(bar);
-    progr
+    steps.progress_with(pbar)
 }
 
 // endregion 
