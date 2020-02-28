@@ -1,4 +1,9 @@
-# Based on https://github.com/actions-rs/example/blob/master/.github/workflows/quickstart.yml
+# Based on:
+#   - https://github.com/actions-rs/example/blob/master/.github/workflows/quickstart.yml
+#
+# Using:
+#   - https://github.com/actions-rs/toolchain   -> https://github.com/marketplace/actions/rust-toolchain
+#   - https://github.com/actions-rs/cargo       -> https://github.com/marketplace/actions/rust-cargo
 #
 # for simplicity we are checking compilation and testing everything on the Ubuntu environment only.
 
@@ -19,12 +24,14 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
+          default: true
           override: true
 
       - name: Run cargo check
         uses: actions-rs/cargo@v1
         with:
-          command: check --verbose
+          command: check
+          args: --verbose
 
   test:
     name: Test Suite
@@ -38,12 +45,14 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
+          default: true
           override: true
 
       - name: Run cargo test
         uses: actions-rs/cargo@v1
         with:
-          command: test --verbose
+          command: test 
+          args: --verbose
 
   lints:
     name: Lints
@@ -55,8 +64,9 @@ jobs:
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
-          profile: minimal
+          profile: default
           toolchain: stable
+          default: true
           override: true
           components: rustfmt, clippy
 
