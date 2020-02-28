@@ -219,7 +219,7 @@ fn parse_file_prefix(src: &str) -> Result<String, String> {
 // endregion
 
 #[cfg(test)]
-pub mod test {
+pub mod tests {
 
     // region Mockup
 
@@ -229,16 +229,19 @@ pub mod test {
 
     impl Arguments {
 
-        pub fn parse_from(argument_list: &[&str]) -> Self {
-            Self::from_iter(argument_list)
+        pub fn mockup_from(argument_list: &[&str]) {
+            match Self::from_iter_safe(argument_list) {
+                Ok(_) => panic!("Error parsing command line arguments: {}", argument_list.join(" ")),
+                Err(_) => (),
+            }
         }
 
         pub fn mockup_args_get() -> Self {
-            Arguments::from_iter(TEST_ARGS_GET)
+            Self::from_iter(TEST_ARGS_GET)
         }
 
         pub fn mockup_args_put() -> Self {
-            Arguments::from_iter(TEST_ARGS_PUT)
+            Self::from_iter(TEST_ARGS_PUT)
         }
     }
  
@@ -315,22 +318,22 @@ pub mod test {
 
     #[test]
     fn check_params_help() {
-        Arguments::parse_from(TEST_ARGS_HELP);
+        Arguments::mockup_from(TEST_ARGS_HELP);
     }
 
     #[test]
     fn check_params_version() {
-        Arguments::parse_from(TEST_ARGS_VERSION);
+        Arguments::mockup_from(TEST_ARGS_VERSION);
     }
 
     #[test]
     fn check_params_get_help() {
-        Arguments::parse_from(TEST_ARGS_GET_HELP);
+        Arguments::mockup_from(TEST_ARGS_GET_HELP);
     }
 
     #[test]
     fn check_params_put_help() {
-        Arguments::parse_from(TEST_ARGS_PUT_HELP);
+        Arguments::mockup_from(TEST_ARGS_PUT_HELP);
     }
 }
 
