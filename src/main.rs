@@ -1,29 +1,28 @@
-#![deny(warnings)] 
+#![deny(warnings)]
 
-#[macro_use] 
+#[macro_use]
 extern crate lazy_static;
 
-extern crate regex;
-extern crate url;
-extern crate reqwest;
-extern crate zip;
 extern crate chrono;
 extern crate glob;
+extern crate regex;
+extern crate reqwest;
+extern crate url;
+extern crate zip;
 
-mod fails;
-mod helpers;
 mod args;
-mod steps;
-mod fetch;
-mod save;
 mod backup;
+mod fails;
+mod fetch;
+mod helpers;
 mod restore;
+mod save;
+mod steps;
 mod update;
 
 use args::Arguments;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-
     let parsed = Arguments::parse_from_args()?;
 
     match parsed {

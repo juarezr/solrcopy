@@ -1,21 +1,21 @@
 use glob::{glob, Paths, PatternError};
 use zip::ZipArchive;
 
-use std::path::PathBuf;
 use std::fs::File;
 use std::io::prelude::*;
+use std::path::PathBuf;
 
 use super::args::Restore;
-use super::update::*;
 use super::fails::*;
+use super::update::*;
 
-pub (crate) fn restore_main(params: Restore) -> Result<(), Box<dyn std::error::Error>> {
-
+pub(crate) fn restore_main(params: Restore) -> Result<(), Box<dyn std::error::Error>> {
     if params.options.verbose {
         // TODO: use a logger and combine with --verbose
         println!("  {:?}", params);
     }
-    let found = params.find_archives()?
+    let found = params
+        .find_archives()?
         .filter_map(Result::ok)
         .collect::<Vec<_>>();
 
@@ -23,14 +23,13 @@ pub (crate) fn restore_main(params: Restore) -> Result<(), Box<dyn std::error::E
 }
 
 fn unzip_archives(params: Restore, found: Vec<PathBuf>) -> Result<(), BoxedError> {
-    
     // TODO: print progress
-    
+
     for path in found {
         let zipfile = File::open(&path)?;
         let mut archive = ZipArchive::new(zipfile)?;
         let file_count = archive.len();
-        
+
         for i in 0..file_count {
             let mut compressed = archive.by_index(i).unwrap();
             let mut buffer = String::new();
@@ -42,16 +41,14 @@ fn unzip_archives(params: Restore, found: Vec<PathBuf>) -> Result<(), BoxedError
 }
 
 impl Restore {
-
     fn find_archives(&self) -> Result<Paths, PatternError> {
-
         let wilcard = self.get_pattern();
         let found = glob(&wilcard)?;
         Ok(found)
     }
-    
+
     fn get_pattern(&self) -> String {
-        let wilcard = match &self.pattern  {
+        let wilcard = match &self.pattern {
             Some(pat) => pat.to_string(),
             None => format!("{}*.zip", self.into),
         };
@@ -68,7 +65,7 @@ mod tests {
     use crate::fails::*;
 
     impl Arguments {
-        pub fn put(&self) ->  Result<&Restore, BoxedError> {
+        pub fn put(&self) -> Result<&Restore, BoxedError> {
             match &self {
                 Self::Restore(puts) => Ok(&puts),
                 _ => raise("command must be 'restore' !"),
@@ -78,7 +75,6 @@ mod tests {
 
     #[test]
     fn check_restore_pattern() {
-
         let parsed = Arguments::mockup_args_put();
         let puts = parsed.put().unwrap();
         let wilcard = puts.get_pattern();
@@ -87,7 +83,6 @@ mod tests {
 
     #[test]
     fn check_restore_iterator() {
-
         let parsed = Arguments::mockup_args_put();
         let puts = parsed.put().unwrap();
 
@@ -95,7 +90,6 @@ mod tests {
             println!("{:?}", zip);
             let path = zip.to_str().unwrap();
             assert_eq!(path.ends_with(".zip"), true);
-        }   
+        }
     }
-
-}    
+}

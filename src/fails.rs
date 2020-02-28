@@ -2,24 +2,26 @@
 
 use std::error::Error;
 use std::fmt;
-    
+
 pub type BoxedError = Box<dyn Error>;
-    
+
 pub type BoxedResult<T> = Result<T, BoxedError>;
-    
+
 pub type ErrorResult = Result<(), BoxedError>;
 
 pub struct Failed {
-    details: String
+    details: String,
 }
 
 impl Failed {
     pub fn new(msg: &str) -> Self {
-        Self { details: msg.to_string() }
+        Self {
+            details: msg.to_string(),
+        }
     }
 
     fn say(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"{}", self.details)
+        write!(f, "{}", self.details)
     }
 }
 
@@ -52,11 +54,10 @@ impl Error for Failed {
 #[cfg(test)]
 mod tests {
     use crate::fails::*;
-   
+
     #[test]
     fn check_throw_and_raise() {
-
-        assert_eq!(throw::<usize>("fail".to_string()).is_ok(), false );
-        assert_eq!(raise::<usize>("fail").is_ok(), false );
+        assert_eq!(throw::<usize>("fail".to_string()).is_ok(), false);
+        assert_eq!(raise::<usize>("fail").is_ok(), false);
     }
 }

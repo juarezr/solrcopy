@@ -1,21 +1,19 @@
-use zip::write::FileOptions;
 use zip::result::ZipResult;
+use zip::write::FileOptions;
 use zip::ZipWriter;
 
 use std::io::Write;
 
 use chrono::{DateTime, Utc};
 
+use super::args::Backup;
 use super::fails::*;
 use super::steps::*;
-use super::args::Backup;
 
-// region Archiver 
+// region Archiver
 
 impl Backup {
-
     pub fn get_writer(&self) -> Result<Archiver, BoxedError> {
-
         let name = match &self.name {
             Some(text) => text,
             None => &self.from,
@@ -35,12 +33,11 @@ pub struct Archiver {
 }
 
 impl Archiver {
-
     fn write_on(dir: &std::path::PathBuf, core_name: &str) -> Self {
         let now: DateTime<Utc> = Utc::now();
         let time = now.format("%Y-%m-%d_%H-%M-%S");
         let out = format!("{}_{}", core_name, time);
-        Archiver { 
+        Archiver {
             writer: None,
             folder: dir.to_owned(),
             name: out,
@@ -49,10 +46,9 @@ impl Archiver {
     }
 
     pub fn create_archive(&mut self) -> ZipResult<()> {
-
         self.close_archive()?;
 
-        self.sequence +=1;
+        self.sequence += 1;
         let file_name = format!("{}_{:05}.zip", &self.name, &self.sequence);
         let zip_path = std::path::Path::new(&self.folder);
         let zip_name = std::path::Path::new(&file_name);
@@ -66,7 +62,6 @@ impl Archiver {
     }
 
     pub fn write_file(&mut self, step: &Step, rows: &str) -> ZipResult<()> {
-
         if self.writer.is_none() {
             self.create_archive()?;
         }
@@ -76,23 +71,21 @@ impl Archiver {
         let zip = self.writer.as_mut().unwrap();
 
         let opts: FileOptions = FileOptions::default()
-                .compression_method(zip::CompressionMethod::Stored)
-                .unix_permissions(0o644);
+            .compression_method(zip::CompressionMethod::Stored)
+            .unix_permissions(0o644);
 
         zip.start_file(filename, opts)?;
         zip.write_all(bytes)?;
         zip.flush()?;
-    
+
         // TODO: limit file size based on zip.stats.bytes_written
-        
+
         Ok(())
     }
 
     pub fn close_archive(&mut self) -> ZipResult<()> {
-
         if self.writer.is_some() {
-            self.writer.as_mut().unwrap()
-                .finish()?;
+            self.writer.as_mut().unwrap().finish()?;
         }
         self.writer = None;
         Ok(())

@@ -1,29 +1,36 @@
-// region depedencies 
+// region depedencies
 
 use regex::Regex;
 
-use std::str::FromStr;
 use std::fmt;
+use std::str::FromStr;
 
+use std::path::PathBuf;
 use structopt::StructOpt;
 use url::Url;
-use std::path::PathBuf;
 
-use super::helpers::*;
 use super::fails::*;
+use super::helpers::*;
 
-// endregion 
+// endregion
 
-// region Order By 
+// region Order By
 
 pub enum SortDirection {
     Asc,
-    Desc
+    Desc,
 }
 
 impl fmt::Debug for SortDirection {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", match self {  SortDirection::Asc => "asc", _ => "desc" })
+        write!(
+            f,
+            "{}",
+            match self {
+                SortDirection::Asc => "asc",
+                _ => "desc",
+            }
+        )
     }
 }
 
@@ -55,15 +62,13 @@ impl FromStr for SortField {
                 static ref REO: Regex = Regex::new("^(\\w+)(([:\\s=])(asc|desc))?$").unwrap();
             }
             match REO.captures(s) {
-                None    => {
-                    Err(s.to_string())
-                },
+                None => Err(s.to_string()),
                 Some(x) => {
                     let sort_field = x.get(1).unwrap().as_str().to_string();
-                    let sort_dir = if x.len() == 4 && x.get(4).unwrap().as_str() == "desc" { 
-                        SortDirection::Desc 
+                    let sort_dir = if x.len() == 4 && x.get(4).unwrap().as_str() == "desc" {
+                        SortDirection::Desc
                     } else {
-                        SortDirection::Asc 
+                        SortDirection::Asc
                     };
                     Ok(SortField {
                         field: sort_field,
@@ -75,9 +80,9 @@ impl FromStr for SortField {
     }
 }
 
-// endregion 
+// endregion
 
-// region Arguments 
+// region Arguments
 
 #[derive(StructOpt, Debug)]
 /// Dumps records from a Apache Solr core into local backup files
@@ -106,7 +111,7 @@ pub struct Backup {
     #[structopt(short, long, default_value = "4096")]
     pub batch: u64,
 
-     /// Existing folder for writing the dump files
+    /// Existing folder for writing the dump files
     #[structopt(short, long, parse(from_os_str), env = "SOLROUT_DIR")]
     pub into: PathBuf,
 
@@ -115,7 +120,7 @@ pub struct Backup {
     pub name: Option<String>,
 
     #[structopt(flatten)]
-    pub options: Options,    
+    pub options: Options,
 }
 
 #[derive(StructOpt, Debug)]
@@ -125,7 +130,7 @@ pub struct Restore {
     #[structopt(short, long)]
     pub into: String,
 
-     /// Existing folder for searching and reading the zip backup files
+    /// Existing folder for searching and reading the zip backup files
     #[structopt(short, long, parse(from_os_str), env = "SOLROUT_DIR")]
     pub from: PathBuf,
 
@@ -134,13 +139,13 @@ pub struct Restore {
     pub pattern: Option<String>,
 
     #[structopt(flatten)]
-    pub options: Options,    
+    pub options: Options,
 }
 
 #[derive(StructOpt, Debug)]
 pub enum Arguments {
     /// Dumps records from a Apache Solr core into local backup files
-    Backup (Backup),
+    Backup(Backup),
     /// Restore records from local backup files into a Apache Solr core
     Restore(Restore),
 }
@@ -148,7 +153,6 @@ pub enum Arguments {
 #[derive(StructOpt, Debug)]
 /// Dumps and restores records from a Apache Solr core into local backup files
 pub struct Options {
-
     /// Url pointing to the Solr base address like: http://solr-server:8983/solr
     #[structopt(short, long, env = "SOLR_URL", parse(try_from_str = parse_solr_url))]
     pub url: String,
@@ -159,9 +163,7 @@ pub struct Options {
 }
 
 impl Arguments {
-
-    pub fn parse_from_args() -> Result<Self, BoxedError>  {
-        
+    pub fn parse_from_args() -> Result<Self, BoxedError> {
         let res = Self::from_args();
         let dir = res.dir()?;
         if !dir.exists() {
@@ -170,7 +172,7 @@ impl Arguments {
         Ok(res)
     }
 
-    pub fn dir(&self) ->  Result<&PathBuf, BoxedError> {
+    pub fn dir(&self) -> Result<&PathBuf, BoxedError> {
         let dir = match &self {
             Self::Backup(get) => &get.into,
             Self::Restore(put) => &put.from,
@@ -180,25 +182,36 @@ impl Arguments {
 }
 
 fn parse_solr_url(src: &str) -> Result<String, String> {
-
-    let url2 = if src.starts_with_any(&["http://", "https://"]) { src.to_owned() } else { "http://".append(src) };
+    let url2 = if src.starts_with_any(&["http://", "https://"]) {
+        src.to_owned()
+    } else {
+        "http://".append(src)
+    };
     let parsing = Url::parse(src);
     if let Err(reason) = parsing {
         return Err(format!("Error parsing Solr: {}", reason));
     }
     let parsed = parsing.unwrap();
     if parsed.scheme() != "http" {
-        return Err("Solr url scheme must be http or https as in: http:://server.domain:8983/solr".to_string());
+        return Err(
+            "Solr url scheme must be http or https as in: http:://server.domain:8983/solr"
+                .to_string(),
+        );
     }
     if parsed.query().is_some() {
         return Err("Solr url scheme must be a base url without query parameters as in: http:://server.domain:8983/solr".to_string());
     }
     if parsed.path_segments().is_none() {
-        return Err("Solr url path must be 'solr' as in: http:://server.domain:8983/solr".to_string());
+        return Err(
+            "Solr url path must be 'solr' as in: http:://server.domain:8983/solr".to_string(),
+        );
     } else {
         let paths: Vec<&str> = parsed.path_segments().unwrap().collect();
         if paths.len() > 1 {
-        return Err("Solr url path must not include core name as in: http:://server.domain:8983/solr".to_string());
+            return Err(
+                "Solr url path must not include core name as in: http:://server.domain:8983/solr"
+                    .to_string(),
+            );
         }
     }
     Ok(url2)
@@ -209,8 +222,11 @@ fn parse_file_prefix(src: &str) -> Result<String, String> {
         static ref REGFN: Regex = Regex::new("^(\\w+)$").unwrap();
     }
     match REGFN.get_group(src, 1) {
-        None => Err(format!("Wrong output filename: '{}'. Considere using letters and numbers.", src)),
-        Some(group1) => Ok(group1.to_string())
+        None => Err(format!(
+            "Wrong output filename: '{}'. Considere using letters and numbers.",
+            src
+        )),
+        Some(group1) => Ok(group1.to_string()),
     }
 }
 
@@ -223,15 +239,17 @@ pub mod tests {
 
     // region Mockup
 
-    use crate::args::{Arguments};
+    use crate::args::Arguments;
 
     use structopt::StructOpt;
 
     impl Arguments {
-
         pub fn mockup_from(argument_list: &[&str]) {
             match Self::from_iter_safe(argument_list) {
-                Ok(_) => panic!("Error parsing command line arguments: {}", argument_list.join(" ")),
+                Ok(_) => panic!(
+                    "Error parsing command line arguments: {}",
+                    argument_list.join(" ")
+                ),
                 Err(_) => (),
             }
         }
@@ -244,47 +262,61 @@ pub mod tests {
             Self::from_iter(TEST_ARGS_PUT)
         }
     }
- 
+
     pub const TEST_SELECT_FIELDS: &'static str = "id,date,vehiclePlate";
-   
-    const TEST_ARGS_HELP: &'static [&'static str] = &["solrcopy", "--help" ];
-   
-    const TEST_ARGS_VERSION: &'static [&'static str] = &["solrcopy", "--version" ];
-   
-    const TEST_ARGS_GET_HELP: &'static [&'static str] = &["solrcopy", "help", "backup" ];
-   
-    const TEST_ARGS_PUT_HELP: &'static [&'static str] = &["solrcopy", "help", "restore" ];
+
+    const TEST_ARGS_HELP: &'static [&'static str] = &["solrcopy", "--help"];
+
+    const TEST_ARGS_VERSION: &'static [&'static str] = &["solrcopy", "--version"];
+
+    const TEST_ARGS_GET_HELP: &'static [&'static str] = &["solrcopy", "help", "backup"];
+
+    const TEST_ARGS_PUT_HELP: &'static [&'static str] = &["solrcopy", "help", "restore"];
 
     const TEST_ARGS_GET: &'static [&'static str] = &[
-            "solrcopy",
-            "backup", 
-            "--url", "http://solr-server.com:8983/solr", 
-            "--from", "mileage", 
-            "--into", "./tmp",
-            "--where", "ownerId:173826 AND periodCode:1", 
-            "--order", "date:asc", "id:desc", "vehiclePlate:asc",
-            "--select", TEST_SELECT_FIELDS, 
-            "--name", "output_filename",
-            "--limit", "42", 
-            "--batch", "5", 
-            "--verbose", 
-        ];
+        "solrcopy",
+        "backup",
+        "--url",
+        "http://solr-server.com:8983/solr",
+        "--from",
+        "mileage",
+        "--into",
+        "./tmp",
+        "--where",
+        "ownerId:173826 AND periodCode:1",
+        "--order",
+        "date:asc",
+        "id:desc",
+        "vehiclePlate:asc",
+        "--select",
+        TEST_SELECT_FIELDS,
+        "--name",
+        "output_filename",
+        "--limit",
+        "42",
+        "--batch",
+        "5",
+        "--verbose",
+    ];
 
     const TEST_ARGS_PUT: &'static [&'static str] = &[
-        "solrcopy", 
-        "restore", 
-        "--url", "http://solr-server.com:8983/solr", 
-        "--from", "./tmp",
-        "--into", "mileage",
-        "--pattern", "*.zip",
-        "--verbose", 
+        "solrcopy",
+        "restore",
+        "--url",
+        "http://solr-server.com:8983/solr",
+        "--from",
+        "./tmp",
+        "--into",
+        "mileage",
+        "--pattern",
+        "*.zip",
+        "--verbose",
     ];
 
     // endregion
 
     #[test]
     fn check_params_backup() {
-
         let parsed = Arguments::mockup_args_get();
         match parsed {
             Arguments::Backup(get) => {
@@ -295,14 +327,13 @@ pub mod tests {
                 assert_eq!(get.limit, Some(42));
                 assert_eq!(get.batch, 5);
                 assert_eq!(get.options.verbose, true);
-                },
+            }
             _ => panic!("command must be 'backup' !"),
         };
     }
 
     #[test]
     fn check_params_restore() {
-
         let parsed = Arguments::mockup_args_put();
         match parsed {
             Arguments::Restore(put) => {
@@ -311,7 +342,7 @@ pub mod tests {
                 assert_eq!(put.into, TEST_ARGS_PUT[7]);
                 assert_eq!(put.pattern.unwrap(), TEST_ARGS_PUT[9]);
                 assert_eq!(put.options.verbose, true);
-                },
+            }
             _ => panic!("command must be 'restore' !"),
         };
     }
