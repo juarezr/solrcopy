@@ -95,7 +95,7 @@ mod tests {
 
     #[test]
     fn check_restore_pattern() {
-        let parsed = Arguments::mockup_args_put();
+        let parsed = Arguments::mockup_args_restore();
         let puts = parsed.put().unwrap();
         let wilcard = puts.get_pattern();
         assert_eq!(wilcard.ends_with(".zip"), true);
@@ -103,7 +103,7 @@ mod tests {
 
     #[test]
     fn check_restore_iterator() {
-        let parsed = Arguments::mockup_args_put();
+        let parsed = Arguments::mockup_args_restore();
         let puts = parsed.put().unwrap();
 
         for zip in puts.find_archives().unwrap().filter_map(Result::ok) {

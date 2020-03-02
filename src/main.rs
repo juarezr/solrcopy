@@ -12,6 +12,7 @@ extern crate zip;
 
 mod args;
 mod backup;
+mod commit;
 mod connection;
 mod fails;
 mod fetch;
@@ -28,6 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     match parsed {
         Arguments::Backup(gets) => backup::backup_main(gets),
         Arguments::Restore(puts) => restore::restore_main(puts),
+        Arguments::Commit(comt) => commit::commit_main(comt),
     }
 }
 

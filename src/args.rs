@@ -135,7 +135,7 @@ pub enum CommitMode {
 }
 
 #[derive(StructOpt, Debug)]
-/// Dumps and restores records from a Apache Solr core into local backup files
+/// Restore records from local backup files into a Apache Solr core
 pub struct Restore {
     /// Case sensitive name of the Solr core to upload records/data
     #[structopt(short, long)]
@@ -158,11 +158,24 @@ pub struct Restore {
 }
 
 #[derive(StructOpt, Debug)]
+/// Dumps and restores records from a Apache Solr core into local backup files
+pub struct Commit {
+    /// Case sensitive name of the Solr core to perform the commit
+    #[structopt(short, long)]
+    pub into: String,
+
+    #[structopt(flatten)]
+    pub options: Options,
+}
+
+#[derive(StructOpt, Debug)]
 pub enum Arguments {
     /// Dumps records from a Apache Solr core into local backup files
     Backup(Backup),
     /// Restore records from local backup files into a Apache Solr core
     Restore(Restore),
+    /// Perform a commit in the Solr core index for persisting documents in disk/memory
+    Commit(Commit),
 }
 
 #[derive(StructOpt, Debug)]
@@ -184,19 +197,20 @@ pub struct Options {
 impl Arguments {
     pub fn parse_from_args() -> Result<Self, BoxedError> {
         let res = Self::from_args();
-        let dir = res.dir()?;
-        if !dir.exists() {
-            throw(format!("Missing folder of zip backup files: {:?}", dir))?
-        }
+        res.check_dir()?;
         Ok(res)
     }
 
-    pub fn dir(&self) -> Result<&PathBuf, BoxedError> {
+    pub fn check_dir(&self) -> Result<(), BoxedError> {
         let dir = match &self {
             Self::Backup(get) => &get.into,
             Self::Restore(put) => &put.from,
+            Self::Commit(_) => return Ok(()),
         };
-        Ok(dir)
+        if !dir.exists() {
+            throw(format!("Missing folder of zip backup files: {:?}", dir))?
+        }
+        Ok(())
     }
 }
 
@@ -303,12 +317,16 @@ pub mod tests {
             }
         }
 
-        pub fn mockup_args_get() -> Self {
-            Self::from_iter(TEST_ARGS_GET)
+        pub fn mockup_args_backup() -> Self {
+            Self::from_iter(TEST_ARGS_BACKUP)
         }
 
-        pub fn mockup_args_put() -> Self {
-            Self::from_iter(TEST_ARGS_PUT)
+        pub fn mockup_args_restore() -> Self {
+            Self::from_iter(TEST_ARGS_RESTORE)
+        }
+
+        pub fn mockup_args_commit() -> Self {
+            Self::from_iter(TEST_ARGS_COMMIT)
         }
     }
 
@@ -318,11 +336,11 @@ pub mod tests {
 
     const TEST_ARGS_VERSION: &'static [&'static str] = &["solrcopy", "--version"];
 
-    const TEST_ARGS_GET_HELP: &'static [&'static str] = &["solrcopy", "help", "backup"];
+    const TEST_ARGS_HELP_BACKUP: &'static [&'static str] = &["solrcopy", "help", "backup"];
 
-    const TEST_ARGS_PUT_HELP: &'static [&'static str] = &["solrcopy", "help", "restore"];
+    const TEST_ARGS_HELP_RESTORE: &'static [&'static str] = &["solrcopy", "help", "restore"];
 
-    const TEST_ARGS_GET: &'static [&'static str] = &[
+    const TEST_ARGS_BACKUP: &'static [&'static str] = &[
         "solrcopy",
         "backup",
         "--url",
@@ -348,7 +366,7 @@ pub mod tests {
         "--verbose",
     ];
 
-    const TEST_ARGS_PUT: &'static [&'static str] = &[
+    const TEST_ARGS_RESTORE: &'static [&'static str] = &[
         "solrcopy",
         "restore",
         "--url",
@@ -364,17 +382,27 @@ pub mod tests {
         "--verbose",
     ];
 
+    const TEST_ARGS_COMMIT: &'static [&'static str] = &[
+        "solrcopy",
+        "commit",
+        "--url",
+        "http://solr-server.com:8983/solr",
+        "--into",
+        "mileage",
+        "--verbose",
+    ];
+
     // endregion
 
     #[test]
     fn check_params_backup() {
-        let parsed = Arguments::mockup_args_get();
+        let parsed = Arguments::mockup_args_backup();
         match parsed {
             Arguments::Backup(get) => {
-                assert_eq!(get.options.url, TEST_ARGS_GET[3]);
-                assert_eq!(get.from, TEST_ARGS_GET[5]);
-                assert_eq!(get.into.to_str().unwrap(), TEST_ARGS_GET[7]);
-                assert_eq!(get.filter, Some(TEST_ARGS_GET[9].to_string()));
+                assert_eq!(get.options.url, TEST_ARGS_BACKUP[3]);
+                assert_eq!(get.from, TEST_ARGS_BACKUP[5]);
+                assert_eq!(get.into.to_str().unwrap(), TEST_ARGS_BACKUP[7]);
+                assert_eq!(get.filter, Some(TEST_ARGS_BACKUP[9].to_string()));
                 assert_eq!(get.limit, Some(42));
                 assert_eq!(get.batch, 5);
                 assert_eq!(get.options.verbose, true);
@@ -385,18 +413,31 @@ pub mod tests {
 
     #[test]
     fn check_params_restore() {
-        let parsed = Arguments::mockup_args_put();
+        let parsed = Arguments::mockup_args_restore();
         match parsed {
             Arguments::Restore(put) => {
-                assert_eq!(put.options.url, TEST_ARGS_PUT[3]);
-                assert_eq!(put.from.to_str().unwrap(), TEST_ARGS_PUT[5]);
-                assert_eq!(put.into, TEST_ARGS_PUT[7]);
-                assert_eq!(put.pattern.unwrap(), TEST_ARGS_PUT[9]);
+                assert_eq!(put.options.url, TEST_ARGS_RESTORE[3]);
+                assert_eq!(put.from.to_str().unwrap(), TEST_ARGS_RESTORE[5]);
+                assert_eq!(put.into, TEST_ARGS_RESTORE[7]);
+                assert_eq!(put.pattern.unwrap(), TEST_ARGS_RESTORE[9]);
                 assert_eq!(put.commit, CommitMode::Soft);
                 assert_eq!(put.commit.as_param("?"), "?softCommit=true");
                 assert_eq!(put.options.verbose, true);
             }
             _ => panic!("command must be 'restore' !"),
+        };
+    }
+
+    #[test]
+    fn check_params_commit() {
+        let parsed = Arguments::mockup_args_commit();
+        match parsed {
+            Arguments::Commit(put) => {
+                assert_eq!(put.options.url, TEST_ARGS_COMMIT[3]);
+                assert_eq!(put.into, TEST_ARGS_COMMIT[5]);
+                assert_eq!(put.options.verbose, true);
+            }
+            _ => panic!("command must be 'commit' !"),
         };
     }
 
@@ -412,12 +453,12 @@ pub mod tests {
 
     #[test]
     fn check_params_get_help() {
-        Arguments::mockup_from(TEST_ARGS_GET_HELP);
+        Arguments::mockup_from(TEST_ARGS_HELP_BACKUP);
     }
 
     #[test]
     fn check_params_put_help() {
-        Arguments::mockup_from(TEST_ARGS_PUT_HELP);
+        Arguments::mockup_from(TEST_ARGS_HELP_RESTORE);
     }
 }
 

@@ -51,6 +51,30 @@
                 "--url", "http://solr-server.com:8983/solr", 
                 "--from", "./tmp", 
                 "--into", "mileage",
+                "--commit", "soft",
+                "--verbose", 
+            ],
+            "env": { 
+                "RUST_BACKTRACE": "full"
+            },
+            "cwd": "${workspaceFolder}",
+        }
+        , {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Launch-commit",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=solrcopy",
+                    "--package=solrcopy"
+                ]
+            },
+            "program": "${cargo:program}",
+            "args": [
+                "commit", 
+                "--url", "http://solr-server.com:8983/solr", 
+                "--into", "mileage",
                 "--verbose", 
             ],
             "env": { 

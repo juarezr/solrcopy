@@ -173,7 +173,7 @@ mod tests {
 
     #[test]
     fn check_iterator_for_params_get() {
-        let parsed = Arguments::mockup_args_get();
+        let parsed = Arguments::mockup_args_backup();
         let gets = parsed.get().unwrap();
 
         let core_info = SolrCore::mockup();
