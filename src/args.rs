@@ -82,7 +82,7 @@ impl FromStr for SortField {
 
 // endregion
 
-// region Arguments
+// region Cli structs
 
 #[derive(StructOpt, Debug)]
 /// Dumps records from a Apache Solr core into local backup files
@@ -123,12 +123,27 @@ pub struct Backup {
     pub options: Options,
 }
 
+#[derive(StructOpt, PartialEq, Debug)]
+/// Tells Solrt to performs a commit of the index while updating the core
+pub enum CommitMode {
+    /// Do not perform a commit
+    None,
+    /// Perform a soft commit to memory of the documents
+    Soft,
+    /// Perform a hard commit to disk of the documents (slow)
+    Hard,
+}
+
 #[derive(StructOpt, Debug)]
 /// Dumps and restores records from a Apache Solr core into local backup files
 pub struct Restore {
     /// Case sensitive name of the Solr core to upload records/data
     #[structopt(short, long)]
     pub into: String,
+
+    /// How to perform commits of the index while updating the core
+    #[structopt(short, long, default_value = "none")]
+    pub commit: CommitMode,
 
     /// Existing folder for searching and reading the zip backup files
     #[structopt(short, long, parse(from_os_str), env = "SOLROUT_DIR")]
@@ -161,6 +176,10 @@ pub struct Options {
     #[structopt(long)]
     pub verbose: bool,
 }
+
+// endregion
+
+// region Cli impl
 
 impl Arguments {
     pub fn parse_from_args() -> Result<Self, BoxedError> {
@@ -230,6 +249,36 @@ fn parse_file_prefix(src: &str) -> Result<String, String> {
     }
 }
 
+impl Default for CommitMode {
+    fn default() -> Self {
+        CommitMode::None
+    }
+}
+
+impl FromStr for CommitMode {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let lower = s.to_ascii_lowercase();
+        match lower.as_str() {
+            "none" => Ok(CommitMode::None),
+            "soft" => Ok(CommitMode::Soft),
+            "hard" => Ok(CommitMode::Hard),
+            _ => Err(format!("'{}' is not a valid value for CommitMode", s)),
+        }
+    }
+}
+
+impl CommitMode {
+    pub fn as_param(&self, separator: &str) -> String {
+        match self {
+            CommitMode::None => EMPTY_STRING,
+            CommitMode::Soft => separator.append("softCommit=true"),
+            CommitMode::Hard => separator.append("commit=true"),
+        }
+    }
+}
+
 // endregion
 
 // endregion
@@ -239,7 +288,7 @@ pub mod tests {
 
     // region Mockup
 
-    use crate::args::Arguments;
+    use crate::args::{Arguments, CommitMode};
 
     use structopt::StructOpt;
 
@@ -310,6 +359,8 @@ pub mod tests {
         "mileage",
         "--pattern",
         "*.zip",
+        "--commit",
+        "soft",
         "--verbose",
     ];
 
@@ -341,6 +392,8 @@ pub mod tests {
                 assert_eq!(put.from.to_str().unwrap(), TEST_ARGS_PUT[5]);
                 assert_eq!(put.into, TEST_ARGS_PUT[7]);
                 assert_eq!(put.pattern.unwrap(), TEST_ARGS_PUT[9]);
+                assert_eq!(put.commit, CommitMode::Soft);
+                assert_eq!(put.commit.as_param("?"), "?softCommit=true");
                 assert_eq!(put.options.verbose, true);
             }
             _ => panic!("command must be 'restore' !"),

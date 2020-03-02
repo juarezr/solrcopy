@@ -41,7 +41,8 @@ impl Restore {
         let parts: Vec<String> = vec![
             self.options.url.with_suffix("/"),
             self.into.clone(),
-            "/update?commit=true".to_string(),
+            "/update".to_string(),
+            self.commit.as_param("?"),
         ];
         parts.concat()
     }
