@@ -98,7 +98,6 @@ impl Backup {
     pub fn get_query_url(&self, selected: &str) -> String {
         let query = self
             .filter
-            .clone()
             .as_deref()
             .unwrap_or("*:*")
             .replace(" or ", " OR ")
@@ -144,6 +143,8 @@ pub fn progress_with<S, It: Iterator<Item = S>>(steps: It, total: u64) -> Progre
 
 #[cfg(test)]
 mod tests {
+    // region mockup
+
     use crate::args::tests::*;
     use crate::args::*;
     use crate::fails::*;
@@ -167,6 +168,8 @@ mod tests {
             }
         }
     }
+
+    // endregion
 
     #[test]
     fn check_iterator_for_params_get() {
