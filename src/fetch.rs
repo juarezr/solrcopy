@@ -1,19 +1,10 @@
 use regex::Regex;
 
 use super::args::Backup;
+use super::connection::http_get_as_text;
 use super::fails::*;
 use super::helpers::*;
 use super::steps::SolrCore;
-
-// region Http Client
-
-fn http_get_as_text(url: &str) -> Result<String, reqwest::Error> {
-    let response = reqwest::blocking::get(url)?;
-    let content = response.text()?;
-    Ok(content)
-}
-
-// endregion
 
 // region Solr Core
 

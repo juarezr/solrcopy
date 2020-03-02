@@ -6,8 +6,9 @@ use std::io::prelude::*;
 use std::path::PathBuf;
 
 use super::args::Restore;
-use super::fails::*;
-use super::update::*;
+use super::connection::http_post_to;
+use super::fails::BoxedError;
+use super::helpers::*;
 
 pub(crate) fn restore_main(params: Restore) -> Result<(), Box<dyn std::error::Error>> {
     if params.options.verbose {
@@ -40,6 +41,15 @@ fn unzip_archives(params: Restore, found: Vec<PathBuf>) -> Result<(), BoxedError
     Ok(())
 }
 
+fn put_content(params: &Restore, content: String) -> Result<(), BoxedError> {
+    let url = params.get_update_url();
+
+    // TODO: handle network error, timeout on posting
+
+    http_post_to(&url, content)?;
+    Ok(())
+}
+
 impl Restore {
     fn find_archives(&self) -> Result<Paths, PatternError> {
         let wilcard = self.get_pattern();
@@ -56,6 +66,16 @@ impl Restore {
         path.push(wilcard);
         let res = path.to_str().unwrap();
         res.to_string()
+    }
+
+    fn get_update_url(&self) -> String {
+        let parts: Vec<String> = vec![
+            self.options.url.with_suffix("/"),
+            self.into.clone(),
+            "/update".to_string(),
+            self.commit.as_param("?"),
+        ];
+        parts.concat()
     }
 }
 

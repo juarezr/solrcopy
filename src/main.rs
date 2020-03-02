@@ -12,13 +12,13 @@ extern crate zip;
 
 mod args;
 mod backup;
+mod connection;
 mod fails;
 mod fetch;
 mod helpers;
 mod restore;
 mod save;
 mod steps;
-mod update;
 
 use args::Arguments;
 
