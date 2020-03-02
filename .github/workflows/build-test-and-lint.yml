@@ -13,7 +13,7 @@ name: build-test-and-lint
 
 jobs:
   sources:
-    name: Checkout
+    name: Building Testing Linting
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
