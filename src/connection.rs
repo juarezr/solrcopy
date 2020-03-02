@@ -3,13 +3,13 @@ use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE, USER_AGENT};
 
 // region Http Client
 
-pub (crate) fn http_get_as_text(url: &str) -> Result<String, reqwest::Error> {
+pub(crate) fn http_get_as_text(url: &str) -> Result<String, reqwest::Error> {
     let response = reqwest::blocking::get(url)?;
     let content = response.text()?;
     Ok(content)
 }
 
-pub (crate) fn http_post_to(url: &str, content: String) -> Result<String, reqwest::Error> {
+pub(crate) fn http_post_as_json(url: &str, content: String) -> Result<String, reqwest::Error> {
     let response = Client::new()
         .post(url)
         .headers(construct_headers())
@@ -28,4 +28,3 @@ fn construct_headers() -> HeaderMap {
 }
 
 // endregion
-

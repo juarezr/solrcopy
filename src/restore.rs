@@ -6,7 +6,7 @@ use std::io::prelude::*;
 use std::path::PathBuf;
 
 use super::args::Restore;
-use super::connection::http_post_to;
+use super::connection::http_post_as_json;
 use super::fails::BoxedError;
 use super::helpers::*;
 
@@ -46,7 +46,7 @@ fn put_content(params: &Restore, content: String) -> Result<(), BoxedError> {
 
     // TODO: handle network error, timeout on posting
 
-    http_post_to(&url, content)?;
+    http_post_as_json(&url, content)?;
     Ok(())
 }
 
