@@ -4,6 +4,7 @@
 extern crate lazy_static;
 
 extern crate chrono;
+extern crate clap;
 extern crate glob;
 extern crate regex;
 extern crate reqwest;
@@ -24,6 +25,9 @@ mod steps;
 use args::Arguments;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(feature = "artifacts")]
+    Arguments::release_artifacts();
+
     let parsed = Arguments::parse_from_args()?;
 
     match parsed {

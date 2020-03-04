@@ -292,6 +292,18 @@ impl CommitMode {
 
 // endregion
 
+// region artifacts
+
+#[cfg(feature = "artifacts")]
+impl Arguments {
+    pub fn release_artifacts() {
+        let mut clap = Arguments::clap();
+        clap.gen_completions_to("solrcopy", clap::Shell::Bash, &mut std::io::stdout());
+        clap.gen_completions_to("solrcopy", clap::Shell::Fish, &mut std::io::stdout());
+        clap.gen_completions_to("solrcopy", clap::Shell::Zsh, &mut std::io::stdout());
+    }
+}
+
 // endregion
 
 #[cfg(test)]
