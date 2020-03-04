@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 use super::args::Restore;
 use super::connection::http_post_as_json;
-use super::fails::BoxedError;
+use super::fails::*;
 use super::helpers::*;
 
 pub(crate) fn restore_main(params: Restore) -> Result<(), Box<dyn std::error::Error>> {
@@ -20,6 +20,9 @@ pub(crate) fn restore_main(params: Restore) -> Result<(), Box<dyn std::error::Er
         .filter_map(Result::ok)
         .collect::<Vec<_>>();
 
+    if found.is_empty() {
+        throw(format!("Found no archives to restore from: {}\n note: try to specify the option --pattern with the source core name", params.get_pattern()))?;
+    }
     unzip_archives(params, found)
 }
 
@@ -58,8 +61,14 @@ impl Restore {
     }
 
     fn get_pattern(&self) -> String {
-        let wilcard = match &self.pattern {
-            Some(pat) => pat.to_string(),
+        let wilcard: String = match &self.pattern {
+            Some(pat) => {
+                if pat.ends_with(".zip") || pat.contains('*') {
+                    pat.to_owned()
+                } else {
+                    format!("{}*", pat)
+                }
+            }
             None => format!("{}*.zip", self.into),
         };
         let mut path = self.from.clone();
