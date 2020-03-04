@@ -23,10 +23,10 @@ pub(crate) fn backup_main(parsed: Backup) -> Result<(), Box<dyn std::error::Erro
         // TODO: retry on network errors and timeouts
 
         let query_url = &step.url;
-        let results = SolrCore::get_rows_from(&query_url);
+        let results = SolrCore::get_docs_from(&query_url);
 
-        if let Ok(rows) = results {
-            archiver.write_file(&step, &rows).unwrap();
+        if let Ok(docs) = results {
+            archiver.write_file(&step, &docs).unwrap();
         }
         // TODO: print a warning about unbalanced shard in solr could configurations
     });

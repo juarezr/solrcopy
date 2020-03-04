@@ -17,13 +17,13 @@ impl SolrCore {
         SolrCore::parse_core_schema(&gets, &json)
     }
 
-    pub fn get_rows_from(url: &str) -> Result<String, BoxedError> {
+    pub fn get_docs_from(url: &str) -> Result<String, BoxedError> {
         let json = http_get_as_text(url)?;
 
-        let rows = SolrCore::parse_rows_from_query(&json);
-        match rows {
+        let docs = SolrCore::parse_docs_from_query(&json);
+        match docs {
             None => throw(format!(
-                "Error parsing rows fetched in solr query results: {}",
+                "Error parsing docs fetched in solr query results: {}",
                 &url
             ))?,
             Some(res) => Ok(res),
@@ -33,8 +33,8 @@ impl SolrCore {
     fn parse_core_schema(gets: &Backup, json: &str) -> Result<Self, BoxedError> {
         let core_name = &gets.from;
 
-        let total_rows = Self::parse_num_found(json)?;
-        if total_rows < 1 {
+        let total_docs = Self::parse_num_found(json)?;
+        if total_docs < 1 {
             throw(format!("Solr Core '{}'is empty!", core_name))?
         };
 
@@ -53,7 +53,7 @@ impl SolrCore {
             gets.select.clone()
         };
         let res = SolrCore {
-            num_found: total_rows,
+            num_found: total_docs,
             fields: core_fields,
         };
         Ok(res)
@@ -93,7 +93,7 @@ impl SolrCore {
         }
     }
 
-    fn parse_rows_from_query(json: &str) -> Option<String> {
+    fn parse_docs_from_query(json: &str) -> Option<String> {
         lazy_static! {
             static ref REGNF: Regex = Regex::new("(\\[.+\\])").unwrap(); // (\[.+\]) or  (\[.+\])(?:\}\})$
         }
@@ -112,7 +112,7 @@ pub mod tests {
     const CORE_3ROW: &str = "{\"response\":{\"numFound\":17344647,\"start\":0,\"maxScore\":1.0,\"docs\":[{\"date\":\"2019-11-04T00:00:00Z\",\"distanceTraveled\":7462,\"groupId\":[\"390433\"],\"id\":\"633040_1572825600_1_5\",\"regionCode\":\"5\"},{\"date\":\"2019-11-04T00:00:00Z\",\"distanceTraveled\":0,\"groupId\":[\"107509\"],\"id\":\"633133_1572825600_0_0\",\"regionCode\":\"0\"},{\"date\":\"2019-11-04T00:00:00Z\",\"distanceTraveled\":183816,\"groupId\":[\"513858\"],\"id\":\"633238_1572825600_1_4\",\"regionCode\":\"4\"}]}}";
 
     #[test]
-    fn check_schema_num_rows() {
+    fn check_schema_num_found() {
         let num_found = SolrCore::parse_num_found(CORE_1ROW);
         assert_eq!(num_found.ok(), Some(87));
     }
@@ -131,13 +131,13 @@ pub mod tests {
     }
 
     #[test]
-    fn check_query_rows() {
-        let rows = SolrCore::parse_rows_from_query(CORE_3ROW);
-        assert_eq!(rows.is_some(), true);
+    fn check_query_docs() {
+        let docs = SolrCore::parse_docs_from_query(CORE_3ROW);
+        assert_eq!(docs.is_some(), true);
 
-        let rows_text = rows.unwrap();
-        assert_eq!(rows_text.starts_with("[{"), true);
-        assert_eq!(rows_text.ends_with("}]"), true);
-        assert_eq!(rows_text.split("},{").collect::<Vec<&str>>().len(), 3);
+        let docs_text = docs.unwrap();
+        assert_eq!(docs_text.starts_with("[{"), true);
+        assert_eq!(docs_text.ends_with("}]"), true);
+        assert_eq!(docs_text.split("},{").collect::<Vec<&str>>().len(), 3);
     }
 }

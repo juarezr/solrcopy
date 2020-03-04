@@ -61,12 +61,12 @@ impl Archiver {
         Ok(())
     }
 
-    pub fn write_file(&mut self, step: &Step, rows: &str) -> ZipResult<()> {
+    pub fn write_file(&mut self, step: &Step, docs: &str) -> ZipResult<()> {
         if self.writer.is_none() {
             self.create_archive()?;
         }
-        let filename = format!("rows_at_{:09}.json", &step.curr);
-        let bytes = rows.as_bytes();
+        let filename = format!("docs_at_{:09}.json", &step.curr);
+        let bytes = docs.as_bytes();
 
         let zip = self.writer.as_mut().unwrap();
 

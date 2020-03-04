@@ -85,13 +85,12 @@ impl FromStr for SortField {
 // region Cli structs
 
 #[derive(StructOpt, Debug)]
-/// Dumps records from a Apache Solr core into local backup files
 pub struct Backup {
-    /// Case sensitive name of the Solr core for extracting records
+    /// Case sensitive name of the Solr core for extracting documents
     #[structopt(short, long)]
     pub from: String,
 
-    /// Solr Query filter for filtering returned records  
+    /// Solr Query filter for filtering returned documents  
     #[structopt(short = "w", long = "where")]
     pub filter: Option<String>,
 
@@ -99,15 +98,15 @@ pub struct Backup {
     #[structopt(short, long)]
     pub select: Vec<String>,
 
-    /// Solr core fields names for sorting records for retrieval (like: field1:desc)
+    /// Solr core fields names for sorting documents for retrieval (like: field1:desc)
     #[structopt(short, long)]
     pub order: Vec<SortField>,
 
-    /// Maximum number of records for retrieving from the core
+    /// Maximum number of documents for retrieving from the core
     #[structopt(short, long)]
     pub limit: Option<u64>,
 
-    /// Number of records for reading from solr in each step
+    /// Number of documents for reading from solr in each step
     #[structopt(short, long, default_value = "4096")]
     pub batch: u64,
 
@@ -135,9 +134,8 @@ pub enum CommitMode {
 }
 
 #[derive(StructOpt, Debug)]
-/// Restore records from local backup files into a Apache Solr core
 pub struct Restore {
-    /// Case sensitive name of the Solr core to upload records/data
+    /// Case sensitive name of the Solr core to upload documents
     #[structopt(short, long)]
     pub into: String,
 
@@ -158,7 +156,6 @@ pub struct Restore {
 }
 
 #[derive(StructOpt, Debug)]
-/// Dumps and restores records from a Apache Solr core into local backup files
 pub struct Commit {
     /// Case sensitive name of the Solr core to perform the commit
     #[structopt(short, long)]
@@ -170,16 +167,16 @@ pub struct Commit {
 
 #[derive(StructOpt, Debug)]
 pub enum Arguments {
-    /// Dumps records from a Apache Solr core into local backup files
+    /// Dumps documents from a Apache Solr core into local backup files
     Backup(Backup),
-    /// Restore records from local backup files into a Apache Solr core
+    /// Restore documents from local backup files into a Apache Solr core
     Restore(Restore),
     /// Perform a commit in the Solr core index for persisting documents in disk/memory
     Commit(Commit),
 }
 
 #[derive(StructOpt, Debug)]
-/// Dumps and restores records from a Apache Solr core into local backup files
+/// Dumps and restores documents from a Apache Solr core into local backup files
 pub struct Options {
     /// Url pointing to the Solr base address like: http://solr-server:8983/solr
     #[structopt(short, long, env = "SOLR_URL", parse(try_from_str = parse_solr_url))]
