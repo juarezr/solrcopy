@@ -2,6 +2,13 @@
 
 Command line tool for backup and restore of documents stored in cores of [Apache Solr](https://lucene.apache.org/solr/).
 
+Solrcopy is a command for doing backup and restore of documents stored on Solr
+cores. It let you filter docs by using a expression, limit quantity, define order
+and desired columns to export. The data is stored as json inside local zip files.
+It is agnostic to data format, content and storage place.
+Because of this data is restored exactly as extracted and your responsible for
+extracting, storing and updating the correct data in correct cores.
+
 ## Usage
 
 1. Use the command `solrcopy backup` for dumping documents from a Solr core into local zip files.
