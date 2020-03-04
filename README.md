@@ -1,6 +1,6 @@
 # solrcopy
 
-Command line tool for backup and restore of information stored in cores of Apache Solr.
+Command line tool for backup and restore of documents stored in cores of [Apache Solr](https://lucene.apache.org/solr/).
 
 ## Usage
 
@@ -102,9 +102,18 @@ $ solrcopy restore --url http://my-solr-server.com::8983/sol  --from ./my-core-f
   - Cause: In this case Cause: Solr reports diferent row count according to the instance is answering the query.
   - Fix: extract data pointing directly to the shard instance address, not for the cloud address.
 
+## Related Projects
+
+1. [solrbulk](https://github.com/miku/solrbulk)
+2. [solrdump](https://github.com/ubleipzig/solrdump)
+
+---
+
 ## Development
 
-For setup of a development:
+For setting up a development environment:
+
+For using Visual Studio Code:
 
 1. Install rust following the instructions on [https://rustup.rs](https://rustup.rs)
 2. Install Visual Studio Code following the instructions on the microsoft [site](https://code.visualstudio.com/download)
@@ -113,7 +122,73 @@ For setup of a development:
    - rust-lang.rust
    - swellaby.vscode-rust-test-adapter
 
-## Related
+You can also use Intellij Idea, vim, emacs or you prefered IDE.
 
-1. [solrbulk](https://github.com/miku/solrbulk)
-2. [solrdump](https://github.com/ubleipzig/solrdump)
+## Testing
+
+For setting up a testing environment you will need:
+
+1. A server instance of [Apache Solr](https://lucene.apache.org/solr/)
+2. A **source** core with some documents for testing the `solrcopy backup` command.
+3. A **target** core with same schema for testing the `solrcopy restore` command.
+4. Setting the server address and core names for the `solrcopy` parameters in command line or IDE launch configuration.
+
+### Use a existing server
+
+ 1. Select on your Solr server a existing **source** core or create a new one and fill with some documents.
+ 2. Clone a new **target** core with the same schema as the previous but without documents.
+
+### Install a server in a docker container
+
+#### Using docker compose
+
+1. Install docker stable for your [platform](https://docs.docker.com/install/#supported-platforms)
+2. Install docker compose for your [platform](https://docs.docker.com/compose/install/#install-compose)
+3. Create the container and the cores for testing with the commands bellow.
+4. Check the cores created in the admin ui at `http://localhost:8983/solr`
+
+``` bash
+$ cd docker
+# Create the container with a solr server with two cores: 'demo' and 'target'
+$ docker-compose up -d
+```
+
+#### Using only docker tools
+
+1. Install docker stable for your [platform](https://docs.docker.com/install/#supported-platforms)
+2. Pull the [latest](https://hub.docker.com/_/solr) [docker solr](https://github.com/docker-solr/docker-solr) image from Docker  Hub.
+3. Create 2 cores for testing with the commands bellow.
+4. Check the cores created in the admin ui at `http://localhost:8983/solr`
+
+``` bash
+$ cd docker
+# Pull solr latest solr image from docker hub
+$ docker pull solr:slim
+...
+# 1. Create a container running solr and after
+# 2. Create the **source** core with the name 'demo'
+# 3. Import some docs into the 'demo' core
+$ docker run -d --name test-container -p 8983:8983 solr:slim solr-demo
+...
+# Create a empty **target** core named 'target'
+$ docker exec -it test-container solr create_core -c target
+```
+
+### Setting up Visual Studio Code
+
+1. Edit the settings file `.vscode/launch.json`
+2. Change to your **solr address** in all the launch configurations:
+    1. point parameter `--url` replacing `http://localhost:8983/solr`
+    2. point parameter `--from` in `Launch-backup` configuration to your existing core name
+    3. point parameter `--into` in `Launch-backup` configuration to your cloned core name
+3. Change the others settings according to your existing core details:
+   1. Set the following parameters for specifying a query to extract documents:
+      - `--where`
+      - `--order`
+      - `--select`
+      - `--batch`
+      - `--limit`
+   2. Check the [Solr Query](https://lucene.apache.org/solr/guide/8_4/the-standard-query-parser.html) docs for understading this parameters.
+4. Test the parameters in Solr admin UI at your core in **solr address** (somenthing like: [http://localhost:8983/solr/#/corename](http://localhost:8983/solr/#/corename))
+
+---
