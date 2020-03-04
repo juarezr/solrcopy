@@ -21,7 +21,7 @@
                 "backup", 
                 "--url", "http://localhost:8983/solr", 
                 "--from", "demo", 
-                "--where", "price:[1 TO 400]", 
+                "--where", "price:[1 TO 400] AND NOT popularity:10", 
                 "--order", "price:asc", "weight:asc", "id:asc",
                 "--limit", "200", 
                 "--batch", "5", 
