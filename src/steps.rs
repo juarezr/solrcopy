@@ -69,30 +69,35 @@ pub struct SolrCore {
 
 impl Backup {
     pub fn get_steps(&self, core_info: &SolrCore) -> Steps {
-        let fl = Self::get_query_fields(&core_info.fields);
+        let core_fields: &[String] = &core_info.fields;
+        let fl = self.get_query_fields(core_fields);
         let query = self.get_query_url(&fl);
-        let rows = core_info.num_found.min(self.limit.unwrap_or(std::u64::MAX));
-
+        let docs = core_info.num_found.min(self.limit.unwrap_or(std::u64::MAX));
         Steps {
             curr: 0,
-            limit: rows,
+            limit: docs,
             batch: self.batch,
             url: query,
+        }
+    }
+
+    pub fn get_query_fields(&self, core_fields: &[String]) -> String {
+        let fields = if self.select.is_empty() {
+            core_fields
+        } else {
+            &self.select
+        };
+        if fields.is_empty() {
+            EMPTY_STRING
+        } else {
+            let all = fields.join(COMMA);
+            "&fl=".append(&all)
         }
     }
 
     pub fn get_query_for_diagnostics(&self) -> String {
         let url = self.get_query_url(EMPTY_STR);
         format!("{}&start=0&rows=1", url)
-    }
-
-    pub fn get_query_fields(selected: &[String]) -> String {
-        if selected.is_empty() {
-            EMPTY_STRING
-        } else {
-            let all = selected.join(COMMA);
-            "&fl=".append(&all)
-        }
     }
 
     pub fn get_query_url(&self, selected: &str) -> String {

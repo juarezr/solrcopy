@@ -20,15 +20,14 @@ pub(crate) fn backup_main(parsed: Backup) -> Result<(), Box<dyn std::error::Erro
     let items = steps.with_progress();
 
     items.for_each(|step| {
-        // TODO: retry on network errors and timeouts
-
         let query_url = &step.url;
-        let results = SolrCore::get_docs_from(&query_url);
+        let response = SolrCore::get_docs_from(&query_url);
+        // TODO: retry on network errors and timeouts
+        // TODO: print a warning about unbalanced shard in solr could configurations
 
-        if let Ok(docs) = results {
+        if let Ok(docs) = response {
             archiver.write_file(&step, &docs).unwrap();
         }
-        // TODO: print a warning about unbalanced shard in solr could configurations
     });
 
     // TODO: split in multiple files of constant size
