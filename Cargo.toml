@@ -1,20 +1,59 @@
 [package]
 name = "solrcopy"
 version = "0.2.1"
-authors = ["Juarez Rudsatz <juarezr@gmail.com>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+authors = ["Juarez Rudsatz <juarezr@gmail.com>"]
+description = "Tool for backup and restore of documents stored in cores of solr"
+homepage = "https://github.com/juarezr/solrcopy"
+repository = "github.com:juarezr/solrcopy.git"
+license = "gpl-3.0-or-later"
+readme = "README.md"
+categories = ["command-line-utilities"]
+keywords = ["solr", "dataimport", "dih", "fulltext-search", "apache-solr"]
 
 [dependencies]
-structopt = "0.3.9"
+structopt = "0.3.11"
 regex = "1.3.4"
 url = "2.1.1"
 lazy_static = "1.4.0"
-reqwest = { version = "0.10.1", features = ["blocking"] }
-zip = "0.5.4"
+reqwest = { version = "0.10.4", features = ["blocking"] }
+zip = "0.5.5"
 indicatif = "0.14.0"
-chrono = "0.4"
+chrono = "0.4.10"
 glob = "0.3.0"
+
+# cargo deb: used for generating a debian package
+#  - https://github.com/mmstick/cargo-deb
+
+[package.metadata.deb]
+section = "utils"
+priority = "optional"
+changelog = "changelog.txt"
+assets = [
+  ["target/release/solrcopy", "usr/bin/", "755"],
+  ["LICENSE", "usr/share/doc/solrcopy/", "644"],
+  ["changelog.txt", "usr/share/doc/solrcopy/", "644"],
+  ["README.md", "usr/share/doc/solrcopy/README", "644"],
+]
+extended-description = """\
+Solrcopy is a command for doing backup and restore of documents stored on Solr \
+cores. It let you filter docs by using a expression, limit quantity, define order\
+and desired columns to export. The data is stored as json inside local zip files.\
+It is agnostic to data format, content and storage place. \
+Because of this data is restored exactly as extracted and your responsible for \
+extracting, storing and updating the correct data in correct cores."""
+
+# cargo rpm: used for generating a debian package
+#  - https://github.com/RustRPM/cargo-rpm
+
+[package.metadata.rpm.cargo]
+buildflags = ["--release"]
+
+[package.metadata.rpm.targets]
+solrcopy = { path = "/usr/bin/solrcopy" }
+
+# TODO: man page: https://rust-cli.github.io/book/in-depth/docs.html
 
 # end of the file
