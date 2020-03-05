@@ -1,15 +1,13 @@
 // region depedencies
 
 use regex::Regex;
-
 use std::fmt;
-use std::str::FromStr;
-
 use std::path::PathBuf;
+use std::str::FromStr;
 use structopt::StructOpt;
 use url::Url;
 
-use super::helpers::*;
+use crate::helpers::*;
 
 // endregion
 
@@ -62,13 +60,14 @@ impl FromStr for SortField {
             }
             match REO.captures(s) {
                 None => Err(s.to_string()),
-                Some(x) => {
-                    let sort_field = x.get(1).unwrap().as_str().to_string();
-                    let sort_dir = if x.len() == 4 && x.get(4).unwrap().as_str() == "desc" {
+                Some(cap) => {
+                    let desc = cap.len() == 4 && cap.get(4).unwrap().as_str() == "desc";
+                    let sort_dir = if desc {
                         SortDirection::Desc
                     } else {
                         SortDirection::Asc
                     };
+                    let sort_field = cap.get(1).unwrap().as_str().to_string();
                     Ok(SortField {
                         field: sort_field,
                         direction: sort_dir,
@@ -266,33 +265,6 @@ impl CommitMode {
             CommitMode::Soft => separator.append("softCommit=true"),
             CommitMode::Hard => separator.append("commit=true"),
         }
-    }
-}
-
-// endregion
-
-// region artifacts
-
-#[cfg(feature = "artifacts")]
-impl Arguments {
-    pub fn release_artifacts() {
-        let pkg_name = std::env::var("CARGO_PKG_NAME").expect("Missing env var CARGO_PKG_NAME!");
-        let pkg_dir =
-            std::env::var("CARGO_MANIFEST_DIR").expect("Missing env var CARGO_MANIFEST_DIR!");
-
-        let release = if cfg!(debug_assertions) {
-            "debug"
-        } else {
-            "release"
-        };
-        let out_dir = format!("{}/target/{}", pkg_dir, release);
-
-        println!("ARTIFACT_DIR: {}", out_dir);
-
-        let mut clap = Arguments::clap();
-        clap.gen_completions(&pkg_name, clap::Shell::Bash, &out_dir);
-        clap.gen_completions(&pkg_name, clap::Shell::Fish, &out_dir);
-        clap.gen_completions(pkg_name, clap::Shell::Zsh, &out_dir);
     }
 }
 
