@@ -24,6 +24,9 @@ indicatif = "0.14.0"
 chrono = "0.4.10"
 glob = "0.3.0"
 
+[badges]
+travis-ci = { repository = "juarezr/solrcopy", branch = "master" }
+
 [features]
 
 # A feature with no dependencies used mainly for conditional compilation
