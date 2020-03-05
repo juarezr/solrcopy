@@ -2,10 +2,18 @@
 
 use regex::Regex;
 
+// region Constants
+
 pub const EMPTY_STR: &str = "";
 pub const EMPTY_STRING: String = String::new();
 
 pub const COMMA: &str = ",";
+
+// endregion
+
+// region Type Method Extensions
+
+// region String Method Extensions
 
 pub trait StringHelpers {
     fn contains_any(&self, patterns: &[&str]) -> bool;
@@ -128,6 +136,19 @@ impl RegexHelpers for Regex {
         maps.collect::<Vec<_>>()
     }
 }
+
+// endregion 
+
+// region Debug helpers
+
+pub fn print_env_vars() {
+    println!("Listing all env vars:");
+    for (key, val) in std::env::vars() {
+        println!("  {}: {}", key, val);
+    }
+}
+
+// endregion
 
 #[cfg(test)]
 mod tests {
