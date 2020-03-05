@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use regex::{Captures, Regex};
+use std::convert::TryInto;
 
 // region Constants
 
@@ -186,6 +187,41 @@ impl<'t> CapturesHelpers for Captures<'t> {
 
     fn get_as_str_or<'a>(&'a self, i: usize, replacement: &'a str) -> &'a str {
         self.get(i).map_or(replacement, |m| m.as_str())
+    }
+}
+
+// endregion
+
+// region Numbers helpers
+
+// TODO: investigate traits Convert From, etc..
+
+pub trait SizeHelpers {
+
+    fn to_u64(self) -> u64;
+
+    fn to_usize(self) -> usize;
+}
+
+impl SizeHelpers for usize {
+
+    fn to_u64(self) -> u64 {
+        self.try_into().unwrap()
+    }
+
+    fn to_usize(self) -> usize {
+        self
+    }
+}
+
+impl SizeHelpers for u64 {
+
+    fn to_u64(self) -> u64 {
+        self
+    }
+
+    fn to_usize(self) -> usize {
+        self.try_into().unwrap()
     }
 }
 
