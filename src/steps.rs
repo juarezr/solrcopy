@@ -1,5 +1,3 @@
-use std::convert::TryInto;
-
 use crate::args::*;
 use crate::helpers::*;
 
@@ -43,7 +41,7 @@ impl Iterator for Steps {
         if num_steps == 0 {
             (0, None)
         } else {
-            let max: usize = num_steps.try_into().unwrap();
+            let max: usize = num_steps.to_usize();
             (0, Some(max))
         }
     }
