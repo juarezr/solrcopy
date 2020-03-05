@@ -27,19 +27,26 @@ pub(crate) fn restore_main(params: Restore) -> Result<(), Box<dyn std::error::Er
 }
 
 fn unzip_archives(params: Restore, found: Vec<PathBuf>) -> Result<(), BoxedError> {
-    // TODO: print progress
+
+    // let range = found.len();
+    // let report = crate::bars::get_wide_bar_for(found.iter(), range.to_u64());
 
     for path in found {
         let zipfile = File::open(&path)?;
         let mut archive = ZipArchive::new(zipfile)?;
         let file_count = archive.len();
 
+        let report2 = crate::bars::new_wide_bar(file_count.to_u64());
+
         for i in 0..file_count {
             let mut compressed = archive.by_index(i).unwrap();
             let mut buffer = String::new();
             compressed.read_to_string(&mut buffer)?;
             put_content(&params, buffer)?;
+
+            report2.inc(1);
         }
+        report2.finish();
     }
     Ok(())
 }
