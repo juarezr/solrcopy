@@ -1,6 +1,8 @@
 use glob::{glob, Paths, PatternError};
 use zip::ZipArchive;
 
+use log::debug;
+
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::PathBuf;
@@ -11,10 +13,8 @@ use super::fails::*;
 use super::helpers::*;
 
 pub(crate) fn restore_main(params: Restore) -> Result<(), Box<dyn std::error::Error>> {
-    if params.options.verbose {
-        // TODO: use a logger and combine with --verbose
-        println!("  {:?}", params);
-    }
+    debug!("  {:?}", params);
+
     let found = params
         .find_archives()?
         .filter_map(Result::ok)
@@ -56,9 +56,7 @@ fn unzip_archives(params: Restore, found: Vec<PathBuf>) -> Result<(), BoxedError
 
 fn put_content(params: &Restore, content: String) -> Result<(), BoxedError> {
     let url = params.get_update_url();
-
     // TODO: handle network error, timeout on posting
-
     http_post_as_json(&url, content)?;
     Ok(())
 }

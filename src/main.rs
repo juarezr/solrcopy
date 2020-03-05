@@ -5,7 +5,9 @@ extern crate lazy_static;
 
 extern crate chrono;
 extern crate clap;
+extern crate env_logger;
 extern crate glob;
+extern crate log;
 extern crate regex;
 extern crate reqwest;
 extern crate url;
@@ -23,12 +25,14 @@ mod restore;
 mod save;
 mod steps;
 
+use structopt::StructOpt;
+
 use args::Arguments;
 use fails::*;
-use structopt::StructOpt;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let parsed = Arguments::parse_from_args()?;
+    parsed.start_log();
 
     match parsed {
         Arguments::Backup(gets) => backup::backup_main(gets),
@@ -56,6 +60,21 @@ impl Arguments {
             throw(format!("Missing folder of zip backup files: {:?}", dir))?
         }
         Ok(())
+    }
+
+    fn start_log(&self) {
+        let verbose = match &self {
+            Self::Backup(get) => get.options.verbose,
+            Self::Restore(put) => put.options.verbose,
+            Self::Commit(com) => com.options.verbose,
+        };
+        if verbose {
+            env_logger::builder()
+                .filter_level(log::LevelFilter::Debug)
+                .init();
+        } else {
+            env_logger::init();
+        }
     }
 }
 

@@ -1,18 +1,13 @@
-// use indicatif::ProgressIterator;
+use log::{debug, info};
 
 use crate::args::Backup;
 use crate::steps::SolrCore;
 
 pub(crate) fn backup_main(parsed: Backup) -> Result<(), Box<dyn std::error::Error>> {
-    if parsed.options.verbose {
-        // TODO: use a logger and combine with --verbose
-        println!("  {:?}", parsed);
-    }
+    debug!("  {:?}", parsed);
 
     let core_info = SolrCore::inspect_core(&parsed)?;
-    if parsed.options.verbose {
-        println!("  {:?}", core_info);
-    }
+    debug!("  {:?}", core_info);
 
     let mut archiver = parsed.get_writer()?;
 
@@ -33,10 +28,7 @@ pub(crate) fn backup_main(parsed: Backup) -> Result<(), Box<dyn std::error::Erro
     let report = crate::bars::get_wide_bar_for(working, range);
 
     let num = report.count();
-
-    if parsed.options.verbose {
-        println!("Retrieved {} documents.", num);
-    }
+    info!("Finished {} steps.", num);
 
     // TODO: split in multiple files of constant size
     archiver.close_archive()?;
