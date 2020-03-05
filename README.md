@@ -156,9 +156,8 @@ For setting up a testing environment you will need:
 4. Check the cores created in the admin ui at `http://localhost:8983/solr`
 
 ``` bash
-$ cd docker
 # Create the container with a solr server with two cores: 'demo' and 'target'
-$ docker-compose up -d
+$ docker-compose -f docker/docker-compose.yml up -d
 ```
 
 #### Using only docker tools

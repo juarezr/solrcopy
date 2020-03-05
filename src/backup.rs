@@ -19,7 +19,7 @@ pub(crate) fn backup_main(parsed: Backup) -> Result<(), Box<dyn std::error::Erro
     let steps = parsed.get_steps(&core_info);
     let range = steps.len();
 
-    let done = steps.map(|step| {
+    let working = steps.map(|step| {
         let query_url = &step.url;
         let response = SolrCore::get_docs_from(&query_url);
         // TODO: retry on network errors and timeouts
@@ -30,7 +30,7 @@ pub(crate) fn backup_main(parsed: Backup) -> Result<(), Box<dyn std::error::Erro
         }
     });
 
-    let report = crate::bars::get_wide_bar_for(done, range);
+    let report = crate::bars::get_wide_bar_for(working, range);
 
     let num = report.count();
 
