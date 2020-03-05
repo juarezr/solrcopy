@@ -297,10 +297,18 @@ impl CommitMode {
 #[cfg(feature = "artifacts")]
 impl Arguments {
     pub fn release_artifacts() {
+        let pkg_name = std::env::var("CARGO_PKG_NAME").expect("Missing env var CARGO_PKG_NAME!");
+        let pkg_dir = std::env::var("CARGO_MANIFEST_DIR").expect("Missing env var CARGO_MANIFEST_DIR!");
+
+        let release = if cfg!(debug_assertions) { "debug" } else { "release" };
+        let out_dir = format!("{}/target/{}", pkg_dir, release);
+
+        println!("ARTIFACT_DIR: {}", out_dir);
+
         let mut clap = Arguments::clap();
-        clap.gen_completions_to("solrcopy", clap::Shell::Bash, &mut std::io::stdout());
-        clap.gen_completions_to("solrcopy", clap::Shell::Fish, &mut std::io::stdout());
-        clap.gen_completions_to("solrcopy", clap::Shell::Zsh, &mut std::io::stdout());
+        clap.gen_completions(&pkg_name, clap::Shell::Bash, &out_dir);
+        clap.gen_completions(&pkg_name, clap::Shell::Fish, &out_dir);
+        clap.gen_completions(pkg_name, clap::Shell::Zsh, &out_dir);
     }
 }
 
