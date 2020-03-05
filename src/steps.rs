@@ -1,5 +1,7 @@
-use super::args::*;
-use super::helpers::*;
+use std::convert::TryInto;
+
+use crate::args::*;
+use crate::helpers::*;
 
 // region Iterator
 
@@ -35,6 +37,16 @@ impl Iterator for Steps {
             None
         }
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let num_steps = self.len();
+        if num_steps == 0 {
+            (0, None)
+        } else {
+            let max: usize = num_steps.try_into().unwrap();
+            (0, Some(max))
+        }
+    }
 }
 
 impl Steps {
@@ -46,16 +58,9 @@ impl Steps {
             res + 1
         }
     }
-
-    pub fn with_progress(self) -> ProgressBarIter<Steps> {
-        let num_found = self.len() - 1;
-        progress_with(self, num_found)
-    }
 }
 
 // endregion
-
-// region Solr Uri
 
 // region Solr Core
 
@@ -127,20 +132,6 @@ impl Backup {
         parts.concat()
     }
 }
-
-// region ProgressBar
-
-use indicatif::{ProgressBar, ProgressBarIter, ProgressIterator};
-
-pub fn progress_with<S, It: Iterator<Item = S>>(steps: It, total: u64) -> ProgressBarIter<It> {
-    let bar_style = indicatif::ProgressStyle::default_bar()
-        .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:40.cyan/blue}] {pos}/{len}  {percent}% ({eta})");
-
-    let pbar = ProgressBar::new(total).with_style(bar_style);
-    steps.progress_with(pbar)
-}
-
-// endregion
 
 // endregion
 

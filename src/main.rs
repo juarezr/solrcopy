@@ -13,6 +13,7 @@ extern crate zip;
 
 mod args;
 mod backup;
+mod bars;
 mod commit;
 mod connection;
 mod fails;
