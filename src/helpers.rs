@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use regex::Regex;
+use regex::{Captures, Regex};
 
 // region Constants
 
@@ -135,14 +135,68 @@ impl RegexHelpers for Regex {
     }
 }
 
+pub trait CapturesHelpers {
+    /// Returns the match associated with the capture group at index `i`. If
+    /// `i` does not correspond to a capture group, or if the capture group
+    /// did not participate in the match, then a empty string is returned.
+    ///
+    /// # Examples
+    ///
+    /// Get the text of the match with a default of an empty string if this
+    /// group didn't participate in the match:
+    ///
+    /// ```rust
+    /// # use regex::Regex;
+    /// let re = Regex::new(r"[a-z]+(?:([0-9]+)|([A-Z]+))").unwrap();
+    /// let caps = re.captures("abc123").unwrap();
+    ///
+    /// let text1 = caps.get_as_str(1);
+    /// let text2 = caps.get_as_str(2);
+    /// assert_eq!(text1, "123");
+    /// assert_eq!(text2, "");
+    /// ```
+    fn get_as_str(&self, i: usize) -> &str;
+
+    /// Returns the match associated with the capture group at index `i`. If
+    /// `i` does not correspond to a capture group, or if the capture group
+    /// did not participate in the match, then a empty string is returned.
+    ///
+    /// # Examples
+    ///
+    /// Get the text of the match with a default of an empty string if this
+    /// group didn't participate in the match:
+    ///
+    /// ```rust
+    /// # use regex::Regex;
+    /// let re = Regex::new(r"[a-z]+(?:([0-9]+)|([A-Z]+))").unwrap();
+    /// let caps = re.captures("abc123").unwrap();
+    ///
+    /// let text1 = caps.get_as_str_or(1, "");
+    /// let text2 = caps.get_as_str(2, "321");
+    /// assert_eq!(text1, "123");
+    /// assert_eq!(text2, "321");
+    /// ```
+    fn get_as_str_or<'a>(&'a self, i: usize, replacement: &'a str) -> &'a str;
+}
+
+impl<'t> CapturesHelpers for Captures<'t> {
+    fn get_as_str(&self, i: usize) -> &str {
+        self.get(i).map_or(EMPTY_STR, |m| m.as_str())
+    }
+
+    fn get_as_str_or<'a>(&'a self, i: usize, replacement: &'a str) -> &'a str {
+        self.get(i).map_or(replacement, |m| m.as_str())
+    }
+}
+
 // endregion
 
 // region Debug helpers
 
-pub fn print_env_vars() {
-    println!("Listing all env vars:");
+pub(crate) fn print_env_vars() {
+    eprintln!("Listing all env vars:");
     for (key, val) in std::env::vars() {
-        println!("  {}: {}", key, val);
+        eprintln!("  {}: {}", key, val);
     }
 }
 
