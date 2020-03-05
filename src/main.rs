@@ -25,8 +25,7 @@ mod steps;
 use args::Arguments;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    #[cfg(feature = "artifacts")]
-    Arguments::release_artifacts();
+    startup();
 
     let parsed = Arguments::parse_from_args()?;
 
@@ -35,6 +34,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Arguments::Restore(puts) => restore::restore_main(puts),
         Arguments::Commit(comt) => commit::commit_main(comt),
     }
+}
+
+fn startup() {
+    #[cfg(feature = "artifacts")]
+    Arguments::release_artifacts();
 }
 
 // end of file
