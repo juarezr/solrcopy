@@ -37,7 +37,6 @@ impl SolrCore {
         if total_docs < 1 {
             throw(format!("Solr Core '{}'is empty!", core_name))?
         };
-
         let parsed_fields = Self::parse_field_names(&json);
 
         let core_fields = if gets.select.is_empty() {
@@ -49,7 +48,7 @@ impl SolrCore {
                 Some(fields) => fields,
             }
         } else {
-            // TODO: check if args.select fields matches parsed_fields
+            // TODO: check if args.select fields matches parsed_fields when --validate
             gets.select.clone()
         };
         let res = SolrCore {
@@ -123,7 +122,6 @@ pub mod tests {
         assert_eq!(fields.is_some(), true);
 
         let fields2 = fields.unwrap();
-        // println!(" {:?}", fields2);
 
         assert_eq!(fields2.len(), 22);
         assert_eq!(fields2.get(0).unwrap(), "date");

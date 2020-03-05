@@ -21,20 +21,18 @@ impl Iterator for Steps {
     type Item = Step;
 
     fn next(&mut self) -> Option<Step> {
-        if self.limit <= self.curr {
-            None
-        } else {
+        if self.limit > self.curr {
             let remaining = self.limit - self.curr;
             let rows = self.batch.min(remaining);
-
             let query = format!("{}&start={}&rows={}", self.url, self.curr, rows);
             let res = Step {
                 url: query,
                 curr: self.curr,
             };
-
             self.curr += self.batch;
             Some(res)
+        } else {
+            None
         }
     }
 }
@@ -180,9 +178,7 @@ mod tests {
     fn check_iterator_for_params_get() {
         let parsed = Arguments::mockup_args_backup();
         let gets = parsed.get().unwrap();
-
         let core_info = SolrCore::mockup();
-
         let query = gets.get_query_url(EMPTY_STR);
 
         let mut i = 0;
@@ -190,7 +186,6 @@ mod tests {
             let url = step.url;
             assert_eq!(url.is_empty(), false);
             assert_eq!(url.starts_with(&query), true);
-
             i += 1;
         }
         assert_eq!(i, 9);

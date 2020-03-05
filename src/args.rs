@@ -61,13 +61,12 @@ impl FromStr for SortField {
             match REO.captures(s) {
                 None => Err(s.to_string()),
                 Some(cap) => {
-                    let desc = cap.len() == 4 && cap.get(4).unwrap().as_str() == "desc";
-                    let sort_dir = if desc {
+                    let sort_dir = if cap.get_as_str(4) == "desc" {
                         SortDirection::Desc
                     } else {
                         SortDirection::Asc
                     };
-                    let sort_field = cap.get(1).unwrap().as_str().to_string();
+                    let sort_field = cap.get_as_str(1).to_string();
                     Ok(SortField {
                         field: sort_field,
                         direction: sort_dir,
