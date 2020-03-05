@@ -197,14 +197,12 @@ impl<'t> CapturesHelpers for Captures<'t> {
 // TODO: investigate traits Convert From, etc..
 
 pub trait SizeHelpers {
-
     fn to_u64(self) -> u64;
 
     fn to_usize(self) -> usize;
 }
 
 impl SizeHelpers for usize {
-
     fn to_u64(self) -> u64 {
         self.try_into().unwrap()
     }
@@ -215,7 +213,6 @@ impl SizeHelpers for usize {
 }
 
 impl SizeHelpers for u64 {
-
     fn to_u64(self) -> u64 {
         self
     }
