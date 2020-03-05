@@ -9,7 +9,6 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 use url::Url;
 
-use super::fails::*;
 use super::helpers::*;
 
 // endregion
@@ -191,26 +190,6 @@ pub struct Options {
 
 // region Cli impl
 
-impl Arguments {
-    pub fn parse_from_args() -> Result<Self, BoxedError> {
-        let res = Self::from_args();
-        res.check_dir()?;
-        Ok(res)
-    }
-
-    pub fn check_dir(&self) -> Result<(), BoxedError> {
-        let dir = match &self {
-            Self::Backup(get) => &get.into,
-            Self::Restore(put) => &put.from,
-            Self::Commit(_) => return Ok(()),
-        };
-        if !dir.exists() {
-            throw(format!("Missing folder of zip backup files: {:?}", dir))?
-        }
-        Ok(())
-    }
-}
-
 fn parse_solr_url(src: &str) -> Result<String, String> {
     let url2 = if src.starts_with_any(&["http://", "https://"]) {
         src.to_owned()
@@ -298,9 +277,14 @@ impl CommitMode {
 impl Arguments {
     pub fn release_artifacts() {
         let pkg_name = std::env::var("CARGO_PKG_NAME").expect("Missing env var CARGO_PKG_NAME!");
-        let pkg_dir = std::env::var("CARGO_MANIFEST_DIR").expect("Missing env var CARGO_MANIFEST_DIR!");
+        let pkg_dir =
+            std::env::var("CARGO_MANIFEST_DIR").expect("Missing env var CARGO_MANIFEST_DIR!");
 
-        let release = if cfg!(debug_assertions) { "debug" } else { "release" };
+        let release = if cfg!(debug_assertions) {
+            "debug"
+        } else {
+            "release"
+        };
         let out_dir = format!("{}/target/{}", pkg_dir, release);
 
         println!("ARTIFACT_DIR: {}", out_dir);

@@ -23,6 +23,8 @@ mod save;
 mod steps;
 
 use args::Arguments;
+use fails::*;
+use structopt::StructOpt;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     startup();
@@ -40,5 +42,29 @@ fn startup() {
     #[cfg(feature = "artifacts")]
     Arguments::release_artifacts();
 }
+
+// region Cli impl
+
+impl Arguments {
+    pub fn parse_from_args() -> Result<Self, BoxedError> {
+        let res = Self::from_args();
+        res.check_dir()?;
+        Ok(res)
+    }
+
+    pub fn check_dir(&self) -> Result<(), BoxedError> {
+        let dir = match &self {
+            Self::Backup(get) => &get.into,
+            Self::Restore(put) => &put.from,
+            Self::Commit(_) => return Ok(()),
+        };
+        if !dir.exists() {
+            throw(format!("Missing folder of zip backup files: {:?}", dir))?
+        }
+        Ok(())
+    }
+}
+
+// endregion
 
 // end of file

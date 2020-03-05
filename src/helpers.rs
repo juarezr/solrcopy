@@ -13,8 +13,6 @@ pub const COMMA: &str = ",";
 
 // region Type Method Extensions
 
-// region String Method Extensions
-
 pub trait StringHelpers {
     fn contains_any(&self, patterns: &[&str]) -> bool;
 
@@ -137,7 +135,7 @@ impl RegexHelpers for Regex {
     }
 }
 
-// endregion 
+// endregion
 
 // region Debug helpers
 
