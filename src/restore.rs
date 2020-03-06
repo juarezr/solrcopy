@@ -1,4 +1,3 @@
-use glob::{glob, Paths, PatternError};
 use zip::ZipArchive;
 
 use log::debug;
@@ -7,18 +6,15 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::PathBuf;
 
-use super::args::Restore;
-use super::connection::http_post_as_json;
-use super::fails::*;
-use super::helpers::*;
+use crate::args::Restore;
+use crate::connection::http_post_as_json;
+use crate::fails::*;
+use crate::helpers::*;
 
 pub(crate) fn restore_main(params: Restore) -> Result<(), Box<dyn std::error::Error>> {
     debug!("  {:?}", params);
 
-    let found = params
-        .find_archives()?
-        .filter_map(Result::ok)
-        .collect::<Vec<_>>();
+    let found = params.find_archives()?;
 
     if found.is_empty() {
         throw(format!("Found no archives to restore from: {}\n note: try to specify the option --pattern with the source core name", params.get_pattern()))?;
@@ -30,6 +26,7 @@ use crate::bars::*;
 
 fn unzip_archives(params: Restore, found: Vec<PathBuf>) -> Result<(), BoxedError> {
     let zip_count = found.len().to_u64();
+    let update_hadler_url = params.get_update_url();
     let barp = new_wide_bar(zip_count);
 
     for path in found {
@@ -45,7 +42,7 @@ fn unzip_archives(params: Restore, found: Vec<PathBuf>) -> Result<(), BoxedError
             let mut buffer = String::new();
             compressed.read_to_string(&mut buffer)?;
 
-            put_content(&params, buffer)?;
+            put_content(&update_hadler_url, buffer)?;
 
             barp.inc(1);
         }
@@ -54,46 +51,10 @@ fn unzip_archives(params: Restore, found: Vec<PathBuf>) -> Result<(), BoxedError
     Ok(())
 }
 
-fn put_content(params: &Restore, content: String) -> Result<(), BoxedError> {
-    let url = params.get_update_url();
+fn put_content(update_hadler_url: &str, content: String) -> Result<(), BoxedError> {
     // TODO: handle network error, timeout on posting
-    http_post_as_json(&url, content)?;
+    http_post_as_json(&update_hadler_url, content)?;
     Ok(())
-}
-
-impl Restore {
-    fn find_archives(&self) -> Result<Paths, PatternError> {
-        let wilcard = self.get_pattern();
-        let found = glob(&wilcard)?;
-        Ok(found)
-    }
-
-    fn get_pattern(&self) -> String {
-        let wilcard: String = match &self.pattern {
-            Some(pat) => {
-                if pat.ends_with(".zip") || pat.contains('*') {
-                    pat.to_owned()
-                } else {
-                    format!("{}*", pat)
-                }
-            }
-            None => format!("{}*.zip", self.into),
-        };
-        let mut path = self.from.clone();
-        path.push(wilcard);
-        let res = path.to_str().unwrap();
-        res.to_string()
-    }
-
-    fn get_update_url(&self) -> String {
-        let parts: Vec<String> = vec![
-            self.options.url.with_suffix("/"),
-            self.into.clone(),
-            "/update".to_string(),
-            self.commit.as_param("?"),
-        ];
-        parts.concat()
-    }
 }
 
 #[cfg(test)]
@@ -123,7 +84,7 @@ mod tests {
         let parsed = Arguments::mockup_args_restore();
         let puts = parsed.put().unwrap();
 
-        for zip in puts.find_archives().unwrap().filter_map(Result::ok) {
+        for zip in puts.find_archives().unwrap() {
             println!("{:?}", zip);
             let path = zip.to_str().unwrap();
             assert_eq!(path.ends_with(".zip"), true);

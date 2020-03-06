@@ -20,6 +20,7 @@ mod commit;
 mod connection;
 mod fails;
 mod fetch;
+mod ingest;
 mod helpers;
 mod restore;
 mod save;
