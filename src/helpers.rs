@@ -8,7 +8,13 @@ use std::convert::TryInto;
 pub const EMPTY_STR: &str = "";
 pub const EMPTY_STRING: String = String::new();
 
+pub const PT: &str = ".";
 pub const COMMA: &str = ",";
+pub const SEMICOLON: &str = ";";
+pub const BRACKETS: &str = "{}";
+
+pub const SPACE: char = ' ';
+pub const ZERO: char = '0';
 
 // endregion
 
@@ -28,6 +34,18 @@ pub trait StringHelpers {
     fn with_prefix(&self, prefix: &str) -> String;
 
     fn with_suffix(&self, suffix: &str) -> String;
+
+    fn pad(&self, pad: usize) -> String;
+
+    fn pad_0(&self, pad: usize) -> String;
+
+    fn pad_with(&self, pad: usize, padchar: char) -> String;
+
+    fn pad_left(&self, pad: usize) -> String;
+
+    fn pad_0_left(&self, pad: usize) -> String;
+
+    fn pad_left_with(&self, pad: usize, padchar: char) -> String;
 }
 
 impl StringHelpers for str {
@@ -89,6 +107,49 @@ impl StringHelpers for str {
         res.push_str(self);
         res.push_str(suffix);
         res
+    }
+
+    fn pad(&self, pad: usize) -> String {
+        Self::pad_left_with(self, pad, SPACE)
+    }
+
+    fn pad_0(&self, pad: usize) -> String {
+        Self::pad_left_with(self, pad, ZERO)
+    }
+
+    fn pad_with(&self, pad: usize, padchar: char) -> String {
+        let mut out = self.to_string();
+        let len = self.len();
+        let pad_len = pad - len;
+
+        if pad_len > 0 {
+            for _ in 0..pad_len {
+                out.push(padchar);
+            }
+        }
+        out
+    }
+
+    fn pad_left(&self, pad: usize) -> String {
+        Self::pad_left_with(self, pad, SPACE)
+    }
+
+    fn pad_0_left(&self, pad: usize) -> String {
+        Self::pad_left_with(self, pad, ZERO)
+    }
+
+    fn pad_left_with(&self, pad: usize, padchar: char) -> String {
+        let mut out = String::new();
+        let len = self.len();
+        let pad_len = pad - len;
+
+        if pad_len > 0 {
+            for _ in 0..pad_len {
+                out.push(padchar);
+            }
+        }
+        out.push_str(self);
+        out
     }
 }
 
