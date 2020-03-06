@@ -8,15 +8,17 @@ use super::steps::SolrCore;
 
 // region Solr Core
 
-impl SolrCore {
-    pub fn inspect_core(gets: &Backup) -> Result<SolrCore, BoxedError> {
-        let diagnostics_query_url = gets.get_query_for_diagnostics();
+impl Backup {
+    pub fn inspect_core(&self) -> Result<SolrCore, BoxedError> {
+        let diagnostics_query_url = self.get_query_for_diagnostics();
 
         let json = http_get_as_text(&diagnostics_query_url)?;
 
-        SolrCore::parse_core_schema(&gets, &json)
+        SolrCore::parse_core_schema(self, &json)
     }
+}
 
+impl SolrCore {
     pub fn get_docs_from(url: &str) -> Result<String, BoxedError> {
         let json = http_get_as_text(url)?;
 

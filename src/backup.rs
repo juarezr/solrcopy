@@ -1,12 +1,11 @@
 use log::{debug, info};
 
 use crate::args::Backup;
-use crate::steps::SolrCore;
 
 pub(crate) fn backup_main(parsed: Backup) -> Result<(), Box<dyn std::error::Error>> {
     debug!("  {:?}", parsed);
 
-    let core_info = SolrCore::inspect_core(&parsed)?;
+    let core_info = parsed.inspect_core()?;
     debug!("  {:?}", core_info);
 
     let mut archiver = parsed.get_writer()?;
@@ -14,15 +13,12 @@ pub(crate) fn backup_main(parsed: Backup) -> Result<(), Box<dyn std::error::Erro
     let steps = parsed.get_steps(&core_info);
     let range = steps.len();
 
-    let working = steps.map(|step| {
-        let query_url = &step.url;
-        let response = SolrCore::get_docs_from(&query_url);
-        // TODO: retry on network errors and timeouts
-        // TODO: print a warning about unbalanced shard in solr could configurations
+    let docs = steps.retrieve();
 
-        if let Ok(docs) = response {
-            archiver.write_file(&step, &docs).unwrap();
-        }
+    let working = docs.map(|response| {
+        let filename = response.step.get_output_name();
+        let docs = response.docs;
+        archiver.write_file(filename, &docs).unwrap();
     });
 
     let report = crate::bars::get_wide_bar_for(working, range);

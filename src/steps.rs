@@ -1,7 +1,9 @@
+use log::error;
+
 use crate::args::*;
 use crate::helpers::*;
 
-// region Iterator
+// region Struct
 
 #[derive(Debug)]
 pub struct Steps {
@@ -15,6 +17,57 @@ pub struct Steps {
 pub struct Step {
     pub curr: u64,
     pub url: String,
+}
+
+#[derive(Debug)]
+pub struct Documents {
+    pub step: Step,
+    pub docs: String,
+}
+
+#[derive(Debug)]
+pub struct SolrCore {
+    pub num_found: u64,
+    pub fields: Vec<String>,
+}
+
+// endregion
+
+// region Iterators
+
+impl Step {
+    pub fn get_output_name(&self) -> String {
+        format!("docs_at_{:09}.json", self.curr)
+    }
+}
+
+impl Steps {
+    pub fn len(&self) -> u64 {
+        let res = self.limit / self.batch;
+        if self.limit % self.batch == 0 {
+            res
+        } else {
+            res + 1
+        }
+    }
+
+    pub fn retrieve(self) -> impl Iterator<Item = Documents> {
+        // TODO: retry on network errors and timeouts
+        // TODO: print a warning about unbalanced shard in solr could configurations
+
+        self.flat_map(|step| {
+            let query_url = &step.url;
+
+            let result = SolrCore::get_docs_from(&query_url);
+            match result {
+                Ok(docs) => Some(Documents { step, docs }),
+                Err(cause) => {
+                    error!("{}", cause);
+                    None
+                }
+            }
+        })
+    }
 }
 
 impl Iterator for Steps {
@@ -47,26 +100,9 @@ impl Iterator for Steps {
     }
 }
 
-impl Steps {
-    pub fn len(&self) -> u64 {
-        let res = self.limit / self.batch;
-        if self.limit % self.batch == 0 {
-            res
-        } else {
-            res + 1
-        }
-    }
-}
-
 // endregion
 
-// region Solr Core
-
-#[derive(Debug)]
-pub struct SolrCore {
-    pub num_found: u64,
-    pub fields: Vec<String>,
-}
+// region Solr requests
 
 impl Backup {
     pub fn get_steps(&self, core_info: &SolrCore) -> Steps {
