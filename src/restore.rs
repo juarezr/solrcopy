@@ -1,6 +1,7 @@
-use zip::ZipArchive;
+#![allow(dead_code)]
 
-use log::debug;
+use log::{debug, info};
+use zip::ZipArchive;
 
 use std::fs::File;
 use std::io::prelude::*;
@@ -10,6 +11,7 @@ use crate::args::Restore;
 use crate::connection::http_post_as_json;
 use crate::fails::*;
 use crate::helpers::*;
+use crate::ingest::*;
 
 pub(crate) fn restore_main(params: Restore) -> Result<(), Box<dyn std::error::Error>> {
     debug!("  {:?}", params);
@@ -22,12 +24,48 @@ pub(crate) fn restore_main(params: Restore) -> Result<(), Box<dyn std::error::Er
     unzip_archives(params, found)
 }
 
+fn unzip_archives(params: Restore, found: Vec<PathBuf>) -> Result<(), BoxedError> {
+    // reading from the zip archives and updating solr core
+
+    let zip_count = found.len().to_u64();
+    let barp = new_wide_bar(zip_count);
+
+    let archives = load_all_archives_for(found);
+
+    let estimated = archives.inspect(|reader| {
+        let file_count = reader.archive.len();
+        let step_count = file_count.to_u64() * zip_count;
+        barp.set_length(step_count);
+    });
+
+    let documents = read_all_documents(estimated);
+
+    let update_hadler_url = params.get_update_url();
+
+    let responses = documents.map(|doc| post_content(&update_hadler_url, doc));
+
+    let report = responses.inspect(|_| barp.inc(1));
+
+    let num = report.count();
+    info!("Finished updating documents in {} steps.", num);
+
+    Ok(())
+}
+
 use crate::bars::*;
 
-fn unzip_archives(params: Restore, found: Vec<PathBuf>) -> Result<(), BoxedError> {
-    let zip_count = found.len().to_u64();
+fn unzip_archives2(params: Restore, found: Vec<PathBuf>) -> Result<(), BoxedError> {
     let update_hadler_url = params.get_update_url();
+    let zip_count = found.len().to_u64();
     let barp = new_wide_bar(zip_count);
+
+    // https://users.rust-lang.org/t/handling-errors-from-iterators/2551/7
+    // Also see Itertools::fold_results() 501 from itertools crate
+
+    //  let count = found.iter().by_ref().take_while(|path| { path.exists() } ).fold(0, |sum, i| sum + i);
+    //  if let Some(Err(e)) = count.next() {
+    //     println!("There was an error: {}", e)
+    // }
 
     for path in found {
         let zipfile = File::open(&path)?;

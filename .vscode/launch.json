@@ -24,8 +24,8 @@
                 "--where", "price:[1 TO 400] AND NOT popularity:10", 
                 "--order", "price:asc", "weight:asc", "id:asc",
                 "--select", "id", "date", "name", "price", "weight", "popularity", "manu", "cat", "store", "features",
-                "--limit", "20", 
-                "--batch", "5", 
+                "--limit", "21", 
+                "--batch", "2", 
                 "--into", "./tmp",
                 "--verbose", 
             ],
@@ -77,7 +77,7 @@
                 "commit", 
                 "--url", "http://localhost:8983/solr", 
                 "--into", "target",
-                "--verbose", 
+                // "--verbose", 
             ],
             "env": { 
                 "RUST_BACKTRACE": "full"
