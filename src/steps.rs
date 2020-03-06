@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use log::error;
 
 use crate::args::*;
@@ -36,7 +37,7 @@ pub struct SolrCore {
 // region Iterators
 
 impl Step {
-    pub fn get_output_name(&self) -> String {
+    pub fn get_docs_filename(&self) -> String {
         format!("docs_at_{:09}.json", self.curr)
     }
 }
@@ -105,6 +106,19 @@ impl Iterator for Steps {
 // region Solr requests
 
 impl Backup {
+    pub fn get_archive_pattern(&self, num_found: u64) -> (String, usize) {
+        let core_name = match &self.name {
+            Some(text) => text,
+            None => &self.from,
+        };
+        let now: DateTime<Utc> = Utc::now();
+        let time = now.format("%Y-%m-%d_%H-%M-%S");
+        let limit = format!("{}", num_found);
+        let size = limit.len();
+        let pattern = format!("{}_{}_{}_{}.zip", core_name, time, BRACKETS, limit);
+        (pattern, size)
+    }
+
     pub fn get_steps(&self, core_info: &SolrCore) -> Steps {
         let core_fields: &[String] = &core_info.fields;
         let fl = self.get_query_fields(core_fields);
@@ -154,7 +168,6 @@ impl Backup {
             let joined = all.join(COMMA);
             "&sort=".append(&joined)
         };
-
         let parts = vec![
             self.options.url.with_suffix("/"),
             self.from.clone(),
@@ -164,13 +177,6 @@ impl Backup {
             selected.to_string(),
         ];
         parts.concat()
-    }
-
-    pub fn get_output_name(&self) -> &str {
-        match &self.name {
-            Some(text) => text,
-            None => &self.from,
-        }
     }
 }
 
