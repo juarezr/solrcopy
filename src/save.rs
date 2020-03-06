@@ -9,14 +9,11 @@ use chrono::{DateTime, Utc};
 use super::args::Backup;
 use super::fails::*;
 
-// region Archiver
+// region Archiver Iterator
 
 impl Backup {
     pub fn get_writer(&self) -> Result<Archiver, BoxedError> {
-        let name = match &self.name {
-            Some(text) => text,
-            None => &self.from,
-        };
+        let name = self.get_output_name();
         let res = Archiver::write_on(&self.into, &name);
         Ok(res)
     }

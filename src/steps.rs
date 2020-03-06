@@ -6,16 +6,16 @@ use crate::helpers::*;
 // region Struct
 
 #[derive(Debug)]
-pub struct Steps {
+pub struct Step {
     pub curr: u64,
-    pub limit: u64,
-    pub batch: u64,
     pub url: String,
 }
 
 #[derive(Debug)]
-pub struct Step {
+pub struct Steps {
     pub curr: u64,
+    pub limit: u64,
+    pub batch: u64,
     pub url: String,
 }
 
@@ -164,6 +164,13 @@ impl Backup {
             selected.to_string(),
         ];
         parts.concat()
+    }
+
+    pub fn get_output_name(&self) -> &str {
+        match &self.name {
+            Some(text) => text,
+            None => &self.from,
+        }
     }
 }
 
