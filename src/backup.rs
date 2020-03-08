@@ -3,6 +3,7 @@ use log::{debug, info};
 use crate::args::Backup;
 use crate::bars::get_wide_bar_for;
 use crate::save::DocumentIterator;
+use crate::steps::Step;
 
 pub(crate) fn backup_main(parsed: Backup) -> Result<(), Box<dyn std::error::Error>> {
     debug!("  {:?}", parsed);
@@ -15,11 +16,11 @@ pub(crate) fn backup_main(parsed: Backup) -> Result<(), Box<dyn std::error::Erro
     let steps = parsed.get_steps(&core_info);
     let range = steps.len();
 
-    let docs = steps.retrieve();
+    let docs = steps
+        .flat_map(Step::retrieve_docs)
+        .store_documents(archiver);
 
-    let working = docs.store_documents(archiver);
-
-    let report = get_wide_bar_for(working, range);
+    let report = get_wide_bar_for(docs, range);
 
     let num = report.count();
     info!(

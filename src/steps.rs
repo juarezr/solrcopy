@@ -37,8 +37,24 @@ pub struct SolrCore {
 // region Iterators
 
 impl Step {
-    pub fn get_docs_filename(&self) -> String {
+    pub(crate) fn get_docs_filename(&self) -> String {
         format!("docs_at_{:09}.json", self.curr)
+    }
+
+    pub(crate) fn retrieve_docs(step: Step) -> Option<Documents> {
+        // TODO: retry on network errors and timeouts
+        // TODO: print a warning about unbalanced shard in solr could configurations
+
+        let query_url = &step.url;
+
+        let result = SolrCore::get_docs_from(&query_url);
+        match result {
+            Ok(docs) => Some(Documents { step, docs }),
+            Err(cause) => {
+                error!("{}", cause);
+                None
+            }
+        }
     }
 }
 
@@ -50,24 +66,6 @@ impl Steps {
         } else {
             res + 1
         }
-    }
-
-    pub fn retrieve(self) -> impl Iterator<Item = Documents> {
-        // TODO: retry on network errors and timeouts
-        // TODO: print a warning about unbalanced shard in solr could configurations
-
-        self.flat_map(|step| {
-            let query_url = &step.url;
-
-            let result = SolrCore::get_docs_from(&query_url);
-            match result {
-                Ok(docs) => Some(Documents { step, docs }),
-                Err(cause) => {
-                    error!("{}", cause);
-                    None
-                }
-            }
-        })
     }
 }
 
