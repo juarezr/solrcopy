@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use log::{error, trace};
 use zip::ZipArchive;
 
