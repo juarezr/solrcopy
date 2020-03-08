@@ -10,6 +10,8 @@ use crate::args::Restore;
 use crate::connection::http_post_as_json;
 use crate::helpers::*;
 
+type Decompressor = ZipArchive<File>;
+
 impl Restore {
     pub fn find_archives(&self) -> Result<Vec<PathBuf>, PatternError> {
         let wilcard = self.get_pattern();
@@ -46,48 +48,58 @@ impl Restore {
     }
 }
 
-type Decompressor = ZipArchive<File>;
-
-pub fn load_all_archives_for(archives_found: Vec<PathBuf>) -> impl Iterator<Item = ArchiveReader> {
-    archives_found
-        .into_iter()
-        // .inspect(|archive_path| debug!("loading archive: {:?}", archive_path))
-        .inspect(trace_archive)
-        .flat_map(open_archive)
+#[derive(Debug)]
+pub(crate) struct ArchiveReader {
+    pub archive: Decompressor,
+    pub entry_index: usize,
 }
 
-fn trace_archive(archive_path: &PathBuf) {
-    trace!("loading archive: {:?}", archive_path)
-}
-
-fn open_archive(archive_path: PathBuf) -> Option<ArchiveReader> {
-    let can_open = File::open(&archive_path);
-
-    match can_open {
-        Err(cause1) => {
-            error!("error opening file: {:?} -> {}", archive_path, cause1);
-            None
-        }
-        Ok(zipfile) => {
-            let reader = ZipArchive::new(zipfile);
-            match reader {
-                Err(cause2) => {
-                    error!("error loading archive: {:?} -> {}", archive_path, cause2);
-                    None
+impl ArchiveReader {
+    pub(crate) fn open_archive(archive_path: &PathBuf) -> Option<Decompressor> {
+        let can_open = File::open(archive_path);
+        match can_open {
+            Err(cause1) => {
+                error!("error opening file: {:?} -> {}", archive_path, cause1);
+                None
+            }
+            Ok(zipfile) => {
+                let zip_is_ok = ZipArchive::new(zipfile);
+                match zip_is_ok {
+                    Err(cause2) => {
+                        error!("error loading archive: {:?} -> {}", archive_path, cause2);
+                        None
+                    }
+                    Ok(reader) => Some(reader),
                 }
-                Ok(archive) => Some(ArchiveReader {
-                    archive,
-                    entry_index: 0,
-                }),
             }
         }
     }
-}
 
-#[derive(Debug)]
-pub struct ArchiveReader {
-    pub archive: Decompressor,
-    pub entry_index: usize,
+    pub(crate) fn create_reader(archive_path: PathBuf) -> Option<ArchiveReader> {
+        let success = Self::open_archive(&archive_path);
+        match success {
+            None => None,
+            Some(zip) => Some(ArchiveReader {
+                archive: zip,
+                entry_index: 0,
+            }),
+        }
+    }
+
+    pub(crate) fn trace_archive(archive_path: &PathBuf) {
+        trace!("loading archive: {:?}", archive_path)
+    }
+
+    pub(crate) fn get_archive_file_count(archive_path: &PathBuf) -> Option<usize> {
+        let success = Self::open_archive(archive_path);
+        match success {
+            None => None,
+            Some(archive) => {
+                let file_count = archive.len();
+                Some(file_count)
+            }
+        }
+    }
 }
 
 impl Iterator for ArchiveReader {
@@ -114,18 +126,11 @@ impl Iterator for ArchiveReader {
     }
 }
 
-pub fn read_all_documents<T>(archives: T) -> impl Iterator<Item = String>
-where
-    T: Iterator<Item = ArchiveReader> + Sized,
-{
-    archives.inspect(trace_document).flatten()
-}
-
-fn trace_document(reader: &ArchiveReader) {
+pub(crate) fn trace_document(reader: &ArchiveReader) {
     trace!("reading document: {:?}", reader.entry_index)
 }
 
-pub fn post_content(update_hadler_url: &str, content: String) -> Option<()> {
+pub(crate) fn post_content(update_hadler_url: &str, content: String) -> Option<()> {
     // TODO: handle network error, timeout on posting
 
     let response = http_post_as_json(&update_hadler_url, content);

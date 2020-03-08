@@ -1,3 +1,4 @@
+use indicatif::ProgressIterator;
 use log::{debug, info};
 
 use std::path::PathBuf;
@@ -21,31 +22,41 @@ pub(crate) fn restore_main(params: Restore) -> Result<(), BoxedError> {
 }
 
 fn unzip_archives(params: Restore, found: Vec<PathBuf>) -> Result<(), BoxedError> {
-    // reading from the zip archives and updating solr core
+    let doc_count = estimate_document_count(&found)?;
+    let progress = new_wide_bar(doc_count);
 
-    let zip_count = found.len().to_u64();
-    let barp = new_wide_bar(zip_count);
+    let archives = found
+        .into_iter()
+        .inspect(ArchiveReader::trace_archive)
+        .flat_map(ArchiveReader::create_reader);
 
-    let archives = load_all_archives_for(found);
-
-    let estimated = archives.inspect(|reader| {
-        let file_count = reader.archive.len();
-        let step_count = file_count.to_u64() * zip_count;
-        barp.set_length(step_count);
-    });
-
-    let documents = read_all_documents(estimated);
+    let documents = archives.inspect(trace_document).flatten();
 
     let update_hadler_url = params.get_update_url();
 
     let responses = documents.map(|doc| post_content(&update_hadler_url, doc));
 
-    let report = responses.inspect(|_| barp.inc(1));
+    let report = responses.progress_with(progress);
 
     let num = report.count();
     info!("Finished updating documents in {} steps.", num);
 
     Ok(())
+}
+
+fn estimate_document_count(found: &[PathBuf]) -> Result<u64, BoxedError> {
+    // Estimate number of json files inside all zip files
+    let zip_count = found.len();
+
+    let first = found.first().unwrap();
+    let file_count = ArchiveReader::get_archive_file_count(first);
+    match file_count {
+        None => throw(format!("Error opening archive: {:?}", first))?,
+        Some(doc_count) => {
+            let doc_total = doc_count * zip_count;
+            Ok(doc_total.to_u64())
+        }
+    }
 }
 
 #[cfg(test)]
