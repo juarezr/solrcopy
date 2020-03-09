@@ -87,7 +87,7 @@ pub struct Backup {
     #[structopt(short, long)]
     pub from: String,
 
-    /// Solr Query filter for filtering returned documents  
+    /// Solr Query filter for filtering returned documents  (like f1:val1 AND f2:val2)
     #[structopt(short = "w", long = "where")]
     pub filter: Option<String>,
 
@@ -99,12 +99,12 @@ pub struct Backup {
     #[structopt(short, long)]
     pub order: Vec<SortField>,
 
-    /// Maximum number of documents for retrieving from the core
-    #[structopt(short, long)]
+    /// Maximum number of documents for retrieving from the core (like 100M)
+    #[structopt(short, long, parse(try_from_str = parse_quantity))]
     pub limit: Option<u64>,
 
-    /// Number of documents for reading from solr in each step
-    #[structopt(short, long, default_value = "4096")]
+    /// Number of documents for reading from solr in each step (default: 4K)
+    #[structopt(short, long, default_value = "4096", parse(try_from_str = parse_quantity))]
     pub batch: u64,
 
     /// Existing folder for writing the dump files
@@ -187,6 +187,23 @@ pub struct Options {
 // endregion
 
 // region Cli impl
+
+fn parse_quantity(src: &str) -> Result<u64, String> {
+    let norm = src
+        .to_ascii_uppercase()
+        .replace('K', "000")
+        .replace('M', "000000")
+        .replace('G', "000000000")
+        .replace('T', "000000000000");
+
+    let qt = norm.parse::<u64>();
+    qt.or_else(|_| {
+        Err(format!(
+            "Wrong value: '{}'. Use numbers only, or suffix: K M G",
+            src
+        ))
+    })
+}
 
 fn parse_solr_url(src: &str) -> Result<String, String> {
     let url2 = if src.starts_with_any(&["http://", "https://"]) {
