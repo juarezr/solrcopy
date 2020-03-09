@@ -120,7 +120,7 @@ impl Archiver {
         let zip = self.writer.as_mut().unwrap();
 
         let opts: FileOptions = FileOptions::default()
-            .compression_method(zip::CompressionMethod::Stored)
+            .compression_method(zip::CompressionMethod::Deflated)
             .unix_permissions(0o644);
 
         zip.start_file(filename, opts)?;
