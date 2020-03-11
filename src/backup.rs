@@ -1,10 +1,10 @@
-use log::{debug, error, info};
-use std::path::PathBuf;
-use std::time::Instant;
-
 use crossbeam::channel::{Receiver, Sender};
 use crossbeam::crossbeam_channel::bounded;
 use crossbeam::thread;
+use log::{debug, error, info};
+
+use std::path::PathBuf;
+use std::time::Instant;
 
 use crate::args::Backup;
 use crate::bars::new_wide_bar;
@@ -13,36 +13,36 @@ use crate::helpers::*;
 use crate::save::Archiver;
 use crate::steps::{Documents, Requests, Step};
 
-pub(crate) fn backup_main(parsed: Backup) -> BoxedFailure {
-    debug!("  {:?}", parsed);
+pub(crate) fn backup_main(params: Backup) -> BoxedFailure {
+    debug!("  {:?}", params);
 
-    let core_info = parsed.inspect_core()?;
+    let core_info = params.inspect_core()?;
     debug!("  {:?}", core_info);
 
     let num_found = core_info.num_found.to_u64();
 
     info!(
         "Starting retrieving {} documents from solr core {}.",
-        num_found, parsed.from
+        num_found, params.from
     );
 
     let started = Instant::now();
 
     thread::scope(|pool| {
-        let requests = parsed.get_steps(&core_info);
+        let requests = params.get_steps(&core_info);
 
-        let readers_channel = parsed.readers * 4;
-        let writers_channel = parsed.writers * 3;
+        let readers_channel = params.readers * 4;
+        let writers_channel = params.writers * 3;
 
         let (generator, sequence) = bounded::<Step>(readers_channel);
         let (sender, receiver) = bounded::<Documents>(writers_channel);
-        let (progress, reporter) = bounded::<u64>(parsed.writers);
+        let (progress, reporter) = bounded::<u64>(params.writers);
 
         pool.spawn(|_| {
             start_querying_core(requests, generator);
         });
 
-        for ir in 0..parsed.readers {
+        for ir in 0..params.readers {
             let producer = sender.clone();
             let iterator = sequence.clone();
             let reader = ir;
@@ -58,13 +58,13 @@ pub(crate) fn backup_main(parsed: Backup) -> BoxedFailure {
         drop(sequence);
         drop(sender);
 
-        let output_pat = parsed.get_archive_pattern(core_info.num_found);
+        let output_pat = params.get_archive_pattern(core_info.num_found);
 
-        for iw in 0..parsed.writers {
+        for iw in 0..params.writers {
             let consumer = receiver.clone();
             let updater = progress.clone();
 
-            let dir = parsed.into.clone();
+            let dir = params.into.clone();
             let name = output_pat.clone();
 
             let writer = iw;
