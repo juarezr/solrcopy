@@ -2,11 +2,12 @@ use log::{debug, error};
 use std::path::PathBuf;
 
 use crossbeam::channel::{Receiver, Sender};
-use crossbeam::crossbeam_channel::{bounded, unbounded};
-use crossbeam::thread::scope;
+use crossbeam::crossbeam_channel::bounded;
+use crossbeam::thread;
 
 use crate::args::Backup;
 use crate::fails::BoxedFailure;
+use crate::helpers::*;
 use crate::save::Archiver;
 use crate::steps::{Documents, Requests, Step};
 
@@ -18,31 +19,50 @@ pub(crate) fn backup_main(parsed: Backup) -> BoxedFailure {
     let core_info = parsed.inspect_core()?;
     debug!("  {:?}", core_info);
 
-    let output_dir = parsed.into.clone();
     let output_pat = parsed.get_archive_pattern(core_info.num_found);
-    let channel_size = parsed.readers * 2;
 
-    scope(|pool| {
+    let channel_size = parsed.readers * 4;
+    // debug!("  Channels: {} Output: {:?} Pattern: {}", channel_size, output_dir, output_pat);
+
+    thread::scope(|pool| {
         let requests = parsed.get_steps(&core_info);
 
-        let (generator, iterator) = bounded::<Step>(channel_size);
-        let (sender, receiver) = unbounded::<Documents>();
+        let (generator, sequence) = bounded::<Step>(channel_size);
+        let (sender, receiver) = bounded::<Documents>(channel_size);
 
         pool.spawn(|_| {
             start_querying_core(requests, generator);
         });
 
-        let producer = sender.clone();
-        pool.spawn(|_| {
-            start_retrieving_docs(iterator, producer);
-        });
+        for ir in 0..parsed.readers {
+            let producer = sender.clone();
+            let iterator = sequence.clone();
+            let reader = ir.clone();
 
-        let consumer = receiver.clone();
-        pool.spawn(|_| {
-            start_storing_docs(&output_dir, &output_pat, consumer);
-        });
-
+            let thread_name = format!("Reader_{}", reader);
+            pool.builder()
+                .name(thread_name)
+                .spawn(move |_| {
+                    start_retrieving_docs(reader, iterator, producer);
+                })
+                .unwrap();
+        }
+        drop(sequence);
         drop(sender);
+
+        for iw in 0..parsed.writers {
+            let consumer = receiver.clone();
+            let writer = iw.clone();
+            let dir = parsed.into.clone();
+            let name = output_pat.clone();
+            let thread_name = format!("Writer_{}", writer);
+            pool.builder()
+                .name(thread_name)
+                .spawn(move|_| {
+                    start_storing_docs(writer, dir, name, consumer);
+                })
+                .unwrap();
+        }
         drop(receiver);
     })
     .unwrap();
@@ -75,8 +95,9 @@ fn start_querying_core(requests: Requests, generator: Sender<Step>) {
     debug!("  Finished Generating ");
 }
 
-fn start_retrieving_docs(iterator: Receiver<Step>, producer: Sender<Documents>) {
-    debug!("  Producing ");
+fn start_retrieving_docs(reader: usize, iterator: Receiver<Step>, producer: Sender<Documents>) {
+    debug!("  Producing #{}", reader);
+
     loop {
         let received = iterator.recv();
         if let Ok(step) = received {
@@ -84,8 +105,7 @@ fn start_retrieving_docs(iterator: Receiver<Step>, producer: Sender<Documents>) 
             match retrieved {
                 Ok(docs) => producer.send(docs).unwrap(),
                 Err(cause) => {
-                    // error!("Error writing file {} into archive: {}", docs.step.get_docs_filename(), cause);
-                    error!("Error writing file into archive: {}", cause);
+                    error!("Error retrieving documents from solr: {}", cause);
                     break;
                 }
             }
@@ -94,18 +114,19 @@ fn start_retrieving_docs(iterator: Receiver<Step>, producer: Sender<Documents>) 
         }
     }
     drop(producer);
-    debug!("  Finished Producing ");
+    
+    debug!("  Finished Producing #{}", reader);
 }
 
-fn start_storing_docs(output_dir: &PathBuf, output_pattern: &str, consumer: Receiver<Documents>) {
-    debug!("  Consuming ");
-    let mut archiver = Archiver::write_on(output_dir, output_pattern);
+fn start_storing_docs(writer: usize, dir: PathBuf, name: String, consumer: Receiver<Documents>) {
+    debug!("  Consuming #{}", writer);
+
+    let mut archiver = Archiver::write_on(&dir, &name);
     loop {
         let received = consumer.recv();
         if let Ok(docs) = received {
             let failed = archiver.write_documents(&docs);
             if let Err(cause) = failed {
-                // error!("Error writing file {} into archive: {}", docs.step.get_docs_filename(), cause);
                 error!("Error writing file into archive: {}", cause);
                 break;
             }
@@ -114,5 +135,6 @@ fn start_storing_docs(output_dir: &PathBuf, output_pattern: &str, consumer: Rece
         }
     }
     drop(consumer);
-    debug!("  Finished Consuming ");
+
+    debug!("  Finished Consuming #{}", writer);
 }
