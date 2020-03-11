@@ -6,68 +6,10 @@ use zip::ZipWriter;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use crate::args::Backup;
-use crate::fails::*;
-use crate::helpers::*;
-use crate::steps::*;
+use crate::steps::Documents;
 
 // TODO: split in multiple files of constant size
 // TODO: limit file size based on zip.stats.bytes_written
-
-// region Archiver Iterator
-
-impl Backup {
-    pub fn get_writer(&self, num_found: u64) -> Result<Archiver, BoxedError> {
-        let (pattern, size) = self.get_archive_pattern(num_found);
-        let res = Archiver::write_on(&self.into, pattern, size);
-        Ok(res)
-    }
-}
-
-pub struct DocumentArchiver<T> {
-    it: T,
-    archiver: Archiver,
-}
-
-impl<T> Iterator for DocumentArchiver<T>
-where
-    T: Iterator<Item = Documents>,
-{
-    type Item = Step;
-
-    fn next(&mut self) -> Option<Step> {
-        let next = self.it.next();
-
-        if let Some(result) = next {
-            let step = result.step;
-            let filename = step.get_docs_filename();
-            let docs = result.docs;
-            let failed = self.archiver.write_file(&filename, &docs);
-            if let Err(cause) = failed {
-                error!("Error writing file {}: {}", filename, cause);
-            } else {
-                return Some(step);
-            }
-        }
-        None
-    }
-}
-
-pub trait DocumentIterator
-where
-    Self: Sized + Iterator<Item = Documents>,
-{
-    fn store_documents(self, archiver: Archiver) -> DocumentArchiver<Self>;
-}
-
-/// Wraps the previous iterator to process it's items.
-impl<T: Iterator<Item = Documents>> DocumentIterator for T {
-    fn store_documents(self, archiver: Archiver) -> DocumentArchiver<Self> {
-        DocumentArchiver { it: self, archiver }
-    }
-}
-
-// endregion
 
 // region Archiver
 
@@ -77,17 +19,15 @@ pub struct Archiver {
     writer: Option<Compressor>,
     folder: PathBuf,
     file_pattern: String,
-    pattern_size: usize,
     sequence: u64,
 }
 
 impl Archiver {
-    fn write_on(dir: &PathBuf, pattern: String, size: usize) -> Self {
+    pub fn write_on(output_dir: &PathBuf, output_pattern: &str) -> Self {
         Archiver {
             writer: None,
-            folder: dir.to_owned(),
-            file_pattern: pattern,
-            pattern_size: size,
+            folder: output_dir.to_owned(),
+            file_pattern: output_pattern.to_string(),
             sequence: 0,
         }
     }
@@ -96,9 +36,7 @@ impl Archiver {
         self.close_archive()?;
 
         self.sequence += 1;
-        let seq = format!("{}", self.sequence)
-            .as_str()
-            .pad_0(self.pattern_size);
+        let seq = format!("{:06}", self.sequence);
         let file_name = self.file_pattern.replace("{}", &seq);
         let zip_path = Path::new(&self.folder);
         let zip_name = Path::new(&file_name);
@@ -135,6 +73,13 @@ impl Archiver {
         }
         self.writer = None;
         Ok(())
+    }
+
+    pub fn write_documents(&mut self, docs: &Documents) -> ZipResult<()> {
+        let step = &docs.step;
+        let filename = step.get_docs_filename();
+        let json = &docs.docs;
+        self.write_file(&filename, &json)
     }
 }
 

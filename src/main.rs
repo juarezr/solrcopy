@@ -5,6 +5,7 @@ extern crate lazy_static;
 
 extern crate chrono;
 extern crate clap;
+extern crate crossbeam;
 extern crate env_logger;
 extern crate glob;
 extern crate log;

@@ -104,27 +104,26 @@ impl Iterator for Steps {
 // region Solr requests
 
 impl Backup {
-    pub fn get_archive_pattern(&self, num_found: u64) -> (String, usize) {
-        let core_name = match &self.name {
-            Some(text) => text,
-            None => &self.from,
+    pub fn get_archive_pattern(&self, num_found: u64) -> String {
+        let prefix = match &self.name {
+            Some(text) => text.to_string(),
+            None => {
+                let now: DateTime<Utc> = Utc::now();
+                let time = now.format("%Y-%m-%d_%H-%M-%S");
+                format!("{}_at_{}", &self.from, &time)
+            }
         };
-        let now: DateTime<Utc> = Utc::now();
-        let time = now.format("%Y-%m-%d_%H-%M-%S");
-        let limit = format!("{}", num_found);
-        let size = limit.len();
-        let pattern = format!("{}_{}_{}_{}.zip", core_name, time, BRACKETS, limit);
-        (pattern, size)
+        format!("{}_docs_{}_seq_{}.zip", prefix, num_found, BRACKETS)
     }
 
     pub fn get_steps(&self, core_info: &SolrCore) -> Steps {
         let core_fields: &[String] = &core_info.fields;
         let fl = self.get_query_fields(core_fields);
         let query = self.get_query_url(&fl);
-        let docs = core_info.num_found.min(self.limit.unwrap_or(std::u64::MAX));
+        let num_docs = core_info.num_found.min(self.limit.unwrap_or(std::u64::MAX));
         Steps {
             curr: 0,
-            limit: docs,
+            limit: num_docs,
             batch: self.batch,
             url: query,
         }
