@@ -20,12 +20,13 @@ extracting, storing and updating the correct data in correct cores.
    1. The documents are updated in the target core in the same format that they were extracted.
    2. The documents are inserted/updated based on their `uniqueKey` field defined in core.
    3. If you want to change the documents/columns use the swithes in `solrcopy backup` for extracting more than one slice of documents to be updated.
+3. For reducing time, you can use the switches `--readers`  and `--writers` for executing operations in parallel.
 
 ## Invocation
 
 ``` bash
 $ solrcopy --help
-solrcopy 0.2.1
+solrcopy 0.3.0
 
 USAGE:
     solrcopy <SUBCOMMAND>
@@ -43,11 +44,11 @@ SUBCOMMANDS:
 
 ``` bash
 $ solrcopy help backup
-solrcopy-backup 0.2.1
+solrcopy-backup 0.3.0
 Dumps documents from a Apache Solr core into local backup files
 
 USAGE:
-    solrcopy backup [FLAGS] [OPTIONS] --from <from> --into <into> --url <url>
+    solrcopy backup [FLAGS] [OPTIONS] --from <core> --into </path/to/output> --url <localhost:8983/solr>
 
 FLAGS:
     -h, --help       Prints help information
@@ -55,26 +56,29 @@ FLAGS:
         --verbose    Show details of the execution
 
 OPTIONS:
-    -b, --batch <batch>         Number of documents for reading from solr in each step [default: 4096]
-    -w, --query <filter>        Solr Query filter for filtering returned documents
-    -f, --from <from>           Case sensitive name of the Solr core for extracting documents
-    -i, --into <into>           Existing folder for writing the dump files [env: SOLROUT_DIR=]
-    -l, --limit <limit>         Maximum number of documents for retrieving from the core
-    -n, --name <name>           Name for writing backup zip files
-    -o, --order <order>...      Solr core fields names for sorting documents for retrieval (like: field1:desc)
-    -s, --select <select>...    Solr core fields names for restricting columns for retrieval
-    -u, --url <url>             Url pointing to the Solr base address like: http://solr-server:8983/solr [env:SOLR_URL=]
+    -b, --batch <quantity>                     Number of documents retrieved from solr in each reader step [default: 4k]
+    -f, --from <core>                          Case sensitive name of the Solr core for extracting documents
+    -i, --into </path/to/output>               Existing folder for writing the zip backup files containing the extracted
+                                               documents [env: SOLR_COPY_DIR=]
+    -l, --limit <quantity>                     Maximum number of documents for retrieving from the core (like 100M)
+    -o, --order <field1:asc field2:desc>...    Solr core fields names for sorting documents for retrieval
+    -p, --prefix <name>                        Optional prefix for naming the zip backup files when storing documents
+    -q, --query <f1:val1 AND f2:val2>          Solr Query for filtering which documents are retrieved
+    -r, --readers <count>                      Number parallel threads reading documents from solr core [default: 1]
+    -s, --select <field1 field2>...            Names of core fields retrieved in each document [default: all but _*]
+    -u, --url <localhost:8983/solr>            Url pointing to the Solr cluster [env: SOLR_COPY_URL=]
+    -w, --writers <count>                      Number parallel threads writing documents into zip archives [default: 1]
 
 $ solrcopy backup --url http://localhost:8983/solr --from demo --query 'price:[1 TO 400] AND NOT popularity:10' --order price:desc weight:asc --limit 10000 --select id date name price weight popularity manu cat store features --into ./tmp
 ```
 
 ``` bash
 $ solrcopy help restore
-solrcopy-restore 0.2.1
+solrcopy-restore 0.3.0
 Restore documents from local backup files into a Apache Solr core
 
 USAGE:
-    solrcopy restore [FLAGS] [OPTIONS] --from <from> --into <into> --url <url>
+    solrcopy restore [FLAGS] [OPTIONS] --from </path/to/zips> --into <core> --url <localhost:8983/solr>
 
 FLAGS:
     -h, --help       Prints help information
@@ -82,11 +86,15 @@ FLAGS:
         --verbose    Show details of the execution
 
 OPTIONS:
-    -c, --commit <commit>      How to perform commits of the index while updating the core [default: none]
-    -f, --from <from>          Existing folder for searching and reading the zip backup files [env: SOLROUT_DIR=]
-    -i, --into <into>          Case sensitive name of the Solr core to upload documents
-    -p, --pattern <pattern>    Pattern for matching backup zip files in `from` folder for restoring
-    -u, --url <url>            Url pointing to the Solr base address like: http://solr-server:8983/solr [env: SOLR_URL=]
+    -c, --commit <mode>                Mode to perform commits of the index while updating documents in the core
+                                       [default: none]  [possible values: none, soft, hard]
+    -f, --from </path/to/zips>         Existing folder for reading the zip backup files containing documents [env:
+                                       SOLR_COPY_DIR=]
+    -i, --into <core>                  Case sensitive name of the Solr core to upload documents
+    -p, --pattern <core*.zip>          Search pattern for matching names of the zip backup files
+    -r, --readers <count>              Number parallel threads reading documents from source folder [default: 1]
+    -u, --url <localhost:8983/solr>    Url pointing to the Solr cluster [env: SOLR_COPY_URL=]
+    -w, --writers <count>              Number parallel threads indexing documents in the solr core [default: 1]
 
 $ solrcopy restore --url http://localhost:8983/solr  --from ./tmp --into target
 ```
@@ -96,7 +104,7 @@ $ solrcopy restore --url http://localhost:8983/solr  --from ./tmp --into target
 ![Build Test Lints](https://github.com/juarezr/solrcopy/workflows/build-test-and-lint.yml/badge.svg)
 
 - solrcopy backup/restore
-  - Kind of working
+  - Works for me... :)
   - Needs finishing some `TODO`
   - Lightly tested
 - Packaging:
