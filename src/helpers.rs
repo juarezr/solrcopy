@@ -241,7 +241,7 @@ pub trait CapturesHelpers {
     fn get_as_str_or<'a>(&'a self, i: usize, replacement: &'a str) -> &'a str;
 }
 
-impl<'t> CapturesHelpers for Captures<'t> {
+impl CapturesHelpers for Captures<'_> {
     fn get_as_str(&self, i: usize) -> &str {
         self.get(i).map_or(EMPTY_STR, |m| m.as_str())
     }

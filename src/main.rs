@@ -1,18 +1,27 @@
 #![deny(warnings)]
+#![deny(anonymous_parameters)]
+#![deny(bare_trait_objects)]
+#![deny(elided_lifetimes_in_paths)]
+#![deny(single_use_lifetimes)]
+#![deny(trivial_casts)]
+#![deny(trivial_numeric_casts)]
+#![deny(unused_extern_crates)]
+#![deny(unused_import_braces)]
+#![deny(unused_qualifications)]
+
+// TODO: Cleanup
+//
+// #![deny(box_pointers)]
+// #![deny(unused_results)]
+
+// switches for develoment only
+//
+// #![allow(unused_variables)]
+// #![allow(unused_imports)]
+// #![allow(dead_code)]
 
 #[macro_use]
 extern crate lazy_static;
-
-extern crate chrono;
-extern crate clap;
-extern crate crossbeam;
-extern crate env_logger;
-extern crate glob;
-extern crate log;
-extern crate regex;
-extern crate reqwest;
-extern crate url;
-extern crate zip;
 
 mod args;
 mod backup;

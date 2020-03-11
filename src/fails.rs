@@ -20,7 +20,7 @@ impl Failed {
         }
     }
 
-    fn say(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn say(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.details)
     }
 }
@@ -34,13 +34,13 @@ pub fn raise<T>(message: &str) -> Result<T, BoxedError> {
 }
 
 impl fmt::Display for Failed {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.say(f)
     }
 }
 
 impl fmt::Debug for Failed {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.say(f)
     }
 }

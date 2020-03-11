@@ -19,7 +19,7 @@ pub enum SortDirection {
 }
 
 impl fmt::Debug for SortDirection {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "{}",
@@ -37,13 +37,13 @@ pub struct SortField {
 }
 
 impl fmt::Display for SortField {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}%20{:?}", self.field, self.direction)
     }
 }
 
 impl fmt::Debug for SortField {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}:{:?}", self.field, self.direction)
     }
 }
