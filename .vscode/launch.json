@@ -27,7 +27,7 @@
                 "--limit", "21", 
                 "--into", "./tmp",
                 "--batch", "2", 
-                "--readers", "2", 
+                "--readers", "1", 
                 "--writers", "1", 
                 "--verbose", 
             ],
