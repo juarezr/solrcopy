@@ -122,12 +122,26 @@ pub struct Backup {
     pub batch: usize,
 
     /// Number parallel threads reading documents from solr core
-    #[structopt(short, long, default_value = "1", min_values = 1, max_values = 128, value_name = "count")]
-    pub readers: u64,
+    #[structopt(
+        short,
+        long,
+        default_value = "1",
+        min_values = 1,
+        max_values = 128,
+        value_name = "count"
+    )]
+    pub readers: usize,
 
     /// Number parallel threads writing documents into zip archives
-    #[structopt(short, long, default_value = "1", min_values = 1, max_values = 128, value_name = "count")]
-    pub writers: u64,
+    #[structopt(
+        short,
+        long,
+        default_value = "1",
+        min_values = 1,
+        max_values = 128,
+        value_name = "count"
+    )]
+    pub writers: usize,
 }
 
 #[derive(StructOpt, PartialEq, Debug)]

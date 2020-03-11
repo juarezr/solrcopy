@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
-use log::error;
 
-use crate::args::*;
+use crate::args::Backup;
+use crate::fails::BoxedError;
 use crate::helpers::*;
 
 // region Struct
@@ -13,6 +13,7 @@ pub struct Step {
 }
 
 #[derive(Debug)]
+pub struct Requests {
     pub curr: usize,
     pub limit: usize,
     pub batch: usize,
@@ -40,23 +41,24 @@ impl Step {
         format!("docs_at_{:09}.json", self.curr)
     }
 
-    pub(crate) fn retrieve_docs(step: Step) -> Option<Documents> {
+    pub(crate) fn retrieve_docs(self) -> Result<Documents, BoxedError> {
         // TODO: retry on network errors and timeouts
         // TODO: print a warning about unbalanced shard in solr could configurations
 
-        let query_url = &step.url;
+        let query_url = &self.url;
 
         let result = SolrCore::get_docs_from(&query_url);
         match result {
-            Ok(docs) => Some(Documents { step, docs }),
-            Err(cause) => {
-                error!("{}", cause);
-                None
-            }
+            Ok(response) => Ok(Documents {
+                step: self,
+                docs: response,
+            }),
+            Err(cause) => Err(cause),
         }
     }
 }
 
+impl Requests {
     pub fn len(&self) -> usize {
         let res = self.limit / self.batch;
         if self.limit % self.batch == 0 {
@@ -67,7 +69,7 @@ impl Step {
     }
 }
 
-impl Iterator for Steps {
+impl Iterator for Requests {
     type Item = Step;
 
     fn next(&mut self) -> Option<Step> {
@@ -114,13 +116,14 @@ impl Backup {
         format!("{}_docs_{}_seq_{}.zip", prefix, num_found, BRACKETS)
     }
 
-    pub fn get_steps(&self, core_info: &SolrCore) -> Steps {
+    pub fn get_steps(&self, core_info: &SolrCore) -> Requests {
         let core_fields: &[String] = &core_info.fields;
         let fl = self.get_query_fields(core_fields);
         let query = self.get_query_url(&fl);
         let num_docs = core_info
             .num_found
             .min(self.limit.unwrap_or(std::usize::MAX));
+        Requests {
             curr: 0,
             limit: num_docs,
             batch: self.batch,

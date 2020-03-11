@@ -2,16 +2,15 @@ use log::{debug, error};
 use std::path::PathBuf;
 
 use crossbeam::channel::{Receiver, Sender};
-use crossbeam::crossbeam_channel::unbounded;
+use crossbeam::crossbeam_channel::{bounded, unbounded};
 use crossbeam::thread::scope;
 
 use crate::args::Backup;
 use crate::fails::BoxedFailure;
 use crate::save::Archiver;
-use crate::steps::{Documents, Step, Steps};
+use crate::steps::{Documents, Requests, Step};
 
 // use crate::bars::get_wide_bar_for;
-// use crate::save::DocumentIterator;
 
 pub(crate) fn backup_main(parsed: Backup) -> BoxedFailure {
     debug!("  {:?}", parsed);
@@ -21,15 +20,21 @@ pub(crate) fn backup_main(parsed: Backup) -> BoxedFailure {
 
     let output_dir = parsed.into.clone();
     let output_pat = parsed.get_archive_pattern(core_info.num_found);
+    let channel_size = parsed.readers * 2;
 
     scope(|pool| {
-        let steps = parsed.get_steps(&core_info);
+        let requests = parsed.get_steps(&core_info);
 
+        let (generator, iterator) = bounded::<Step>(channel_size);
         let (sender, receiver) = unbounded::<Documents>();
+
+        pool.spawn(|_| {
+            start_querying_core(requests, generator);
+        });
 
         let producer = sender.clone();
         pool.spawn(|_| {
-            start_retrieving_docs(steps, producer);
+            start_retrieving_docs(iterator, producer);
         });
 
         let consumer = receiver.clone();
@@ -61,11 +66,32 @@ pub(crate) fn backup_main(parsed: Backup) -> BoxedFailure {
     Ok(())
 }
 
-fn start_retrieving_docs(steps: Steps, producer: Sender<Documents>) {
+fn start_querying_core(requests: Requests, generator: Sender<Step>) {
+    debug!("  Generating ");
+    for step in requests {
+        generator.send(step).unwrap();
+    }
+    drop(generator);
+    debug!("  Finished Generating ");
+}
+
+fn start_retrieving_docs(iterator: Receiver<Step>, producer: Sender<Documents>) {
     debug!("  Producing ");
-    let responses = steps.flat_map(Step::retrieve_docs);
-    for docs in responses {
-        producer.send(docs).unwrap();
+    loop {
+        let received = iterator.recv();
+        if let Ok(step) = received {
+            let retrieved = step.retrieve_docs();
+            match retrieved {
+                Ok(docs) => producer.send(docs).unwrap(),
+                Err(cause) => {
+                    // error!("Error writing file {} into archive: {}", docs.step.get_docs_filename(), cause);
+                    error!("Error writing file into archive: {}", cause);
+                    break;
+                }
+            }
+        } else {
+            break;
+        }
     }
     drop(producer);
     debug!("  Finished Producing ");
