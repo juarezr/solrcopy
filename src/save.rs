@@ -19,7 +19,7 @@ pub struct Archiver {
     writer: Option<Compressor>,
     folder: PathBuf,
     file_pattern: String,
-    sequence: u64,
+    sequence: usize,
 }
 
 impl Archiver {

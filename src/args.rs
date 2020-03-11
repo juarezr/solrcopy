@@ -104,7 +104,7 @@ pub struct Backup {
 
     /// Maximum number of documents for retrieving from the core (like 100M)
     #[structopt(short, long, parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
-    pub limit: Option<u64>,
+    pub limit: Option<usize>,
 
     /// Existing folder for writing the zip backup files containing the extracted documents
     #[structopt(short, long, parse(from_os_str), env = SOLR_COPY_DIR, value_name = "/path/to/output")]
@@ -119,7 +119,7 @@ pub struct Backup {
 
     /// Number of documents retrieved from solr in each reader step
     #[structopt(short, long, default_value = "4k", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
-    pub batch: u64,
+    pub batch: usize,
 
     /// Number parallel threads reading documents from solr core
     #[structopt(short, long, default_value = "1", min_values = 1, max_values = 128, value_name = "count")]
@@ -201,7 +201,7 @@ pub struct Options {
 
 // region Cli impl
 
-fn parse_quantity(src: &str) -> Result<u64, String> {
+fn parse_quantity(src: &str) -> Result<usize, String> {
     let norm = src
         .to_ascii_uppercase()
         .replace('K', "000")
@@ -209,7 +209,7 @@ fn parse_quantity(src: &str) -> Result<u64, String> {
         .replace('G', "000000000")
         .replace('T', "000000000000");
 
-    let qt = norm.parse::<u64>();
+    let qt = norm.parse::<usize>();
     qt.or_else(|_| {
         Err(format!(
             "Wrong value: '{}'. Use numbers only, or suffix: K M G",

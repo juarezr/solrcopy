@@ -60,16 +60,16 @@ impl SolrCore {
         Ok(res)
     }
 
-    fn parse_num_found(json: &str) -> Result<u64, BoxedError> {
+    fn parse_num_found(json: &str) -> Result<usize, BoxedError> {
         lazy_static! {
             static ref REGNF: Regex = Regex::new("\"numFound\":(\\d+),").unwrap();
         }
         match REGNF.get_group(json, 1) {
             None => throw(format!("Error parsing numFound from solr query: {}", json))?,
             Some(group1) => {
-                let res = group1.parse::<u64>();
+                let res = group1.parse::<usize>();
                 res.or_else(|_| {
-                    throw::<u64>(format!("Error parsing numFound from solr query: {}", json))
+                    throw::<usize>(format!("Error parsing numFound from solr query: {}", json))
                 })
             }
         }

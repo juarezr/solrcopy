@@ -8,15 +8,14 @@ use crate::helpers::*;
 
 #[derive(Debug)]
 pub struct Step {
-    pub curr: u64,
+    pub curr: usize,
     pub url: String,
 }
 
 #[derive(Debug)]
-pub struct Steps {
-    pub curr: u64,
-    pub limit: u64,
-    pub batch: u64,
+    pub curr: usize,
+    pub limit: usize,
+    pub batch: usize,
     pub url: String,
 }
 
@@ -28,7 +27,7 @@ pub struct Documents {
 
 #[derive(Debug)]
 pub struct SolrCore {
-    pub num_found: u64,
+    pub num_found: usize,
     pub fields: Vec<String>,
 }
 
@@ -58,8 +57,7 @@ impl Step {
     }
 }
 
-impl Steps {
-    pub fn len(&self) -> u64 {
+    pub fn len(&self) -> usize {
         let res = self.limit / self.batch;
         if self.limit % self.batch == 0 {
             res
@@ -104,7 +102,7 @@ impl Iterator for Steps {
 // region Solr requests
 
 impl Backup {
-    pub fn get_archive_pattern(&self, num_found: u64) -> String {
+    pub fn get_archive_pattern(&self, num_found: usize) -> String {
         let prefix = match &self.prefix {
             Some(text) => text.to_string(),
             None => {
@@ -120,8 +118,9 @@ impl Backup {
         let core_fields: &[String] = &core_info.fields;
         let fl = self.get_query_fields(core_fields);
         let query = self.get_query_url(&fl);
-        let num_docs = core_info.num_found.min(self.limit.unwrap_or(std::u64::MAX));
-        Steps {
+        let num_docs = core_info
+            .num_found
+            .min(self.limit.unwrap_or(std::usize::MAX));
             curr: 0,
             limit: num_docs,
             batch: self.batch,

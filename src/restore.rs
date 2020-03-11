@@ -23,7 +23,7 @@ pub(crate) fn restore_main(params: Restore) -> Result<(), BoxedError> {
 
 fn unzip_archives(params: Restore, found: Vec<PathBuf>) -> Result<(), BoxedError> {
     let doc_count = estimate_document_count(&found)?;
-    let progress = new_wide_bar(doc_count);
+    let progress = new_wide_bar(doc_count.to_u64());
 
     let archives = found
         .into_iter()
@@ -44,7 +44,7 @@ fn unzip_archives(params: Restore, found: Vec<PathBuf>) -> Result<(), BoxedError
     Ok(())
 }
 
-fn estimate_document_count(found: &[PathBuf]) -> Result<u64, BoxedError> {
+fn estimate_document_count(found: &[PathBuf]) -> Result<usize, BoxedError> {
     // Estimate number of json files inside all zip files
     let zip_count = found.len();
 
@@ -54,7 +54,7 @@ fn estimate_document_count(found: &[PathBuf]) -> Result<u64, BoxedError> {
         None => throw(format!("Error opening archive: {:?}", first))?,
         Some(doc_count) => {
             let doc_total = doc_count * zip_count;
-            Ok(doc_total.to_u64())
+            Ok(doc_total)
         }
     }
 }
