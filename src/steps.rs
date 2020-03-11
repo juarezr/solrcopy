@@ -38,7 +38,7 @@ pub struct SolrCore {
 
 impl Step {
     pub(crate) fn get_docs_filename(&self) -> String {
-        format!("docs_at_{:09}.json", self.curr)
+        format!("docs_at_{:09}.json", self.curr + 1)
     }
 
     pub(crate) fn retrieve_docs(self) -> Result<Documents, BoxedError> {
