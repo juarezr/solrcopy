@@ -25,14 +25,6 @@ impl Failed {
     }
 }
 
-pub fn throw<T>(message: String) -> Result<T, BoxedError> {
-    Err(Box::new(Failed::new(&message)))
-}
-
-pub fn raise<T>(message: &str) -> Result<T, BoxedError> {
-    Err(Box::new(Failed::new(&message)))
-}
-
 impl fmt::Display for Failed {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.say(f)
@@ -50,6 +42,18 @@ impl Error for Failed {
         &self.details
     }
 }
+
+// region utilities
+
+pub fn throw<T>(message: String) -> Result<T, BoxedError> {
+    Err(Box::new(Failed::new(&message)))
+}
+
+pub fn raise<T>(message: &str) -> Result<T, BoxedError> {
+    Err(Box::new(Failed::new(&message)))
+}
+
+// endregion
 
 #[cfg(test)]
 mod tests {

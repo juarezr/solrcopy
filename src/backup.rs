@@ -83,6 +83,7 @@ pub(crate) fn backup_main(params: Backup) -> BoxedFailure {
         for _ in reporter.iter() {
             perc_bar.inc(1);
         }
+        perc_bar.finish_and_clear();
         drop(reporter);
     })
     .unwrap();
@@ -95,6 +96,8 @@ pub(crate) fn backup_main(params: Backup) -> BoxedFailure {
     Ok(())
 }
 
+// region Channels
+
 fn start_querying_core(requests: Requests, generator: Sender<Step>) {
     debug!("  Generating ");
     for step in requests {
@@ -105,7 +108,7 @@ fn start_querying_core(requests: Requests, generator: Sender<Step>) {
 }
 
 fn start_retrieving_docs(reader: usize, iterator: Receiver<Step>, producer: Sender<Documents>) {
-    debug!("  Producing #{}", reader);
+    debug!("  Retrieving #{}", reader);
 
     loop {
         let received = iterator.recv();
@@ -124,7 +127,7 @@ fn start_retrieving_docs(reader: usize, iterator: Receiver<Step>, producer: Send
     }
     drop(producer);
 
-    debug!("  Finished Producing #{}", reader);
+    debug!("  Finished Retrieving #{}", reader);
 }
 
 fn start_storing_docs(
@@ -134,7 +137,7 @@ fn start_storing_docs(
     consumer: Receiver<Documents>,
     progress: Sender<u64>,
 ) {
-    debug!("  Consuming #{}", writer);
+    debug!("  Storing #{}", writer);
 
     let mut archiver = Archiver::write_on(&dir, &name);
     loop {
@@ -152,5 +155,9 @@ fn start_storing_docs(
     }
     drop(consumer);
 
-    debug!("  Finished Consuming #{}", writer);
+    debug!("  Finished Storing #{}", writer);
 }
+
+// endregion
+
+// end of file \\
