@@ -105,7 +105,7 @@ impl Iterator for Steps {
 
 impl Backup {
     pub fn get_archive_pattern(&self, num_found: u64) -> String {
-        let prefix = match &self.name {
+        let prefix = match &self.prefix {
             Some(text) => text.to_string(),
             None => {
                 let now: DateTime<Utc> = Utc::now();
@@ -149,8 +149,8 @@ impl Backup {
     }
 
     pub fn get_query_url(&self, selected: &str) -> String {
-        let query = self
-            .filter
+        let filter = self
+            .query
             .as_deref()
             .unwrap_or("*:*")
             .replace(" or ", " OR ")
@@ -169,7 +169,7 @@ impl Backup {
             self.options.url.with_suffix("/"),
             self.from.clone(),
             "/select?wt=json&indent=off&omitHeader=true".to_string(),
-            format!("&q={}", query),
+            format!("&q={}", filter),
             sort,
             selected.to_string(),
         ];

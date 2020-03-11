@@ -12,7 +12,7 @@ extracting, storing and updating the correct data in correct cores.
 ## Usage
 
 1. Use the command `solrcopy backup` for dumping documents from a Solr core into local zip files.
-   1. Use the switch `--where` for filtering the documents extracted by using a [Solr](https://lucene.apache.org/solr/guide/8_4/the-standard-query-parser.html) [Query](https://lucene.apache.org/solr/guide/8_4/the-standard-query-parser.html)
+   1. Use the switch `--query` for filtering the documents extracted by using a [Solr](https://lucene.apache.org/solr/guide/8_4/the-standard-query-parser.html) [Query](https://lucene.apache.org/solr/guide/8_4/the-standard-query-parser.html)
    2. Use the switch `--order` for specifing the sorting of documents extracted.
    3. Use the switch `--limit` for restricting the number of documents extracted.
    4. Use the switch `--select` for restricting the columns extracted.
@@ -56,7 +56,7 @@ FLAGS:
 
 OPTIONS:
     -b, --batch <batch>         Number of documents for reading from solr in each step [default: 4096]
-    -w, --where <filter>        Solr Query filter for filtering returned documents
+    -w, --query <filter>        Solr Query filter for filtering returned documents
     -f, --from <from>           Case sensitive name of the Solr core for extracting documents
     -i, --into <into>           Existing folder for writing the dump files [env: SOLROUT_DIR=]
     -l, --limit <limit>         Maximum number of documents for retrieving from the core
@@ -65,7 +65,7 @@ OPTIONS:
     -s, --select <select>...    Solr core fields names for restricting columns for retrieval
     -u, --url <url>             Url pointing to the Solr base address like: http://solr-server:8983/solr [env:SOLR_URL=]
 
-$ solrcopy backup --url http://localhost:8983/solr --from demo --where 'price:[1 TO 400] AND NOT popularity:10' --order price:desc weight:asc --limit 10000 --select id date name price weight popularity manu cat store features --into ./tmp
+$ solrcopy backup --url http://localhost:8983/solr --from demo --query 'price:[1 TO 400] AND NOT popularity:10' --order price:desc weight:asc --limit 10000 --select id date name price weight popularity manu cat store features --into ./tmp
 ```
 
 ``` bash
@@ -190,7 +190,7 @@ $ docker exec -it test-container solr create_core -c target
     3. point parameter `--into` in `Launch-backup` configuration to your cloned core name
 3. Change the others settings according to your existing core details:
    1. Set the following parameters for specifying a query to extract documents:
-      - `--where`
+      - `--query`
       - `--order`
       - `--select`
       - `--batch`

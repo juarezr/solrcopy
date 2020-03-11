@@ -81,42 +81,45 @@ impl FromStr for SortField {
 
 // region Cli structs
 
+const SOLR_COPY_DIR: &str = "SOLR_COPY_DIR";
+const SOLR_COPY_URL: &str = "SOLR_COPY_URL";
+
 #[derive(StructOpt, Debug)]
 pub struct Backup {
     /// Case sensitive name of the Solr core for extracting documents
-    #[structopt(short, long)]
+    #[structopt(short, long, value_name = "core")]
     pub from: String,
 
-    /// Solr Query filter for filtering returned documents  (like f1:val1 AND f2:val2)
-    #[structopt(short = "w", long = "where")]
-    pub filter: Option<String>,
+    /// Solr Query for filtering which documents are retrieved
+    #[structopt(short, long, value_name = "f1:val1 AND f2:val2")]
+    pub query: Option<String>,
 
-    /// Solr core fields names for restricting columns for retrieval
-    #[structopt(short, long)]
+    /// Names of core fields retrieved in each document [default: all but _*]
+    #[structopt(short, long, value_name = "field1 field2")]
     pub select: Vec<String>,
 
-    /// Solr core fields names for sorting documents for retrieval (like: field1:desc)
-    #[structopt(short, long)]
+    /// Solr core fields names for sorting documents for retrieval
+    #[structopt(short, long, value_name = "field1:asc field2:desc")]
     pub order: Vec<SortField>,
 
     /// Maximum number of documents for retrieving from the core (like 100M)
-    #[structopt(short, long, parse(try_from_str = parse_quantity))]
+    #[structopt(short, long, parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
     pub limit: Option<u64>,
 
-    /// Number of documents for reading from solr in each step (default: 4K)
-    #[structopt(short, long, default_value = "4096", parse(try_from_str = parse_quantity))]
-    pub batch: u64,
-
-    /// Existing folder for writing the dump files
-    #[structopt(short, long, parse(from_os_str), env = "SOLROUT_DIR")]
+    /// Existing folder for writing the zip backup files containing the extracted documents
+    #[structopt(short, long, parse(from_os_str), env = SOLR_COPY_DIR, value_name = "/path/to/output")]
     pub into: PathBuf,
 
-    /// Name for writing backup zip files  
-    #[structopt(short, long, parse(try_from_str = parse_file_prefix))]
-    pub name: Option<String>,
+    /// Optional prefix for naming the zip backup files when storing documents
+    #[structopt(short, long, parse(try_from_str = parse_file_prefix), value_name = "name")]
+    pub prefix: Option<String>,
 
     #[structopt(flatten)]
     pub options: Options,
+
+    /// Number of documents retrieved from solr in each reader step
+    #[structopt(short, long, default_value = "4k", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
+    pub batch: u64,
 }
 
 #[derive(StructOpt, PartialEq, Debug)]
@@ -130,22 +133,24 @@ pub enum CommitMode {
     Hard,
 }
 
+const COMMIT_VALUES: &[&str] = &["none", "soft", "hard"];
+
 #[derive(StructOpt, Debug)]
 pub struct Restore {
     /// Case sensitive name of the Solr core to upload documents
-    #[structopt(short, long)]
+    #[structopt(short, long, value_name = "core")]
     pub into: String,
 
-    /// How to perform commits of the index while updating the core
-    #[structopt(short, long, default_value = "none")]
+    /// Mode to perform commits of the index while updating documents in the core
+    #[structopt(short, long, default_value = "none", possible_values = COMMIT_VALUES, value_name = "mode")]
     pub commit: CommitMode,
 
-    /// Existing folder for searching and reading the zip backup files
-    #[structopt(short, long, parse(from_os_str), env = "SOLROUT_DIR")]
+    /// Existing folder for reading the zip backup files containing documents
+    #[structopt(short, long, parse(from_os_str), env = SOLR_COPY_DIR, value_name = "/path/to/zips")]
     pub from: PathBuf,
 
-    /// Pattern for matching backup zip files in `from` folder for restoring
-    #[structopt(short, long)]
+    /// Search pattern for matching names of the zip backup files
+    #[structopt(short, long, value_name = "core*.zip")]
     pub pattern: Option<String>,
 
     #[structopt(flatten)]
@@ -155,7 +160,7 @@ pub struct Restore {
 #[derive(StructOpt, Debug)]
 pub struct Commit {
     /// Case sensitive name of the Solr core to perform the commit
-    #[structopt(short, long)]
+    #[structopt(short, long, value_name = "core")]
     pub into: String,
 
     #[structopt(flatten)]
@@ -175,8 +180,8 @@ pub enum Arguments {
 #[derive(StructOpt, Debug)]
 /// Dumps and restores documents from a Apache Solr core into local backup files
 pub struct Options {
-    /// Url pointing to the Solr base address like: http://solr-server:8983/solr
-    #[structopt(short, long, env = "SOLR_URL", parse(try_from_str = parse_solr_url))]
+    /// Url pointing to the Solr cluster
+    #[structopt(short, long, env = SOLR_COPY_URL, parse(try_from_str = parse_solr_url), value_name = "localhost:8983/solr")]
     pub url: String,
 
     /// Show details of the execution
@@ -338,7 +343,7 @@ pub mod tests {
         "mileage",
         "--into",
         "./tmp",
-        "--where",
+        "--query",
         "ownerId:173826 AND periodCode:1",
         "--order",
         "date:asc",
@@ -346,7 +351,7 @@ pub mod tests {
         "vehiclePlate:asc",
         "--select",
         TEST_SELECT_FIELDS,
-        "--name",
+        "--prefix",
         "output_filename",
         "--limit",
         "42",
@@ -363,7 +368,7 @@ pub mod tests {
         "--from",
         "./tmp",
         "--into",
-        "mileage",
+        "target",
         "--pattern",
         "*.zip",
         "--commit",
@@ -391,7 +396,7 @@ pub mod tests {
                 assert_eq!(get.options.url, TEST_ARGS_BACKUP[3]);
                 assert_eq!(get.from, TEST_ARGS_BACKUP[5]);
                 assert_eq!(get.into.to_str().unwrap(), TEST_ARGS_BACKUP[7]);
-                assert_eq!(get.filter, Some(TEST_ARGS_BACKUP[9].to_string()));
+                assert_eq!(get.query, Some(TEST_ARGS_BACKUP[9].to_string()));
                 assert_eq!(get.limit, Some(42));
                 assert_eq!(get.batch, 5);
                 assert_eq!(get.options.verbose, true);
