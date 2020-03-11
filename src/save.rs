@@ -19,7 +19,6 @@ pub struct Archiver {
     writer: Option<Compressor>,
     folder: PathBuf,
     file_pattern: String,
-    sequence: usize,
 }
 
 impl Archiver {
@@ -28,16 +27,13 @@ impl Archiver {
             writer: None,
             folder: output_dir.to_owned(),
             file_pattern: output_pattern.to_string(),
-            sequence: 0,
         }
     }
 
-    pub fn create_archive(&mut self) -> ZipResult<()> {
+    fn create_archive(&mut self, suffix: &str) -> ZipResult<()> {
         self.close_archive()?;
 
-        self.sequence += 1;
-        let seq = format!("{:06}", self.sequence);
-        let file_name = self.file_pattern.replace("{}", &seq);
+        let file_name = self.file_pattern.replace("{}", suffix);
         let zip_path = Path::new(&self.folder);
         let zip_name = Path::new(&file_name);
         let zip_file = zip_path.join(&zip_name);
@@ -49,10 +45,7 @@ impl Archiver {
         Ok(())
     }
 
-    pub fn write_file(&mut self, filename: &str, docs: &str) -> ZipResult<()> {
-        if self.writer.is_none() {
-            self.create_archive()?;
-        }
+    fn write_file(&mut self, filename: &str, docs: &str) -> ZipResult<()> {
         let bytes = docs.as_bytes();
 
         let zip = self.writer.as_mut().unwrap();
@@ -76,9 +69,15 @@ impl Archiver {
     }
 
     pub fn write_documents(&mut self, docs: &Documents) -> ZipResult<()> {
-        let step = &docs.step;
-        let filename = step.get_docs_filename();
         let json = &docs.docs;
+        let step = &docs.step;
+
+        let filename = step.get_docs_filename();
+
+        if self.writer.is_none() {
+            let suffix = format!("{}", step.curr + 1);
+            self.create_archive(&suffix)?;
+        }
         self.write_file(&filename, &json)
     }
 }
