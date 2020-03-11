@@ -120,6 +120,14 @@ pub struct Backup {
     /// Number of documents retrieved from solr in each reader step
     #[structopt(short, long, default_value = "4k", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
     pub batch: u64,
+
+    /// Number parallel threads reading documents from solr core
+    #[structopt(short, long, default_value = "1", min_values = 1, max_values = 128, value_name = "count")]
+    pub readers: u64,
+
+    /// Number parallel threads writing documents into zip archives
+    #[structopt(short, long, default_value = "1", min_values = 1, max_values = 128, value_name = "count")]
+    pub writers: u64,
 }
 
 #[derive(StructOpt, PartialEq, Debug)]
@@ -357,6 +365,10 @@ pub mod tests {
         "42",
         "--batch",
         "5",
+        "--readers",
+        "7",
+        "--writers",
+        "9",
         "--verbose",
     ];
 
@@ -399,6 +411,8 @@ pub mod tests {
                 assert_eq!(get.query, Some(TEST_ARGS_BACKUP[9].to_string()));
                 assert_eq!(get.limit, Some(42));
                 assert_eq!(get.batch, 5);
+                assert_eq!(get.readers, 7);
+                assert_eq!(get.writers, 9);
                 assert_eq!(get.options.verbose, true);
             }
             _ => panic!("command must be 'backup' !"),
