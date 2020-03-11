@@ -7,7 +7,7 @@ pub type BoxedError = Box<dyn Error>;
 
 pub type BoxedResult<T> = Result<T, BoxedError>;
 
-pub type ErrorResult = Result<(), BoxedError>;
+pub type BoxedFailure = Result<(), BoxedError>;
 
 pub struct Failed {
     details: String,
