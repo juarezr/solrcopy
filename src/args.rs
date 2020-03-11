@@ -177,6 +177,28 @@ pub struct Restore {
 
     #[structopt(flatten)]
     pub options: Options,
+
+    /// Number parallel threads reading documents from source folder
+    #[structopt(
+        short,
+        long,
+        default_value = "1",
+        min_values = 1,
+        max_values = 128,
+        value_name = "count"
+    )]
+    pub readers: usize,
+
+    /// Number parallel threads indexing documents in the solr core
+    #[structopt(
+        short,
+        long,
+        default_value = "1",
+        min_values = 1,
+        max_values = 128,
+        value_name = "count"
+    )]
+    pub writers: usize,
 }
 
 #[derive(StructOpt, Debug)]

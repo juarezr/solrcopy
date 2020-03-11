@@ -1,4 +1,4 @@
-use log::{error, trace};
+use log::error;
 use zip::ZipArchive;
 
 use glob::{glob, PatternError};
@@ -8,6 +8,7 @@ use std::path::PathBuf;
 
 use crate::args::Restore;
 use crate::connection::http_post_as_json;
+use crate::fails::*;
 use crate::helpers::*;
 
 type Decompressor = ZipArchive<File>;
@@ -55,46 +56,28 @@ pub(crate) struct ArchiveReader {
 }
 
 impl ArchiveReader {
-    pub(crate) fn open_archive(archive_path: &PathBuf) -> Option<Decompressor> {
-        let can_open = File::open(archive_path);
-        match can_open {
-            Err(cause1) => {
-                error!("error opening file: {:?} -> {}", archive_path, cause1);
-                None
-            }
-            Ok(zipfile) => {
-                let zip_is_ok = ZipArchive::new(zipfile);
-                match zip_is_ok {
-                    Err(cause2) => {
-                        error!("error loading archive: {:?} -> {}", archive_path, cause2);
-                        None
-                    }
-                    Ok(reader) => Some(reader),
-                }
-            }
-        }
+    pub(crate) fn open_archive(archive_path: &PathBuf) -> BoxedResult<Decompressor> {
+        let zipfile = File::open(archive_path)?;
+        let res = ZipArchive::new(zipfile)?;
+        Ok(res)
     }
 
-    pub(crate) fn create_reader(archive_path: PathBuf) -> Option<ArchiveReader> {
-        let success = Self::open_archive(&archive_path);
+    pub(crate) fn create_reader(archive_path: &PathBuf) -> BoxedResult<ArchiveReader> {
+        let success = Self::open_archive(archive_path);
         match success {
-            None => None,
-            Some(zip) => Some(ArchiveReader {
+            Err(cause) => Err(cause),
+            Ok(zip) => Ok(ArchiveReader {
                 archive: zip,
                 entry_index: 0,
             }),
         }
     }
 
-    pub(crate) fn trace_archive(archive_path: &PathBuf) {
-        trace!("loading archive: {:?}", archive_path)
-    }
-
     pub(crate) fn get_archive_file_count(archive_path: &PathBuf) -> Option<usize> {
         let success = Self::open_archive(archive_path);
         match success {
-            None => None,
-            Some(archive) => {
+            Err(_) => None,
+            Ok(archive) => {
                 let file_count = archive.len();
                 Some(file_count)
             }
@@ -126,21 +109,11 @@ impl Iterator for ArchiveReader {
     }
 }
 
-pub(crate) fn trace_document(reader: &ArchiveReader) {
-    trace!("reading document: {:?}", reader.entry_index)
-}
-
-pub(crate) fn post_content(update_hadler_url: &str, content: String) -> Option<()> {
+pub(crate) fn post_content(update_hadler_url: &str, content: String) -> BoxedResult<String> {
     // TODO: handle network error, timeout on posting
 
-    let response = http_post_as_json(&update_hadler_url, content);
-    match response {
-        Err(cause) => {
-            error!("error updating solr at: {} -> {}", update_hadler_url, cause);
-            None
-        }
-        Ok(_) => Some(()),
-    }
+    let response = http_post_as_json(&update_hadler_url, content)?;
+    Ok(response)
 }
 
 // end of the file \\
