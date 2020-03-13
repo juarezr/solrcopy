@@ -40,12 +40,13 @@ fn unzip_archives(params: Restore, found: Vec<PathBuf>) -> Result<(), BoxedError
     let doc_count = estimate_document_count(&found)?;
 
     thread::scope(|pool| {
-        let readers_channel = params.readers * 2;
-        let writers_channel = params.writers * 2;
+        let transfer = &params.transfer;
+        let readers_channel = transfer.readers * 2;
+        let writers_channel = transfer.writers * 2;
 
         let (generator, sequence) = bounded::<&PathBuf>(readers_channel);
         let (sender, receiver) = bounded::<String>(writers_channel);
-        let (progress, reporter) = bounded::<u64>(params.writers);
+        let (progress, reporter) = bounded::<u64>(transfer.writers);
 
         let archives = found.iter();
         pool.spawn(|_| {
@@ -55,7 +56,7 @@ fn unzip_archives(params: Restore, found: Vec<PathBuf>) -> Result<(), BoxedError
             drop(generator);
         });
 
-        for ir in 0..params.readers {
+        for ir in 0..transfer.readers {
             let producer = sender.clone();
             let iterator = sequence.clone();
 
@@ -73,7 +74,7 @@ fn unzip_archives(params: Restore, found: Vec<PathBuf>) -> Result<(), BoxedError
 
         let update_hadler_url = params.get_update_url();
 
-        for iw in 0..params.writers {
+        for iw in 0..transfer.writers {
             let consumer = receiver.clone();
             let updater = progress.clone();
 
@@ -121,15 +122,13 @@ fn estimate_document_count(found: &[PathBuf]) -> Result<u64, BoxedError> {
 // region Channels
 
 fn start_reading_archive(reader: usize, iterator: Receiver<&PathBuf>, producer: Sender<String>) {
-    debug!("  Reading #{}", reader);
-
     loop {
         let received = iterator.recv();
         if let Ok(archive_path) = received {
             let can_open = ArchiveReader::create_reader(&archive_path);
             match can_open {
                 Err(cause) => {
-                    error!("Error reading documents in archive: {}", cause);
+                    error!("Error in thread #{} reading documents in archive: {}", reader, cause);
                     break;
                 }
                 Ok(archive_reader) => {
@@ -143,8 +142,6 @@ fn start_reading_archive(reader: usize, iterator: Receiver<&PathBuf>, producer: 
         }
     }
     drop(producer);
-
-    debug!("  Finished Reading #{}", reader);
 }
 
 fn start_indexing_docs(
@@ -153,14 +150,12 @@ fn start_indexing_docs(
     consumer: Receiver<String>,
     progress: Sender<u64>,
 ) {
-    debug!("  Storing #{}", writer);
-
     loop {
         let received = consumer.recv();
         if let Ok(docs) = received {
             let failed = post_content(url, docs);
             if let Err(cause) = failed {
-                error!("Error writing file into archive: {}", cause);
+                error!("Error in thread #{} writing file into archive: {}", writer, cause);
                 break;
             }
             progress.send(0).unwrap();
@@ -169,8 +164,6 @@ fn start_indexing_docs(
         }
     }
     drop(consumer);
-
-    debug!("  Finished Storing #{}", writer);
 }
 
 // endregion

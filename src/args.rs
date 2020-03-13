@@ -115,33 +115,14 @@ pub struct Backup {
     pub prefix: Option<String>,
 
     #[structopt(flatten)]
-    pub options: Options,
+    pub options: CommonArgs,
+
+    #[structopt(flatten)]
+    pub transfer: ParallelArgs,
 
     /// Number of documents retrieved from solr in each reader step
     #[structopt(short, long, default_value = "4k", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
     pub batch: usize,
-
-    /// Number parallel threads reading documents from solr core
-    #[structopt(
-        short,
-        long,
-        default_value = "1",
-        min_values = 1,
-        max_values = 128,
-        value_name = "count"
-    )]
-    pub readers: usize,
-
-    /// Number parallel threads writing documents into zip archives
-    #[structopt(
-        short,
-        long,
-        default_value = "1",
-        min_values = 1,
-        max_values = 128,
-        value_name = "count"
-    )]
-    pub writers: usize,
 }
 
 #[derive(StructOpt, PartialEq, Debug)]
@@ -176,29 +157,10 @@ pub struct Restore {
     pub pattern: Option<String>,
 
     #[structopt(flatten)]
-    pub options: Options,
+    pub options: CommonArgs,
 
-    /// Number parallel threads reading documents from source folder
-    #[structopt(
-        short,
-        long,
-        default_value = "1",
-        min_values = 1,
-        max_values = 128,
-        value_name = "count"
-    )]
-    pub readers: usize,
-
-    /// Number parallel threads indexing documents in the solr core
-    #[structopt(
-        short,
-        long,
-        default_value = "1",
-        min_values = 1,
-        max_values = 128,
-        value_name = "count"
-    )]
-    pub writers: usize,
+    #[structopt(flatten)]
+    pub transfer: ParallelArgs,
 }
 
 #[derive(StructOpt, Debug)]
@@ -208,7 +170,7 @@ pub struct Commit {
     pub into: String,
 
     #[structopt(flatten)]
-    pub options: Options,
+    pub options: CommonArgs,
 }
 
 #[derive(StructOpt, Debug)]
@@ -222,8 +184,7 @@ pub enum Arguments {
 }
 
 #[derive(StructOpt, Debug)]
-/// Dumps and restores documents from a Apache Solr core into local backup files
-pub struct Options {
+pub struct CommonArgs {
     /// Url pointing to the Solr cluster
     #[structopt(short, long, env = SOLR_COPY_URL, parse(try_from_str = parse_solr_url), value_name = "localhost:8983/solr")]
     pub url: String,
@@ -231,6 +192,32 @@ pub struct Options {
     /// Show details of the execution
     #[structopt(long)]
     pub verbose: bool,
+}
+
+#[derive(StructOpt, Debug)]
+/// Dumps and restores documents from a Apache Solr core into local backup files
+pub struct ParallelArgs {
+    /// Number parallel threads reading documents from solr core
+    #[structopt(
+        short,
+        long,
+        default_value = "1",
+        min_values = 1,
+        max_values = 128,
+        value_name = "count"
+    )]
+    pub readers: usize,
+
+    /// Number parallel threads writing documents into zip archives
+    #[structopt(
+        short,
+        long,
+        default_value = "1",
+        min_values = 1,
+        max_values = 128,
+        value_name = "count"
+    )]
+    pub writers: usize,
 }
 
 // endregion

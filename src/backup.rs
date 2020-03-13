@@ -30,19 +30,20 @@ pub(crate) fn backup_main(params: Backup) -> BoxedFailure {
 
     thread::scope(|pool| {
         let requests = params.get_steps(&core_info);
+        let transfer = &params.transfer;
 
-        let readers_channel = params.readers * 4;
-        let writers_channel = params.writers * 3;
+        let readers_channel = transfer.readers * 4;
+        let writers_channel = transfer.writers * 3;
 
         let (generator, sequence) = bounded::<Step>(readers_channel);
         let (sender, receiver) = bounded::<Documents>(writers_channel);
-        let (progress, reporter) = bounded::<u64>(params.writers);
+        let (progress, reporter) = bounded::<u64>(transfer.writers);
 
         pool.spawn(|_| {
             start_querying_core(requests, generator);
         });
 
-        for ir in 0..params.readers {
+        for ir in 0..transfer.readers {
             let producer = sender.clone();
             let iterator = sequence.clone();
             let reader = ir;
@@ -60,7 +61,7 @@ pub(crate) fn backup_main(params: Backup) -> BoxedFailure {
 
         let output_pat = params.get_archive_pattern(core_info.num_found);
 
-        for iw in 0..params.writers {
+        for iw in 0..transfer.writers {
             let consumer = receiver.clone();
             let updater = progress.clone();
 
@@ -99,17 +100,13 @@ pub(crate) fn backup_main(params: Backup) -> BoxedFailure {
 // region Channels
 
 fn start_querying_core(requests: Requests, generator: Sender<Step>) {
-    debug!("  Generating ");
     for step in requests {
         generator.send(step).unwrap();
     }
     drop(generator);
-    debug!("  Finished Generating ");
 }
 
 fn start_retrieving_docs(reader: usize, iterator: Receiver<Step>, producer: Sender<Documents>) {
-    debug!("  Retrieving #{}", reader);
-
     loop {
         let received = iterator.recv();
         if let Ok(step) = received {
@@ -117,7 +114,10 @@ fn start_retrieving_docs(reader: usize, iterator: Receiver<Step>, producer: Send
             match retrieved {
                 Ok(docs) => producer.send(docs).unwrap(),
                 Err(cause) => {
-                    error!("Error retrieving documents from solr: {}", cause);
+                    error!(
+                        "Error in thread #{} retrieving documents from solr: {}",
+                        reader, cause
+                    );
                     break;
                 }
             }
@@ -126,8 +126,6 @@ fn start_retrieving_docs(reader: usize, iterator: Receiver<Step>, producer: Send
         }
     }
     drop(producer);
-
-    debug!("  Finished Retrieving #{}", reader);
 }
 
 fn start_storing_docs(
@@ -137,15 +135,16 @@ fn start_storing_docs(
     consumer: Receiver<Documents>,
     progress: Sender<u64>,
 ) {
-    debug!("  Storing #{}", writer);
-
     let mut archiver = Archiver::write_on(&dir, &name);
     loop {
         let received = consumer.recv();
         if let Ok(docs) = received {
             let failed = archiver.write_documents(&docs);
             if let Err(cause) = failed {
-                error!("Error writing file into archive: {}", cause);
+                error!(
+                    "Error in thread #{} writing file into archive: {}",
+                    writer, cause
+                );
                 break;
             }
             progress.send(0).unwrap();
@@ -154,8 +153,6 @@ fn start_storing_docs(
         }
     }
     drop(consumer);
-
-    debug!("  Finished Storing #{}", writer);
 }
 
 // endregion
