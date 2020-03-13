@@ -27,9 +27,4 @@ pub fn get_wide_bar_for<S, It: Iterator<Item = S>>(steps: It, len: u64) -> Progr
     steps.progress_with(new_wide_bar(len))
 }
 
-pub fn wait(secs: u64) {
-    let millis = secs * 1000;
-    std::thread::sleep(std::time::Duration::from_millis(millis));
-}
-
 // endregion

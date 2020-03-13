@@ -18,6 +18,15 @@ pub const ZERO: char = '0';
 
 // endregion
 
+// region Utility helpers
+
+pub fn wait(secs: u64) {
+    let millis = secs * 1000;
+    std::thread::sleep(std::time::Duration::from_millis(millis));
+}
+
+// endregion
+
 // region Type Method Extensions
 
 pub trait StringHelpers {
