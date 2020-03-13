@@ -128,7 +128,10 @@ fn start_reading_archive(reader: usize, iterator: Receiver<&PathBuf>, producer: 
             let can_open = ArchiveReader::create_reader(&archive_path);
             match can_open {
                 Err(cause) => {
-                    error!("Error in thread #{} reading documents in archive: {}", reader, cause);
+                    error!(
+                        "Error in thread #{} reading documents in archive: {}",
+                        reader, cause
+                    );
                     break;
                 }
                 Ok(archive_reader) => {
@@ -145,17 +148,17 @@ fn start_reading_archive(reader: usize, iterator: Receiver<&PathBuf>, producer: 
 }
 
 fn start_indexing_docs(
-    writer: usize,
-    url: &str,
-    consumer: Receiver<String>,
-    progress: Sender<u64>,
+    writer: usize, url: &str, consumer: Receiver<String>, progress: Sender<u64>,
 ) {
     loop {
         let received = consumer.recv();
         if let Ok(docs) = received {
             let failed = post_content(url, docs);
             if let Err(cause) = failed {
-                error!("Error in thread #{} writing file into archive: {}", writer, cause);
+                error!(
+                    "Error in thread #{} writing file into archive: {}",
+                    writer, cause
+                );
                 break;
             }
             progress.send(0).unwrap();

@@ -129,11 +129,7 @@ fn start_retrieving_docs(reader: usize, iterator: Receiver<Step>, producer: Send
 }
 
 fn start_storing_docs(
-    writer: usize,
-    dir: PathBuf,
-    name: String,
-    consumer: Receiver<Documents>,
-    progress: Sender<u64>,
+    writer: usize, dir: PathBuf, name: String, consumer: Receiver<Documents>, progress: Sender<u64>,
 ) {
     let mut archiver = Archiver::write_on(&dir, &name);
     loop {

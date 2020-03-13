@@ -1,0 +1,39 @@
+#### SETTINGS FOR AUTO FORMATTING SOURCES ####
+
+## Before commiting run `cargo fmt` for all source files
+## Checking of formatting is configured in github CI at file:
+##   - ./github/workflows/build-test-and-lint.yml
+
+edition = "2018"
+# max_width = 100       # default 100
+newline_style = "Unix"
+# tab_spaces = 4        # default 4
+
+# unstable_features = true
+
+## Settings replacing/rewriting items in source code ##
+
+# fn_single_line = true
+# format_code_in_doc_comments = true
+# format_strings = true
+# merge_imports = true
+# condense_wildcard_suffixes = true
+# match_block_trailing_comma = true
+# normalize_comments = true
+# trailing_semicolon = true
+# trailing_comma = "Always"
+use_field_init_shorthand = true
+# version = "Two"
+
+## Settings formatting items position in cols/lines of source code ##
+
+# enum_discrim_align_threshold = 40
+fn_args_layout = "Compressed"           # Default: "Wide"
+# imports_indent = "Visual"
+# overflow_delimited_expr = true
+# struct_field_align_threshold = 40
+# use_small_heuristics = "Max"          # Default: "Default"
+use_try_shorthand = true
+
+## END OF SETTINGS ##
+
