@@ -10,10 +10,11 @@ use std::{path::PathBuf, time::Instant};
 use crate::{
     args::Backup,
     bars::new_wide_bar,
+    connection::SolrClient,
     fails::BoxedFailure,
     helpers::*,
     save::Archiver,
-    steps::{Documents, Requests, Step},
+    steps::{Documents, Requests, Step, SolrCore},
 };
 
 pub(crate) fn backup_main(params: Backup) -> BoxedFailure {
@@ -104,16 +105,33 @@ fn start_querying_core(requests: Requests, generator: Sender<Step>) {
 }
 
 fn start_retrieving_docs(reader: usize, iterator: Receiver<Step>, producer: Sender<Documents>) {
+    // TODO: unhardcode it!!!!
+    let mut client = SolrClient::new(4).unwrap();
+
     loop {
         let received = iterator.recv();
         if let Ok(step) = received {
-            let retrieved = step.retrieve_docs();
-            match retrieved {
-                Ok(docs) => producer.send(docs).unwrap(),
+            let solr_url = &step.url;
+            let response = client.get_as_text(solr_url);
+            match response {
                 Err(cause) => {
                     error!("Error in thread #{} retrieving documents from solr: {}", reader, cause);
                     break;
-                }
+                },
+                Ok(content) => {
+                    // TODO: print a warning about unbalanced shard in solr could configurations
+                    let parsed = SolrCore::parse_docs_from_query(&content);
+                    match parsed {
+                        None => {
+                            error!("Error parsing docs fetched in solr query results: {}", solr_url);
+                            break;
+                        },
+                        Some(json) => {
+                            let docs = Documents { step: step, docs: json };
+                            producer.send(docs).unwrap();
+                        },
+                    }
+                },
             }
         } else {
             break;

@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 
-use crate::{args::Backup, fails::BoxedError, helpers::*};
+use crate::{args::Backup, helpers::*};
 
 // region Struct
 
@@ -33,25 +33,6 @@ pub struct SolrCore {
 // endregion
 
 // region Iterators
-
-impl Step {
-    pub(crate) fn get_docs_filename(&self) -> String {
-        format!("docs_at_{:09}.json", self.curr + 1)
-    }
-
-    pub(crate) fn retrieve_docs(self) -> Result<Documents, BoxedError> {
-        // TODO: retry on network errors and timeouts
-        // TODO: print a warning about unbalanced shard in solr could configurations
-
-        let query_url = &self.url;
-
-        let result = SolrCore::get_docs_from(&query_url);
-        match result {
-            Ok(response) => Ok(Documents { step: self, docs: response }),
-            Err(cause) => Err(cause),
-        }
-    }
-}
 
 impl Requests {
     pub fn len(&self) -> usize {

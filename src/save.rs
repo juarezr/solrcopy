@@ -77,7 +77,7 @@ impl Archiver {
         let json = &docs.docs;
         let step = &docs.step;
 
-        let filename = step.get_docs_filename();
+        let filename = format!("docs_at_{:09}.json", step.curr + 1);
 
         self.file_count += 1;
         let wrap = self.file_count >= self.max_files;

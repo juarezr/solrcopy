@@ -15,15 +15,6 @@ impl Backup {
 }
 
 impl SolrCore {
-    pub fn get_docs_from(url: &str) -> Result<String, BoxedError> {
-        let json = http_get_as_text(url)?;
-
-        let docs = SolrCore::parse_docs_from_query(&json);
-        match docs {
-            None => throw(format!("Error parsing docs fetched in solr query results: {}", &url))?,
-            Some(res) => Ok(res),
-        }
-    }
 
     fn parse_core_schema(gets: &Backup, json: &str) -> Result<Self, BoxedError> {
         let core_name = &gets.from;
@@ -81,8 +72,9 @@ impl SolrCore {
         }
     }
 
-    fn parse_docs_from_query(json: &str) -> Option<String> {
+    pub fn parse_docs_from_query(json: &str) -> Option<String> {
         lazy_static! {
+            // TODO: check documents  with nested documents and arrays
             static ref REGNF: Regex = Regex::new("(\\[.+\\])").unwrap(); // (\[.+\]) or  (\[.+\])(?:\}\})$
         }
         let parsed = REGNF.get_group(json, 1);
