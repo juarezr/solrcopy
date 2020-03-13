@@ -70,7 +70,7 @@ impl SolrCore {
         match REGROW.get_group(json, 1) {
             None => None,
             Some(row1) => {
-                let matches = REGFN.get_groups(row1, 1);
+                let matches = REGFN.get_group_values(row1, 1);
                 let filtered = matches
                     .iter()
                     .filter(|s| !s.starts_with('_'))

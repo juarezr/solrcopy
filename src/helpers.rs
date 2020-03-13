@@ -156,7 +156,9 @@ impl StringHelpers for str {
 pub trait RegexHelpers {
     fn get_group<'a>(&'a self, json: &'a str, group_number: usize) -> Option<&'a str>;
 
-    fn get_groups<'a>(&self, json: &'a str, group_number: usize) -> Vec<&'a str>;
+    fn get_groups<'a>(&self, json: &'a str) -> Option<Captures<'a>>;
+
+    fn get_group_values<'a>(&self, json: &'a str, group_number: usize) -> Vec<&'a str>;
 
     fn get_matches<'a>(&self, json: &'a str) -> Vec<&'a str>;
 
@@ -176,7 +178,12 @@ impl RegexHelpers for Regex {
         }
     }
 
-    fn get_groups<'a>(&self, json: &'a str, group_number: usize) -> Vec<&'a str> {
+    fn get_groups<'a>(&self, json: &'a str) -> Option<Captures<'a>> {
+        let mut matches = self.captures_iter(json);
+        matches.next()
+    }
+
+    fn get_group_values<'a>(&self, json: &'a str, group_number: usize) -> Vec<&'a str> {
         let matches = self.captures_iter(json);
         let caps = matches.map(|cap| cap.get(group_number));
         let filt = caps.filter(|opt| opt.is_some());
