@@ -101,7 +101,7 @@ impl Backup {
             Some(text) => text.to_string(),
             None => {
                 let now: DateTime<Utc> = Utc::now();
-                let time = now.format("%Y-%m-%d_%H-%M-%S");
+                let time = now.format("%Y%m%d_%H%M");
                 format!("{}_at_{}", &self.from, &time)
             }
         };
@@ -113,7 +113,7 @@ impl Backup {
         let fl = self.get_query_fields(core_fields);
         let query = self.get_query_url(&fl);
         let num_docs = core_info.num_found.min(self.limit.unwrap_or(std::usize::MAX));
-        Requests { curr: 0, limit: num_docs, batch: self.batch, url: query }
+        Requests { curr: 0, limit: num_docs, batch: self.doc_count, url: query }
     }
 
     pub fn get_query_fields(&self, core_fields: &[String]) -> String {

@@ -67,13 +67,14 @@ pub(crate) fn backup_main(params: Backup) -> BoxedFailure {
 
             let dir = params.into.clone();
             let name = output_pat.clone();
+            let max = params.max_files;
 
             let writer = iw;
             let thread_name = format!("Writer_{}", writer);
             pool.builder()
                 .name(thread_name)
                 .spawn(move |_| {
-                    start_storing_docs(writer, dir, name, consumer, updater);
+                    start_storing_docs(writer, dir, name, max, consumer, updater);
                 })
                 .unwrap();
         }
@@ -122,9 +123,10 @@ fn start_retrieving_docs(reader: usize, iterator: Receiver<Step>, producer: Send
 }
 
 fn start_storing_docs(
-    writer: usize, dir: PathBuf, name: String, consumer: Receiver<Documents>, progress: Sender<u64>,
+    writer: usize, dir: PathBuf, name: String, max: usize, consumer: Receiver<Documents>,
+    progress: Sender<u64>,
 ) {
-    let mut archiver = Archiver::write_on(&dir, &name);
+    let mut archiver = Archiver::write_on(&dir, &name, max);
     loop {
         let received = consumer.recv();
         if let Ok(docs) = received {

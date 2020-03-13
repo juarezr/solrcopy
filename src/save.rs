@@ -19,14 +19,18 @@ pub struct Archiver {
     writer: Option<Compressor>,
     folder: PathBuf,
     file_pattern: String,
+    max_files: usize,
+    file_count: usize,
 }
 
 impl Archiver {
-    pub fn write_on(output_dir: &PathBuf, output_pattern: &str) -> Self {
+    pub fn write_on(output_dir: &PathBuf, output_pattern: &str, max: usize) -> Self {
         Archiver {
             writer: None,
             folder: output_dir.to_owned(),
             file_pattern: output_pattern.to_string(),
+            max_files: max,
+            file_count: 0,
         }
     }
 
@@ -42,6 +46,7 @@ impl Archiver {
         let zip = zip::ZipWriter::new(file);
 
         self.writer = Some(zip);
+        self.file_count = 0;
         Ok(())
     }
 
@@ -74,8 +79,11 @@ impl Archiver {
 
         let filename = step.get_docs_filename();
 
-        if self.writer.is_none() {
-            let suffix = format!("{}", step.curr + 1);
+        self.file_count += 1;
+        let wrap = self.file_count >= self.max_files;
+
+        if self.writer.is_none() || wrap {
+            let suffix = format!("{:09}", step.curr + 1);
             self.create_archive(&suffix)?;
         }
         self.write_file(&filename, &json)

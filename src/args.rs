@@ -117,7 +117,11 @@ pub struct Backup {
 
     /// Number of documents retrieved from solr in each reader step
     #[structopt(short, long, default_value = "4k", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
-    pub batch: usize,
+    pub doc_count: usize,
+
+    /// Max number of files of documents stored in each zip file
+    #[structopt(short, long, default_value = "1000", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
+    pub max_files: usize,
 }
 
 #[derive(StructOpt, PartialEq, Debug)]
@@ -389,8 +393,10 @@ pub mod tests {
         "output_filename",
         "--limit",
         "42",
-        "--batch",
+        "--doc-count",
         "5",
+        "--max-files",
+        "6",
         "--readers",
         "7",
         "--writers",
@@ -436,7 +442,8 @@ pub mod tests {
                 assert_eq!(get.into.to_str().unwrap(), TEST_ARGS_BACKUP[7]);
                 assert_eq!(get.query, Some(TEST_ARGS_BACKUP[9].to_string()));
                 assert_eq!(get.limit, Some(42));
-                assert_eq!(get.batch, 5);
+                assert_eq!(get.doc_count, 5);
+                assert_eq!(get.max_files, 6);
                 assert_eq!(get.transfer.readers, 7);
                 assert_eq!(get.transfer.writers, 9);
                 assert_eq!(get.options.verbose, true);
