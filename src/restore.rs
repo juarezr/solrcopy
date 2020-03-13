@@ -15,8 +15,11 @@ pub(crate) fn restore_main(params: Restore) -> Result<(), BoxedError> {
     let found = params.find_archives()?;
 
     if found.is_empty() {
-        throw(format!("Found no archives to restore from: {}\n note: try to specify the option --pattern with the source core name", 
-            params.get_pattern()))?;
+        throw(format!(
+            "Found no archives to restore from: {}\n note: try to specify the option --pattern \
+             with the source core name",
+            params.get_pattern()
+        ))?;
     }
 
     let core = params.into.clone();

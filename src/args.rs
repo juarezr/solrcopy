@@ -247,7 +247,9 @@ fn parse_solr_url(src: &str) -> Result<String, String> {
             .to_string());
     }
     if parsed.query().is_some() {
-        return Err("Solr url scheme must be a base url without query parameters as in: http:://server.domain:8983/solr".to_string());
+        return Err("Solr url scheme must be a base url without query parameters as in: \
+                    http:://server.domain:8983/solr"
+            .to_string());
     }
     if parsed.path_segments().is_none() {
         return Err(
@@ -256,10 +258,9 @@ fn parse_solr_url(src: &str) -> Result<String, String> {
     } else {
         let paths: Vec<&str> = parsed.path_segments().unwrap().collect();
         if paths.len() > 1 {
-            return Err(
-                "Solr url path must not include core name as in: http:://server.domain:8983/solr"
-                    .to_string(),
-            );
+            return Err("Solr url path must not include core name as in: \
+                        http:://server.domain:8983/solr"
+                .to_string());
         }
     }
     Ok(url2)
@@ -420,8 +421,8 @@ pub mod tests {
                 assert_eq!(get.query, Some(TEST_ARGS_BACKUP[9].to_string()));
                 assert_eq!(get.limit, Some(42));
                 assert_eq!(get.batch, 5);
-                assert_eq!(get.readers, 7);
-                assert_eq!(get.writers, 9);
+                assert_eq!(get.transfer.readers, 7);
+                assert_eq!(get.transfer.writers, 9);
                 assert_eq!(get.options.verbose, true);
             }
             _ => panic!("command must be 'backup' !"),

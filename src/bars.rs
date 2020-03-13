@@ -9,7 +9,10 @@ fn new_style(style_template: &str) -> ProgressStyle {
 }
 
 pub fn new_wide_style() -> ProgressStyle {
-    new_style("{spinner:.green} [{elapsed_precise}] [{wide_bar:40.cyan/blue}] {pos}/{len}  {percent}% ({eta})")
+    new_style(
+        "{spinner:.green} [{elapsed_precise}] [{wide_bar:40.cyan/blue}] {pos}/{len}  {percent}% \
+         ({eta})",
+    )
 }
 
 pub fn new_bar(len: u64) -> ProgressBar {

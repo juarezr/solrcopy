@@ -15,7 +15,6 @@ newline_style = "Unix"
 
 # fn_single_line = true
 # format_code_in_doc_comments = true
-# format_strings = true
 # condense_wildcard_suffixes = true
 # match_block_trailing_comma = true
 # normalize_comments = true
@@ -24,8 +23,9 @@ newline_style = "Unix"
 use_field_init_shorthand = true
 # version = "Two"
 
-## Settings rewriting in stable as same as nightly ##
+## Settings for migrating from stable to nightly ##
 
+# format_strings = true
 # merge_imports = true
 
 ## Settings formatting items position in cols/lines of source code ##
