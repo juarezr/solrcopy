@@ -1,9 +1,7 @@
 // region depedencies
 
 use regex::Regex;
-use std::fmt;
-use std::path::PathBuf;
-use std::str::FromStr;
+use std::{fmt, path::PathBuf, str::FromStr};
 use structopt::StructOpt;
 use url::Url;
 

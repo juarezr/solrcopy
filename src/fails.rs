@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 
-use std::error::Error;
-use std::fmt;
+use std::{error::Error, fmt};
 
 pub type BoxedError = Box<dyn Error>;
 

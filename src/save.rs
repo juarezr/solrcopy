@@ -1,10 +1,10 @@
 use log::error;
-use zip::result::ZipResult;
-use zip::write::FileOptions;
-use zip::ZipWriter;
+use zip::{result::ZipResult, write::FileOptions, ZipWriter};
 
-use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::{
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 use crate::steps::Documents;
 

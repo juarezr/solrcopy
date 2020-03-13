@@ -1,8 +1,6 @@
 use chrono::{DateTime, Utc};
 
-use crate::args::Backup;
-use crate::fails::BoxedError;
-use crate::helpers::*;
+use crate::{args::Backup, fails::BoxedError, helpers::*};
 
 // region Struct
 
@@ -168,11 +166,12 @@ impl Backup {
 mod tests {
     // region mockup
 
-    use crate::args::tests::*;
-    use crate::args::*;
-    use crate::fails::*;
-    use crate::helpers::*;
-    use crate::steps::SolrCore;
+    use crate::{
+        args::{tests::*, *},
+        fails::*,
+        helpers::*,
+        steps::SolrCore,
+    };
 
     impl Arguments {
         pub fn get(&self) -> Result<&Backup, BoxedError> {

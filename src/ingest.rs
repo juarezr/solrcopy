@@ -2,14 +2,9 @@ use log::error;
 use zip::ZipArchive;
 
 use glob::{glob, PatternError};
-use std::fs::File;
-use std::io::prelude::*;
-use std::path::PathBuf;
+use std::{fs::File, io::prelude::*, path::PathBuf};
 
-use crate::args::Restore;
-use crate::connection::http_post_as_json;
-use crate::fails::*;
-use crate::helpers::*;
+use crate::{args::Restore, connection::http_post_as_json, fails::*, helpers::*};
 
 type Decompressor = ZipArchive<File>;
 

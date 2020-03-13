@@ -1,16 +1,13 @@
-use crossbeam::channel::{Receiver, Sender};
-use crossbeam::crossbeam_channel::bounded;
-use crossbeam::thread;
+use crossbeam::{
+    channel::{Receiver, Sender},
+    crossbeam_channel::bounded,
+    thread,
+};
 use log::{debug, error, info};
 
-use std::path::PathBuf;
-use std::time::Instant;
+use std::{path::PathBuf, time::Instant};
 
-use crate::args::Restore;
-use crate::bars::*;
-use crate::fails::*;
-use crate::helpers::*;
-use crate::ingest::*;
+use crate::{args::Restore, bars::*, fails::*, helpers::*, ingest::*};
 
 pub(crate) fn restore_main(params: Restore) -> Result<(), BoxedError> {
     debug!("  {:?}", params);
@@ -164,8 +161,7 @@ fn start_indexing_docs(
 
 #[cfg(test)]
 mod tests {
-    use crate::args::*;
-    use crate::fails::*;
+    use crate::{args::*, fails::*};
 
     impl Arguments {
         pub fn put(&self) -> Result<&Restore, BoxedError> {

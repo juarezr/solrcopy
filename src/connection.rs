@@ -1,5 +1,7 @@
-use reqwest::blocking::Client;
-use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE, USER_AGENT};
+use reqwest::{
+    blocking::Client,
+    header::{HeaderMap, HeaderValue, CONTENT_TYPE, USER_AGENT},
+};
 
 // region Http Client
 

@@ -1,17 +1,20 @@
-use crossbeam::channel::{Receiver, Sender};
-use crossbeam::crossbeam_channel::bounded;
-use crossbeam::thread;
+use crossbeam::{
+    channel::{Receiver, Sender},
+    crossbeam_channel::bounded,
+    thread,
+};
 use log::{debug, error, info};
 
-use std::path::PathBuf;
-use std::time::Instant;
+use std::{path::PathBuf, time::Instant};
 
-use crate::args::Backup;
-use crate::bars::new_wide_bar;
-use crate::fails::BoxedFailure;
-use crate::helpers::*;
-use crate::save::Archiver;
-use crate::steps::{Documents, Requests, Step};
+use crate::{
+    args::Backup,
+    bars::new_wide_bar,
+    fails::BoxedFailure,
+    helpers::*,
+    save::Archiver,
+    steps::{Documents, Requests, Step},
+};
 
 pub(crate) fn backup_main(params: Backup) -> BoxedFailure {
     debug!("  {:?}", params);

@@ -1,10 +1,6 @@
 use regex::Regex;
 
-use super::args::Backup;
-use super::connection::http_get_as_text;
-use super::fails::*;
-use super::helpers::*;
-use super::steps::SolrCore;
+use super::{args::Backup, connection::http_get_as_text, fails::*, helpers::*, steps::SolrCore};
 
 // region Solr Core
 

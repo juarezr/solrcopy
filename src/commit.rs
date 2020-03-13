@@ -1,6 +1,4 @@
-use super::args::Commit;
-use super::connection::http_post_as_json;
-use super::helpers::*;
+use super::{args::Commit, connection::http_post_as_json, helpers::*};
 
 pub(crate) fn commit_main(params: Commit) -> Result<(), Box<dyn std::error::Error>> {
     if params.options.verbose {
