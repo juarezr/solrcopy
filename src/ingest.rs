@@ -66,10 +66,7 @@ impl ArchiveReader {
         let success = Self::open_archive(archive_path);
         match success {
             Err(cause) => Err(cause),
-            Ok(zip) => Ok(ArchiveReader {
-                archive: zip,
-                entry_index: 0,
-            }),
+            Ok(zip) => Ok(ArchiveReader { archive: zip, entry_index: 0 }),
         }
     }
 

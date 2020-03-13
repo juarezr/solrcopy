@@ -67,10 +67,7 @@ impl FromStr for SortField {
                         SortDirection::Asc
                     };
                     let sort_field = cap.get_as_str(1).to_string();
-                    Ok(SortField {
-                        field: sort_field,
-                        direction: sort_dir,
-                    })
+                    Ok(SortField { field: sort_field, direction: sort_dir })
                 }
             }
         }
@@ -233,12 +230,7 @@ fn parse_quantity(src: &str) -> Result<usize, String> {
         .replace('T', "000000000000");
 
     let qt = norm.parse::<usize>();
-    qt.or_else(|_| {
-        Err(format!(
-            "Wrong value: '{}'. Use numbers only, or suffix: K M G",
-            src
-        ))
-    })
+    qt.or_else(|_| Err(format!("Wrong value: '{}'. Use numbers only, or suffix: K M G", src)))
 }
 
 fn parse_solr_url(src: &str) -> Result<String, String> {
@@ -253,17 +245,15 @@ fn parse_solr_url(src: &str) -> Result<String, String> {
     }
     let parsed = parsing.unwrap();
     if parsed.scheme() != "http" {
-        return Err(
-            "Solr url scheme must be http or https as in: http:://server.domain:8983/solr"
-                .to_string(),
-        );
+        return Err("Solr url scheme must be http or https as in: http:://server.domain:8983/solr"
+            .to_string());
     }
     if parsed.query().is_some() {
         return Err("Solr url scheme must be a base url without query parameters as in: http:://server.domain:8983/solr".to_string());
     }
     if parsed.path_segments().is_none() {
         return Err(
-            "Solr url path must be 'solr' as in: http:://server.domain:8983/solr".to_string(),
+            "Solr url path must be 'solr' as in: http:://server.domain:8983/solr".to_string()
         );
     } else {
         let paths: Vec<&str> = parsed.path_segments().unwrap().collect();
@@ -282,10 +272,9 @@ fn parse_file_prefix(src: &str) -> Result<String, String> {
         static ref REGFN: Regex = Regex::new("^(\\w+)$").unwrap();
     }
     match REGFN.get_group(src, 1) {
-        None => Err(format!(
-            "Wrong output filename: '{}'. Considere using letters and numbers.",
-            src
-        )),
+        None => {
+            Err(format!("Wrong output filename: '{}'. Considere using letters and numbers.", src))
+        }
         Some(group1) => Ok(group1.to_string()),
     }
 }
@@ -334,10 +323,9 @@ pub mod tests {
     impl Arguments {
         pub fn mockup_from(argument_list: &[&str]) {
             match Self::from_iter_safe(argument_list) {
-                Ok(_) => panic!(
-                    "Error parsing command line arguments: {}",
-                    argument_list.join(" ")
-                ),
+                Ok(_) => {
+                    panic!("Error parsing command line arguments: {}", argument_list.join(" "))
+                }
                 Err(_) => (),
             }
         }

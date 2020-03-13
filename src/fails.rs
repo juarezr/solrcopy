@@ -15,9 +15,7 @@ pub struct Failed {
 
 impl Failed {
     pub fn new(msg: &str) -> Self {
-        Self {
-            details: msg.to_string(),
-        }
+        Self { details: msg.to_string() }
     }
 
     fn say(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -17,6 +17,7 @@ pub(crate) fn commit_main(params: Commit) -> Result<(), Box<dyn std::error::Erro
 
 impl Commit {
     fn get_update_url(&self) -> String {
+        #[rustfmt::skip]
         let parts: Vec<String> = vec![
             self.options.url.with_suffix("/"),
             self.into.clone(),

@@ -49,10 +49,7 @@ impl Step {
 
         let result = SolrCore::get_docs_from(&query_url);
         match result {
-            Ok(response) => Ok(Documents {
-                step: self,
-                docs: response,
-            }),
+            Ok(response) => Ok(Documents { step: self, docs: response }),
             Err(cause) => Err(cause),
         }
     }
@@ -77,10 +74,7 @@ impl Iterator for Requests {
             let remaining = self.limit - self.curr;
             let rows = self.batch.min(remaining);
             let query = format!("{}&start={}&rows={}", self.url, self.curr, rows);
-            let res = Step {
-                url: query,
-                curr: self.curr,
-            };
+            let res = Step { url: query, curr: self.curr };
             self.curr += self.batch;
             Some(res)
         } else {
@@ -120,23 +114,12 @@ impl Backup {
         let core_fields: &[String] = &core_info.fields;
         let fl = self.get_query_fields(core_fields);
         let query = self.get_query_url(&fl);
-        let num_docs = core_info
-            .num_found
-            .min(self.limit.unwrap_or(std::usize::MAX));
-        Requests {
-            curr: 0,
-            limit: num_docs,
-            batch: self.batch,
-            url: query,
-        }
+        let num_docs = core_info.num_found.min(self.limit.unwrap_or(std::usize::MAX));
+        Requests { curr: 0, limit: num_docs, batch: self.batch, url: query }
     }
 
     pub fn get_query_fields(&self, core_fields: &[String]) -> String {
-        let fields = if self.select.is_empty() {
-            core_fields
-        } else {
-            &self.select
-        };
+        let fields = if self.select.is_empty() { core_fields } else { &self.select };
         if fields.is_empty() {
             EMPTY_STRING
         } else {
@@ -202,10 +185,7 @@ mod tests {
 
     impl SolrCore {
         pub fn mockup() -> Self {
-            SolrCore {
-                num_found: 100,
-                fields: vec![TEST_SELECT_FIELDS.split(COMMA).collect()],
-            }
+            SolrCore { num_found: 100, fields: vec![TEST_SELECT_FIELDS.split(COMMA).collect()] }
         }
     }
 

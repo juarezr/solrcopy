@@ -80,9 +80,7 @@ impl Arguments {
             Self::Commit(com) => com.options.verbose,
         };
         if verbose {
-            env_logger::builder()
-                .filter_level(log::LevelFilter::Debug)
-                .init();
+            env_logger::builder().filter_level(log::LevelFilter::Debug).init();
         } else {
             env_logger::init();
         }

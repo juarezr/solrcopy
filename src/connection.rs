@@ -10,6 +10,7 @@ pub(crate) fn http_get_as_text(url: &str) -> Result<String, reqwest::Error> {
 }
 
 pub(crate) fn http_post_as_json(url: &str, content: String) -> Result<String, reqwest::Error> {
+    #[rustfmt::skip]
     let response = Client::new()
         .post(url)
         .headers(construct_headers())

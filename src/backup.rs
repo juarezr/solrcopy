@@ -21,10 +21,7 @@ pub(crate) fn backup_main(params: Backup) -> BoxedFailure {
 
     let num_found = core_info.num_found.to_u64();
 
-    info!(
-        "Starting retrieving {} documents from solr core {}.",
-        num_found, params.from
-    );
+    info!("Starting retrieving {} documents from solr core {}.", num_found, params.from);
 
     let started = Instant::now();
 
@@ -89,11 +86,7 @@ pub(crate) fn backup_main(params: Backup) -> BoxedFailure {
     })
     .unwrap();
 
-    info!(
-        "Dowloaded {} documents in {:?}.",
-        num_found,
-        started.elapsed()
-    );
+    info!("Dowloaded {} documents in {:?}.", num_found, started.elapsed());
     Ok(())
 }
 
@@ -114,10 +107,7 @@ fn start_retrieving_docs(reader: usize, iterator: Receiver<Step>, producer: Send
             match retrieved {
                 Ok(docs) => producer.send(docs).unwrap(),
                 Err(cause) => {
-                    error!(
-                        "Error in thread #{} retrieving documents from solr: {}",
-                        reader, cause
-                    );
+                    error!("Error in thread #{} retrieving documents from solr: {}", reader, cause);
                     break;
                 }
             }
@@ -137,10 +127,7 @@ fn start_storing_docs(
         if let Ok(docs) = received {
             let failed = archiver.write_documents(&docs);
             if let Err(cause) = failed {
-                error!(
-                    "Error in thread #{} writing file into archive: {}",
-                    writer, cause
-                );
+                error!("Error in thread #{} writing file into archive: {}", writer, cause);
                 break;
             }
             progress.send(0).unwrap();

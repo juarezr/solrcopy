@@ -24,10 +24,7 @@ impl SolrCore {
 
         let docs = SolrCore::parse_docs_from_query(&json);
         match docs {
-            None => throw(format!(
-                "Error parsing docs fetched in solr query results: {}",
-                &url
-            ))?,
+            None => throw(format!("Error parsing docs fetched in solr query results: {}", &url))?,
             Some(res) => Ok(res),
         }
     }
@@ -43,20 +40,14 @@ impl SolrCore {
 
         let core_fields = if gets.select.is_empty() {
             match parsed_fields {
-                None => throw(format!(
-                    "Missing fields to parse in Solr Core '{}'!",
-                    core_name
-                ))?,
+                None => throw(format!("Missing fields to parse in Solr Core '{}'!", core_name))?,
                 Some(fields) => fields,
             }
         } else {
             // TODO: check if args.select fields matches parsed_fields when --validate
             gets.select.clone()
         };
-        let res = SolrCore {
-            num_found: total_docs,
-            fields: core_fields,
-        };
+        let res = SolrCore { num_found: total_docs, fields: core_fields };
         Ok(res)
     }
 
