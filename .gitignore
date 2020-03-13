@@ -13,4 +13,5 @@ Cargo.lock
 /tmp/
 
 # User excluded files
-notes.txt
+scratchpad.*
+
