@@ -9,6 +9,8 @@
 #![deny(unused_import_braces)]
 #![deny(unused_qualifications)]
 
+// TODO : hancle Ctrl + C and finish zip archives
+
 // TODO: Cleanup
 //
 // #![deny(box_pointers)]
