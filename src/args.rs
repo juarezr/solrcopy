@@ -220,15 +220,31 @@ pub struct ParallelArgs {
 // region Cli impl
 
 fn parse_quantity(src: &str) -> Result<usize, String> {
-    let norm = src
-        .to_ascii_uppercase()
-        .replace('K', "000")
-        .replace('M', "000000")
-        .replace('G', "000000000")
-        .replace('T', "000000000000");
+    lazy_static! {
+        static ref REGKB: Regex =
+            Regex::new("^([0-9]+)\\s*([k|m|g|t|K|M|G|T](?:[b|B])?)?$").unwrap();
+    }
+    let up = src.trim().to_ascii_uppercase();
 
-    let qt = norm.parse::<usize>();
-    qt.or_else(|_| Err(format!("Wrong value: '{}'. Use numbers only, or suffix: K M G", src)))
+    match REGKB.get_groups(&up) {
+        None => Err(format!("Wrong value: '{}'. Use numbers only, or suffix: K M G", src)),
+        Some(parts) => {
+            let number = parts.get_as_str(1);
+            let multiplier = parts.get_as_str(2);
+            let parsed = number.parse::<usize>();
+            match parsed {
+                Err(_) => Err(format!("Wrong value for number: '{}'", src)),
+                Ok(quantity) => match multiplier {
+                    "" => Ok(quantity),
+                    "K" | "KB" => Ok(quantity * 1000),
+                    "M" | "MB" => Ok(quantity * 1_000_000),
+                    "G" | "GB" => Ok(quantity * 1_000_000_000),
+                    "T" | "TB" => Ok(quantity * 1_000_000_000_000),
+                    _ => Err(format!("Wrong value for multiplier '{}' in '{}'", multiplier, src)),
+                },
+            }
+        }
+    }
 }
 
 fn parse_solr_url(src: &str) -> Result<String, String> {
@@ -315,7 +331,7 @@ pub mod tests {
 
     // region Mockup
 
-    use crate::args::{Arguments, CommitMode};
+    use crate::args::{parse_quantity, Arguments, CommitMode};
 
     use structopt::StructOpt;
 
@@ -477,6 +493,17 @@ pub mod tests {
     #[test]
     fn check_params_put_help() {
         Arguments::mockup_from(TEST_ARGS_HELP_RESTORE);
+    }
+
+    #[test]
+    fn check_parse_quantity() {
+        assert_eq!(parse_quantity("3k"), Ok(3000));
+        assert_eq!(parse_quantity("4 k"), Ok(4000));
+        assert_eq!(parse_quantity("5kb"), Ok(5000));
+        assert_eq!(parse_quantity("666m"), Ok(666000000));
+        assert_eq!(parse_quantity("777mb"), Ok(777000000));
+        assert_eq!(parse_quantity("888mb"), Ok(888000000));
+        assert_eq!(parse_quantity("999 mb"), Ok(999000000));
     }
 }
 
