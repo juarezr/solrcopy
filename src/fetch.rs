@@ -95,14 +95,17 @@ impl SolrCore {
 #[cfg(test)]
 pub mod tests {
     use crate::fetch::*;
+    use crate::helpers::EMPTY_STR;
 
-    const CORE_1ROW: &str = "{\"response\":{\"numFound\":87,\"start\":0,\"docs\":[{\"date\":\"2018-08-03T00:00:00Z\",\"deviceId\":\"\",\"vehiclePlate\":\"A\\B\",\"ownerId\":\"173826\",\"deviceSerialNumber\":\"205525330\",\"regionType\":\"state\",\"clientId\":[\"2\"],\"proposalNumber\":\"635383717\",\"distanceTraveled\":20030,\"minutesTraveled\":48,\"contracted\":false,\"periodCode\":\"1\",\"groupId\":[\"2\"],\"vehicleNumber\":\"\",\"timeTraveled\":\"00:47:39\",\"identification\":\"Jack Daniesls\",\"policyNumber\":\"172645\",\"id\":\"633040_1533254400_1_5\",\"trackableObjectId\":\"633040\",\"periodType\":\"daily\",\"docNumber\":\"1235232435\",\"regionCode\":\"5\",\"_ttl_\":\"+6MONTHS\",\"_expiration_date_\":\"2019-02-06T16:34:09.326Z\",\"_version_\":1608068103504134147}]}}";
-    const CORE_3ROW: &str = "{\"response\":{\"numFound\":17344647,\"start\":0,\"maxScore\":1.0,\"docs\":[{\"date\":\"2019-11-04T00:00:00Z\",\"distanceTraveled\":7462,\"groupId\":[\"390433\"],\"id\":\"633040_1572825600_1_5\",\"regionCode\":\"5\"},{\"date\":\"2019-11-04T00:00:00Z\",\"distanceTraveled\":0,\"groupId\":[\"107509\"],\"id\":\"633133_1572825600_0_0\",\"regionCode\":\"0\"},{\"date\":\"2019-11-04T00:00:00Z\",\"distanceTraveled\":183816,\"groupId\":[\"513858\"],\"id\":\"633238_1572825600_1_4\",\"regionCode\":\"4\"}]}}";
+    const CORE_1ROW: &str = r#"{"response":{"numFound":46,"start":0,"docs":[{"id":"3007WFP","name":["Dell Widescreen UltraSharp 3007WFP"],"cat":["electronics and computer1"],"price":[2199.0]}]}}"#;
+    const CORE_3ROW: &str = r#"{"response":{"numFound":46,"start":0,
+                                "docs":[{"id":"3007WFP","name":["Dell Widescreen UltraSharp 3007WFP"],"cat":["electronics and computer1"],"price":[2199.0]},{"id":"100-435805","name":["ATI Radeon X1900 XTX 512 MB PCIE Video Card"],"cat":["electronics","graphics card"],"price":[649.99]},{"id":"EN7800GTX/2DHTV/256M","name":["ASUS Extreme N7800GTX/2DHTV (256 MB)"],"cat":["electronics","graphics card"],"price":[479.95]}]}}
+                            "#;
 
     #[test]
     fn check_schema_num_found() {
         let num_found = SolrCore::parse_num_found(CORE_1ROW);
-        assert_eq!(num_found.ok(), Some(87));
+        assert_eq!(num_found.ok(), Some(46));
     }
 
     #[test]
@@ -112,9 +115,11 @@ pub mod tests {
 
         let fields2 = fields.unwrap();
 
-        assert_eq!(fields2.len(), 22);
-        assert_eq!(fields2.get(0).unwrap(), "date");
-        assert_eq!(fields2.get(21).unwrap(), "regionCode");
+        assert_eq!(fields2.len(), 4);
+        assert_eq!(fields2.get(0).unwrap(), "id");
+        assert_eq!(fields2.get(1).unwrap(), "name");
+        assert_eq!(fields2.get(2).unwrap(), "cat");
+        assert_eq!(fields2.get(3).unwrap(), "price");
     }
 
     #[test]
@@ -123,8 +128,10 @@ pub mod tests {
         assert_eq!(docs.is_some(), true);
 
         let docs_text = docs.unwrap();
-        assert_eq!(docs_text.starts_with("[{"), true);
-        assert_eq!(docs_text.ends_with("}]"), true);
-        assert_eq!(docs_text.split("},{").collect::<Vec<&str>>().len(), 3);
+        let json = docs_text.replace(' ', EMPTY_STR).replace('\n', EMPTY_STR);
+        assert_eq!(&json[..2], "[{");
+        let two = json.len() - 2;
+        assert_eq!(&json[two..], "}]");
+        assert_eq!(json.split("},{").collect::<Vec<&str>>().len(), 3);
     }
 }
