@@ -4,7 +4,7 @@ use zip::ZipArchive;
 use glob::{glob, PatternError};
 use std::{fs::File, io::prelude::*, path::PathBuf};
 
-use crate::{args::Restore, connection::http_post_as_json, fails::*, helpers::*};
+use crate::{args::Restore, fails::*, helpers::*};
 
 type Decompressor = ZipArchive<File>;
 
@@ -99,13 +99,6 @@ impl Iterator for ArchiveReader {
             }
         }
     }
-}
-
-pub(crate) fn post_content(update_hadler_url: &str, content: String) -> BoxedResult<String> {
-    // TODO: handle network error, timeout on posting
-
-    let response = http_post_as_json(&update_hadler_url, content)?;
-    Ok(response)
 }
 
 // end of the file \\

@@ -7,7 +7,7 @@ use log::{debug, error, info};
 
 use std::{path::PathBuf, time::Instant};
 
-use crate::{args::Restore, bars::*, fails::*, helpers::*, ingest::*};
+use crate::{args::Restore, bars::*, connection::SolrClient, fails::*, helpers::*, ingest::*};
 
 pub(crate) fn restore_main(params: Restore) -> Result<(), BoxedError> {
     debug!("  {:?}", params);
@@ -144,10 +144,13 @@ fn start_reading_archive(reader: usize, iterator: Receiver<&PathBuf>, producer: 
 fn start_indexing_docs(
     writer: usize, url: &str, consumer: Receiver<String>, progress: Sender<u64>,
 ) {
+    // TODO: unhardcode it!!!!
+    let mut client = SolrClient::new(4).unwrap();
+
     loop {
         let received = consumer.recv();
         if let Ok(docs) = received {
-            let failed = post_content(url, docs);
+            let failed = client.post_as_json(&url, docs);
             if let Err(cause) = failed {
                 error!("Error in thread #{} writing file into archive: {}", writer, cause);
                 break;
