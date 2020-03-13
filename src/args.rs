@@ -120,7 +120,7 @@ pub struct Backup {
     pub doc_count: usize,
 
     /// Max number of files of documents stored in each zip file
-    #[structopt(short, long, default_value = "1000", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
+    #[structopt(short, long, default_value = "200", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
     pub max_files: usize,
 }
 
