@@ -105,8 +105,7 @@ fn start_querying_core(requests: Requests, generator: Sender<Step>) {
 }
 
 fn start_retrieving_docs(reader: usize, iterator: Receiver<Step>, producer: Sender<Documents>) {
-    // TODO: unhardcode it!!!!
-    let mut client = SolrClient::new(4).unwrap();
+    let mut client = SolrClient::new().unwrap();
 
     loop {
         let received = iterator.recv();

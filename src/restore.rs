@@ -144,8 +144,7 @@ fn start_reading_archive(reader: usize, iterator: Receiver<&PathBuf>, producer: 
 fn start_indexing_docs(
     writer: usize, url: &str, consumer: Receiver<String>, progress: Sender<u64>,
 ) {
-    // TODO: unhardcode it!!!!
-    let mut client = SolrClient::new(4).unwrap();
+    let mut client = SolrClient::new().unwrap();
 
     loop {
         let received = consumer.recv();

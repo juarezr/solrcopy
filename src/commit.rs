@@ -1,9 +1,9 @@
-use log::{ info, debug };
+use log::{debug, info};
 
 use super::{args::Commit, connection::http_post_as_json, helpers::*};
 
 pub(crate) fn commit_main(params: Commit) -> Result<(), Box<dyn std::error::Error>> {
-        debug!("  {:?}", params);
+    debug!("  {:?}", params);
 
     let url = params.get_update_url();
 
