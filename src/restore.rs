@@ -27,14 +27,14 @@ pub(crate) fn restore_main(params: Restore) -> Result<(), BoxedError> {
 
     let started = Instant::now();
 
-    unzip_archives(params, found)?;
+    unzip_archives(params, &found)?;
 
     info!("Updated solr core {} in {:?}.", core, started.elapsed());
     Ok(())
 }
 
-fn unzip_archives(params: Restore, found: Vec<PathBuf>) -> Result<(), BoxedError> {
-    let doc_count = estimate_document_count(&found)?;
+fn unzip_archives(params: Restore, found: &Vec<PathBuf>) -> Result<(), BoxedError> {
+    let doc_count = estimate_document_count(found)?;
 
     thread::scope(|pool| {
         let transfer = &params.transfer;
@@ -45,12 +45,8 @@ fn unzip_archives(params: Restore, found: Vec<PathBuf>) -> Result<(), BoxedError
         let (sender, receiver) = bounded::<String>(writers_channel);
         let (progress, reporter) = bounded::<u64>(transfer.writers);
 
-        let archives = found.iter();
-        pool.spawn(|_| {
-            for archive in archives {
-                generator.send(archive).unwrap();
-            }
-            drop(generator);
+        pool.spawn(move |_| {
+            start_listing_archives(found, generator);
         });
 
         for ir in 0..transfer.readers {
@@ -118,6 +114,17 @@ fn estimate_document_count(found: &[PathBuf]) -> Result<u64, BoxedError> {
 
 // region Channels
 
+fn start_listing_archives<'a>(found: &'a Vec<PathBuf>, generator: Sender<&'a PathBuf>) {
+    let archives = found.iter();
+    for archive in archives {
+        let status = generator.send(&archive);
+        if status.is_err() {
+            break;
+        }
+    }
+    drop(generator);
+}
+
 fn start_reading_archive(reader: usize, iterator: Receiver<&PathBuf>, producer: Sender<String>) {
     loop {
         let received = iterator.recv();
@@ -130,7 +137,10 @@ fn start_reading_archive(reader: usize, iterator: Receiver<&PathBuf>, producer: 
                 }
                 Ok(archive_reader) => {
                     for docs in archive_reader {
-                        producer.send(docs).unwrap();
+                        let status = producer.send(docs);
+                        if status.is_err() {
+                            break;
+                        }
                     }
                 }
             }
@@ -154,7 +164,10 @@ fn start_indexing_docs(
                 error!("Error in thread # {} while sending docs to solr core: {:?}", writer, cause);
                 break;
             } else {
-                progress.send(0).unwrap();
+                let status = progress.send(0);
+                if status.is_err() {
+                    break;
+                }
             }
         } else {
             break;

@@ -99,7 +99,10 @@ pub(crate) fn backup_main(params: Backup) -> BoxedFailure {
 
 fn start_querying_core(requests: Requests, generator: Sender<Step>) {
     for step in requests {
-        generator.send(step).unwrap();
+        let status = generator.send(step);
+        if status.is_err() {
+            break;
+        }
     }
     drop(generator);
 }
@@ -128,7 +131,10 @@ fn start_retrieving_docs(reader: usize, iterator: Receiver<Step>, producer: Send
                         Some(json) => {
                             // TODO: pass &str instead of String
                             let docs = Documents { step, docs: json.to_string() };
-                            producer.send(docs).unwrap();
+                            let status = producer.send(docs);
+                            if status.is_err() {
+                                break;
+                            }
                         }
                     }
                 }
@@ -153,7 +159,10 @@ fn start_storing_docs(
                 error!("Error in thread #{} writing file into archive: {}", writer, cause);
                 break;
             }
-            progress.send(0).unwrap();
+            let status = progress.send(0);
+            if status.is_err() {
+                break;
+            }
         } else {
             break;
         }
