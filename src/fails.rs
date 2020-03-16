@@ -42,11 +42,18 @@ impl Error for Failed {
 
 // region utilities
 
-pub fn throw<T>(message: String) -> Result<T, BoxedError> {
+pub fn throw<T>(message: String) -> BoxedResult<T> {
     Err(Box::new(Failed::new(&message)))
 }
 
-pub fn raise<T>(message: &str) -> Result<T, BoxedError> {
+pub fn rethrow<'a, T, E>(failure: E) -> BoxedResult<T>
+where
+    E: Error + 'static,
+{
+    Err(Box::new(failure))
+}
+
+pub fn raise<T>(message: &str) -> BoxedResult<T> {
     Err(Box::new(Failed::new(&message)))
 }
 
@@ -58,7 +65,13 @@ mod tests {
 
     #[test]
     fn check_throw_and_raise() {
-        assert_eq!(throw::<usize>("fail".to_string()).is_ok(), false);
+        let failure = throw::<usize>("fail".to_string());
+        assert_eq!(failure.is_ok(), false);
+
+        // TODO revamp error handling results types
+        // let failerr = failure.err().unwrap();
+        // assert_eq!(rethrow(failerr).is_ok(), false);
+
         assert_eq!(raise::<usize>("fail").is_ok(), false);
     }
 }
