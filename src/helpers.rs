@@ -2,6 +2,9 @@
 
 use regex::{Captures, Regex};
 use std::convert::TryInto;
+use std::env;
+use std::num::ParseIntError;
+use std::str::FromStr;
 
 // region Constants
 
@@ -23,6 +26,20 @@ pub const ZERO: char = '0';
 pub fn wait(secs: u64) {
     let millis = secs * 1000;
     std::thread::sleep(std::time::Duration::from_millis(millis));
+}
+
+pub fn env_var(var_name: &str, replacement: &str) -> String {
+    match env::var(var_name) {
+        Ok(var_value) => var_value,
+        Err(_) => replacement.to_string(),
+    }
+}
+
+pub fn env_value(var_name: &str, replacement: isize) -> Result<isize, ParseIntError> {
+    match env::var(var_name) {
+        Ok(var_value) => isize::from_str(&var_value),
+        Err(_) => Ok(replacement),
+    }
 }
 
 // endregion
@@ -287,15 +304,23 @@ impl CapturesHelpers for Captures<'_> {
 
 // region Numbers helpers
 
-// TODO: investigate traits Convert From, etc..
-
-pub trait SizeHelpers {
+pub trait IntegerHelpers {
     fn to_u64(self) -> u64;
 
     fn to_usize(self) -> usize;
 }
 
-impl SizeHelpers for usize {
+impl IntegerHelpers for isize {
+    fn to_u64(self) -> u64 {
+        self.try_into().unwrap()
+    }
+
+    fn to_usize(self) -> usize {
+        self.try_into().unwrap()
+    }
+}
+
+impl IntegerHelpers for usize {
     fn to_u64(self) -> u64 {
         self.try_into().unwrap()
     }
@@ -305,7 +330,7 @@ impl SizeHelpers for usize {
     }
 }
 
-impl SizeHelpers for u64 {
+impl IntegerHelpers for u64 {
     fn to_u64(self) -> u64 {
         self
     }
