@@ -77,6 +77,7 @@ pub trait StringHelpers {
 }
 
 impl StringHelpers for str {
+    #[inline]
     fn contains_any(&self, patterns: &[&str]) -> bool {
         for arg in patterns {
             if self.contains(arg) {
@@ -86,6 +87,7 @@ impl StringHelpers for str {
         false
     }
 
+    #[inline]
     fn starts_with_any(&self, patterns: &[&str]) -> bool {
         for arg in patterns {
             if self.starts_with(arg) {
@@ -95,6 +97,7 @@ impl StringHelpers for str {
         false
     }
 
+    #[inline]
     fn ends_with_any(&self, patterns: &[&str]) -> bool {
         for arg in patterns {
             if self.ends_with(arg) {
@@ -119,6 +122,7 @@ impl StringHelpers for str {
         Some(snippet)
     }
 
+    #[inline]
     fn append(&self, suffix: &str) -> String {
         let mut res = String::with_capacity(self.len() + suffix.len());
         res.push_str(self);
@@ -126,6 +130,7 @@ impl StringHelpers for str {
         res
     }
 
+    #[inline]
     fn append_all(&self, suffixes: &[&str]) -> String {
         let mut all: Vec<&str> = Vec::with_capacity(suffixes.len() + 1);
         all.push(&self);
@@ -133,6 +138,7 @@ impl StringHelpers for str {
         all.concat()
     }
 
+    #[inline]
     fn with_prefix(&self, prefix: &str) -> String {
         if self.starts_with(prefix) {
             return self.to_string();
@@ -142,6 +148,7 @@ impl StringHelpers for str {
         res
     }
 
+    #[inline]
     fn with_suffix(&self, suffix: &str) -> String {
         if self.ends_with(suffix) {
             return self.to_string();
@@ -152,14 +159,17 @@ impl StringHelpers for str {
         res
     }
 
+    #[inline]
     fn pad(&self, pad: usize) -> String {
         Self::pad_left_with(self, pad, SPACE)
     }
 
+    #[inline]
     fn pad_0(&self, pad: usize) -> String {
         Self::pad_left_with(self, pad, ZERO)
     }
 
+    #[inline]
     fn pad_with(&self, pad: usize, padchar: char) -> String {
         let mut out = self.to_string();
         let len = self.len();
@@ -173,14 +183,17 @@ impl StringHelpers for str {
         out
     }
 
+    #[inline]
     fn pad_left(&self, pad: usize) -> String {
         Self::pad_left_with(self, pad, SPACE)
     }
 
+    #[inline]
     fn pad_0_left(&self, pad: usize) -> String {
         Self::pad_left_with(self, pad, ZERO)
     }
 
+    #[inline]
     fn pad_left_with(&self, pad: usize, padchar: char) -> String {
         let mut out = String::new();
         let len = self.len();
@@ -223,6 +236,7 @@ impl RegexHelpers for Regex {
         }
     }
 
+    #[inline]
     fn get_groups<'a>(&self, text_to_search: &'a str) -> Option<Captures<'a>> {
         let mut matches = self.captures_iter(text_to_search);
         matches.next()
@@ -305,10 +319,12 @@ pub trait CapturesHelpers {
 }
 
 impl CapturesHelpers for Captures<'_> {
+    #[inline]
     fn get_as_str(&self, i: usize) -> &str {
         self.get(i).map_or(EMPTY_STR, |m| m.as_str())
     }
 
+    #[inline]
     fn get_as_str_or<'a>(&'a self, i: usize, replacement: &'a str) -> &'a str {
         self.get(i).map_or(replacement, |m| m.as_str())
     }
@@ -325,30 +341,36 @@ pub trait IntegerHelpers {
 }
 
 impl IntegerHelpers for isize {
+    #[inline]
     fn to_u64(self) -> u64 {
         self.try_into().unwrap()
     }
 
+    #[inline]
     fn to_usize(self) -> usize {
         self.try_into().unwrap()
     }
 }
 
 impl IntegerHelpers for usize {
+    #[inline]
     fn to_u64(self) -> u64 {
         self.try_into().unwrap()
     }
 
+    #[inline]
     fn to_usize(self) -> usize {
         self
     }
 }
 
 impl IntegerHelpers for u64 {
+    #[inline]
     fn to_u64(self) -> u64 {
         self
     }
 
+    #[inline]
     fn to_usize(self) -> usize {
         self.try_into().unwrap()
     }
