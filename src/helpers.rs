@@ -53,6 +53,8 @@ pub trait StringHelpers {
 
     fn ends_with_any(&self, patterns: &[&str]) -> bool;
 
+    fn find_text_between<'a>(&'a self, text_to_search: &str, last_pos: isize) -> Option<&'a str>;
+
     fn append(&self, suffix: &str) -> String;
 
     fn append_all(&self, prefix: &[&str]) -> String;
@@ -100,6 +102,21 @@ impl StringHelpers for str {
             }
         }
         false
+    }
+
+    #[inline]
+    fn find_text_between<'a>(&'a self, text_to_search: &str, last_pos: isize) -> Option<&'a str> {
+        let (found, prefix) = self.match_indices(text_to_search).next()?;
+
+        let starts = found + prefix.len();
+        let text_len = self.len();
+
+        let finish = if last_pos < 0 { text_len - 2 } else { text_len.min(last_pos as usize) };
+        if finish <= starts {
+            return None;
+        }
+        let snippet = &self[starts..finish];
+        Some(snippet)
     }
 
     fn append(&self, suffix: &str) -> String {
@@ -190,7 +207,7 @@ pub trait RegexHelpers {
 
     fn get_match_values(&self, text_to_search: &str) -> Vec<String>;
 
-    fn find_text_up_to<'a>(&self, text_to_search: &'a str, limit: isize) -> Option<&'a str>;
+    fn match_text_between<'a>(&self, text_to_search: &'a str, limit: isize) -> Option<&'a str>;
 }
 
 impl RegexHelpers for Regex {
@@ -231,18 +248,15 @@ impl RegexHelpers for Regex {
         maps.collect::<Vec<_>>()
     }
 
-    fn find_text_up_to<'a>(&self, text_to_search: &'a str, limit: isize) -> Option<&'a str> {
+    fn match_text_between<'a>(&self, text_to_search: &'a str, last_pos: isize) -> Option<&'a str> {
         let text_len = text_to_search.len();
-        let finish = if limit < 0 { text_len - 2 } else { text_len.min(limit as usize) };
-        if finish <= 0 {
-            return None;
-        }
+        let finish = if last_pos < 0 { text_len - 2 } else { text_len.min(last_pos as usize) };
         let starts = self.find(&text_to_search)?.end();
         if finish <= starts {
             return None;
         }
-        let docs = &text_to_search[starts..finish];
-        Some(docs)
+        let snippet = &text_to_search[starts..finish];
+        Some(snippet)
     }
 }
 

@@ -72,11 +72,7 @@ impl SolrCore {
     /// {"response":{"numFound":46,"start":0,"docs":_____}}
     /// ```
     pub fn parse_docs_from_query(json: &str) -> Option<&str> {
-        lazy_static! {
-            static ref REGDOCS: Regex = Regex::new("docs\":").unwrap();
-        }
-        let docs = json.trim();
-        REGDOCS.find_text_up_to(&docs, -2) // -> [{  ... }]
+        json.find_text_between("docs\":", -2) // -> [{  ... }]
     }
 }
 
