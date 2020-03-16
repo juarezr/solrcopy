@@ -72,7 +72,7 @@ impl SolrCore {
     /// {"response":{"numFound":46,"start":0,"docs":_____}}
     /// ```
     pub fn parse_docs_from_query(json: &str) -> Option<&str> {
-        json.find_text_between("docs\":", -2) // -> [{  ... }]
+        json.find_text_between("docs\":", "}}") // -> [{  ... }]
     }
 }
 
@@ -80,7 +80,7 @@ impl SolrCore {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::{fetch::*, helpers::EMPTY_STR};
+    use crate::fetch::*;
 
     const CORE_1ROW: &str = r#"{
         "response":{"numFound":46,"start":0,
@@ -123,13 +123,16 @@ pub mod tests {
         let docs = SolrCore::parse_docs_from_query(CORE_3ROW);
         assert_eq!(docs.is_some(), true);
 
-        let docs_text = docs.unwrap();
-        let json = docs_text.replace(' ', EMPTY_STR).replace('\n', EMPTY_STR);
-        assert_eq!(&json[..2], "[{");
+        let json = docs.unwrap().remove_whitespace();
+
+        let starting = &json[..2];
+        assert_eq!(starting, "[{");
 
         let two = json.len() - 2;
-        assert_eq!(&json[two..], "}]");
+        let ending = &json[two..];
+        assert_eq!(ending, "}]");
 
-        assert_eq!(json.split("},{").collect::<Vec<&str>>().len(), 3);
+        let rows = json.split("},{").collect::<Vec<&str>>();
+        assert_eq!(rows.len(), 3);
     }
 }

@@ -50,7 +50,9 @@ pub trait StringHelpers {
 
     fn ends_with_any(&self, patterns: &[&str]) -> bool;
 
-    fn find_text_between<'a>(&'a self, text_to_search: &str, last_pos: isize) -> Option<&'a str>;
+    fn find_text_from<'a>(&'a self, text_to_search: &str, last_pos: isize) -> Option<&'a str>;
+
+    fn find_text_between<'a>(&'a self, starts_text: &str, ends_text: &str) -> Option<&'a str>;
 
     fn append(&self, suffix: &str) -> String;
 
@@ -71,6 +73,8 @@ pub trait StringHelpers {
     fn pad_0_left(&self, pad: usize) -> String;
 
     fn pad_left_with(&self, pad: usize, padchar: char) -> String;
+
+    fn remove_whitespace(&self) -> String;
 }
 
 impl StringHelpers for str {
@@ -105,18 +109,42 @@ impl StringHelpers for str {
     }
 
     #[inline]
-    fn find_text_between<'a>(&'a self, text_to_search: &str, last_pos: isize) -> Option<&'a str> {
+    fn find_text_from<'a>(&'a self, text_to_search: &str, last_pos: isize) -> Option<&'a str> {
         let (found, prefix) = self.match_indices(text_to_search).next()?;
 
         let starts = found + prefix.len();
         let text_len = self.len();
 
-        let finish = if last_pos < 0 { text_len - 2 } else { text_len.min(last_pos as usize) };
+        let ulast_pos = last_pos.abs() as usize;
+        let positive = last_pos > 0;
+        let smaller = ulast_pos < text_len;
+
+        let finish: usize = if positive && smaller { 
+            ulast_pos
+        } else if !positive && smaller {
+            text_len - ulast_pos
+        } else { 
+            text_len
+        };
         if finish <= starts {
             return None;
         }
         let snippet = &self[starts..finish];
         Some(snippet)
+    }
+
+
+    fn find_text_between<'a>(&'a self, starts_text: &str, ends_text: &str) -> Option<&'a str>{
+        let (start_pos, prefix) = self.match_indices(starts_text).next()?;
+        let (ends_pos, _suffix) = self.rmatch_indices(ends_text).next()?;
+
+        let starting = start_pos + prefix.len();
+        if starting < ends_pos {
+            let snippet = &self[starting..ends_pos];
+            Some(snippet)               
+        } else {
+            None
+        }
     }
 
     #[inline]
@@ -204,6 +232,11 @@ impl StringHelpers for str {
         out.push_str(self);
         out
     }
+
+    #[inline]
+    fn remove_whitespace(&self) -> String {
+        self.chars().filter(|c| !c.is_whitespace()).collect()
+    }
 }
 
 pub trait RegexHelpers {
@@ -216,8 +249,6 @@ pub trait RegexHelpers {
     fn get_matches<'a>(&self, text_to_search: &'a str) -> Vec<&'a str>;
 
     fn get_match_values(&self, text_to_search: &str) -> Vec<String>;
-
-    fn match_text_between<'a>(&self, text_to_search: &'a str, limit: isize) -> Option<&'a str>;
 }
 
 impl RegexHelpers for Regex {
@@ -257,17 +288,6 @@ impl RegexHelpers for Regex {
         let matches = self.find_iter(text_to_search);
         let maps = matches.map(|m| m.as_str().to_string());
         maps.collect::<Vec<_>>()
-    }
-
-    fn match_text_between<'a>(&self, text_to_search: &'a str, last_pos: isize) -> Option<&'a str> {
-        let text_len = text_to_search.len();
-        let finish = if last_pos < 0 { text_len - 2 } else { text_len.min(last_pos as usize) };
-        let starts = self.find(&text_to_search)?.end();
-        if finish <= starts {
-            return None;
-        }
-        let snippet = &text_to_search[starts..finish];
-        Some(snippet)
     }
 }
 
