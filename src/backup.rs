@@ -14,7 +14,7 @@ use crate::{
     fails::BoxedFailure,
     helpers::*,
     save::Archiver,
-    steps::{Documents, Requests, Step, SolrCore},
+    steps::{Documents, Requests, SolrCore, Step},
 };
 
 pub(crate) fn backup_main(params: Backup) -> BoxedFailure {
@@ -117,21 +117,25 @@ fn start_retrieving_docs(reader: usize, iterator: Receiver<Step>, producer: Send
                 Err(cause) => {
                     error!("Error in thread #{} retrieving documents from solr: {}", reader, cause);
                     break;
-                },
+                }
                 Ok(content) => {
                     // TODO: print a warning about unbalanced shard in solr could configurations
                     let parsed = SolrCore::parse_docs_from_query(&content);
                     match parsed {
                         None => {
-                            error!("Error parsing docs fetched in solr query results: {}", solr_url);
+                            error!(
+                                "Error parsing docs fetched in solr query results: {}",
+                                solr_url
+                            );
                             break;
-                        },
+                        }
                         Some(json) => {
-                            let docs = Documents { step: step, docs: json };
+                            // TODO: pass &str instead of String
+                            let docs = Documents { step, docs: json.to_string() };
                             producer.send(docs).unwrap();
-                        },
+                        }
                     }
-                },
+                }
             }
         } else {
             break;

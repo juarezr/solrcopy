@@ -15,7 +15,6 @@ impl Backup {
 }
 
 impl SolrCore {
-
     fn parse_core_schema(gets: &Backup, json: &str) -> Result<Self, BoxedError> {
         let core_name = &gets.from;
 
@@ -47,7 +46,7 @@ impl SolrCore {
             Some(group1) => {
                 let res = group1.parse::<usize>();
                 res.or_else(|_| {
-                    throw::<usize>(format!("Error parsing numFound from solr query: {}", json))
+                    throw::<usize>(format!("Error converting numFound from solr query: {}", json))
                 })
             }
         }
@@ -55,30 +54,29 @@ impl SolrCore {
 
     fn parse_field_names(json: &str) -> Option<Vec<String>> {
         lazy_static! {
-            static ref REGROW: Regex = Regex::new("\\[\\{(.+)\\}\\]").unwrap();
             static ref REGFN: Regex = Regex::new("\"(\\w+)\":").unwrap();
         }
-        match REGROW.get_group(json, 1) {
-            None => None,
-            Some(row1) => {
-                let matches = REGFN.get_group_values(row1, 1);
-                let filtered = matches
-                    .iter()
-                    .filter(|s| !s.starts_with('_'))
-                    .map(|&s| s.to_string())
-                    .collect::<Vec<String>>();
-                Some(filtered)
-            }
-        }
+        let row1 = Self::parse_docs_from_query(json)?;
+
+        let matches = REGFN.get_group_values(row1, 1);
+        let filtered = matches
+            .iter()
+            .filter(|s| !s.starts_with('_'))
+            .map(|&s| s.to_string())
+            .collect::<Vec<String>>();
+        Some(filtered)
     }
 
-    pub fn parse_docs_from_query(json: &str) -> Option<String> {
+    /// Strips out: `[{  "a": "b", "c": "d" }]` from Solr json response
+    /// ``` json
+    /// {"response":{"numFound":46,"start":0,"docs":_____}}
+    /// ```
+    pub fn parse_docs_from_query(json: &str) -> Option<&str> {
         lazy_static! {
-            // TODO: check documents  with nested documents and arrays
-            static ref REGNF: Regex = Regex::new("(\\[.+\\])").unwrap(); // (\[.+\]) or  (\[.+\])(?:\}\})$
+            static ref REGDOCS: Regex = Regex::new("docs\":").unwrap();
         }
-        let parsed = REGNF.get_group(json, 1);
-        parsed.map(|s| s.to_string())
+        let docs = json.trim();
+        REGDOCS.find_text_up_to(&docs, -2) // -> [{  ... }]
     }
 }
 
@@ -89,10 +87,21 @@ pub mod tests {
     use crate::fetch::*;
     use crate::helpers::EMPTY_STR;
 
-    const CORE_1ROW: &str = r#"{"response":{"numFound":46,"start":0,"docs":[{"id":"3007WFP","name":["Dell Widescreen UltraSharp 3007WFP"],"cat":["electronics and computer1"],"price":[2199.0]}]}}"#;
+    const CORE_1ROW: &str = r#"{
+        "response":{"numFound":46,"start":0,
+            "docs":[
+                {
+                "id":"3007WFP",
+                "name":["Dell Widescreen UltraSharp 3007WFP"],
+                "cat":["electronics and computer1"],
+                "price":[2199.0]}
+            ]}}"#;
     const CORE_3ROW: &str = r#"{"response":{"numFound":46,"start":0,
-                                "docs":[{"id":"3007WFP","name":["Dell Widescreen UltraSharp 3007WFP"],"cat":["electronics and computer1"],"price":[2199.0]},{"id":"100-435805","name":["ATI Radeon X1900 XTX 512 MB PCIE Video Card"],"cat":["electronics","graphics card"],"price":[649.99]},{"id":"EN7800GTX/2DHTV/256M","name":["ASUS Extreme N7800GTX/2DHTV (256 MB)"],"cat":["electronics","graphics card"],"price":[479.95]}]}}
-                            "#;
+            "docs":[
+                {"id":"3007WFP","name":["Dell Widescreen UltraSharp 3007WFP"],"cat":["electronics and computer1"],"price":[2199.0]},
+                {"id":"100-435805","name":["ATI Radeon X1900 XTX 512 MB PCIE Video Card"],"cat":["electronics","graphics card"],"price":[649.99]},
+                {"id":"EN7800GTX/2DHTV/256M","name":["ASUS Extreme N7800GTX/2DHTV (256 MB)"],"cat":["electronics","graphics card"],"price":[479.95]}
+            ]}}"#;
 
     #[test]
     fn check_schema_num_found() {
@@ -122,8 +131,10 @@ pub mod tests {
         let docs_text = docs.unwrap();
         let json = docs_text.replace(' ', EMPTY_STR).replace('\n', EMPTY_STR);
         assert_eq!(&json[..2], "[{");
+
         let two = json.len() - 2;
         assert_eq!(&json[two..], "}]");
+
         assert_eq!(json.split("},{").collect::<Vec<&str>>().len(), 3);
     }
 }
