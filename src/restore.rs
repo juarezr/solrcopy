@@ -33,7 +33,7 @@ pub(crate) fn restore_main(params: Restore) -> Result<(), BoxedError> {
     Ok(())
 }
 
-fn unzip_archives(params: Restore, found: &Vec<PathBuf>) -> Result<(), BoxedError> {
+fn unzip_archives(params: Restore, found: &[PathBuf]) -> Result<(), BoxedError> {
     let doc_count = estimate_document_count(found)?;
 
     thread::scope(|pool| {
@@ -114,7 +114,7 @@ fn estimate_document_count(found: &[PathBuf]) -> Result<u64, BoxedError> {
 
 // region Channels
 
-fn start_listing_archives<'a>(found: &'a Vec<PathBuf>, generator: Sender<&'a PathBuf>) {
+fn start_listing_archives<'a>(found: &'a [PathBuf], generator: Sender<&'a PathBuf>) {
     let archives = found.iter();
     for archive in archives {
         let status = generator.send(&archive);

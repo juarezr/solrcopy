@@ -2,6 +2,18 @@
 
 Command line tool for backup and restore of documents stored in cores of [Apache Solr](https://lucene.apache.org/solr/).
 
+## Status
+
+![build-test-and-lint](https://github.com/juarezr/solrcopy/workflows/build-test-and-lint/badge.svg)
+
+- solrcopy backup/restore
+  - Should work well in most common cases.
+  - Works for me... :)
+- Packaging:
+  - Not started yet
+- Check the issues in github
+- Patches welcome!
+
 ## Usage
 
 1. Use the command `solrcopy backup` for dumping documents from a Solr core into local zip files.
@@ -98,18 +110,6 @@ OPTIONS:
 
 $ solrcopy restore --url http://localhost:8983/solr  --from ./tmp --into target
 ```
-
-## Status
-
-![Build Test Lints](https://github.com/juarezr/solrcopy/workflows/build-test-and-lint.yml/badge.svg)
-
-- solrcopy backup/restore
-  - Should work well in most common cases.
-  - Works for me... :)
-- Packaging:
-  - Not started yet
-- Check the issues in github
-- Patches welcome!
 
 ## Known Issues
 
