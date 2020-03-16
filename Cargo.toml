@@ -1,6 +1,6 @@
 [package]
 name = "solrcopy"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2018"
 
 authors = ["Juarez Rudsatz <juarezr@gmail.com>"]
@@ -21,7 +21,7 @@ lazy_static = "1.4.0"
 reqwest = { version = "0.10.4", features = ["blocking"] }
 zip = "0.5.5"
 indicatif = "0.14.0"
-chrono = "0.4.10"
+chrono = "0.4.11"
 glob = "0.3.0"
 log = "0.4.8"
 env_logger = "0.7.1"

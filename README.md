@@ -2,13 +2,6 @@
 
 Command line tool for backup and restore of documents stored in cores of [Apache Solr](https://lucene.apache.org/solr/).
 
-Solrcopy is a command for doing backup and restore of documents stored on Solr
-cores. It let you filter docs by using a expression, limit quantity, define order
-and desired columns to export. The data is stored as json inside local zip files.
-It is agnostic to data format, content and storage place.
-Because of this data is restored exactly as extracted and your responsible for
-extracting, storing and updating the correct data in correct cores.
-
 ## Usage
 
 1. Use the command `solrcopy backup` for dumping documents from a Solr core into local zip files.
@@ -24,9 +17,15 @@ extracting, storing and updating the correct data in correct cores.
 
 ## Invocation
 
-``` bash
+``` text
 $ solrcopy --help
-solrcopy 0.3.0
+solrcopy 0.4.0
+Command line tool for backup and restore of documents stored in cores of Apache Solr.
+
+Solrcopy is a command for doing backup and restore of documents stored on Solr cores. It let you filter docs by using a
+expression, limit quantity, define order and desired columns to export. The data is stored as json inside local zip
+files. It is agnostic to data format, content and storage place. Because of this data is restored exactly as extracted
+and your responsible for extracting, storing and updating the correct data from and into correct cores.
 
 USAGE:
     solrcopy <SUBCOMMAND>
@@ -42,9 +41,9 @@ SUBCOMMANDS:
     restore    Restore documents from local backup files into a Apache Solr core
 ```
 
-``` bash
+``` text
 $ solrcopy help backup
-solrcopy-backup 0.3.0
+solrcopy-backup 0.4.0
 Dumps documents from a Apache Solr core into local backup files
 
 USAGE:
@@ -56,11 +55,12 @@ FLAGS:
         --verbose    Show details of the execution
 
 OPTIONS:
-    -b, --batch <quantity>                     Number of documents retrieved from solr in each reader step [default: 4k]
+    -d, --doc-count <quantity>                 Number of documents retrieved from solr in each reader step [default: 4k]
     -f, --from <core>                          Case sensitive name of the Solr core for extracting documents
     -i, --into </path/to/output>               Existing folder for writing the zip backup files containing the extracted
                                                documents [env: SOLR_COPY_DIR=]
     -l, --limit <quantity>                     Maximum number of documents for retrieving from the core (like 100M)
+    -m, --max-files <quantity>                 Max number of files of documents stored in each zip file [default: 200]
     -o, --order <field1:asc field2:desc>...    Solr core fields names for sorting documents for retrieval
     -p, --prefix <name>                        Optional prefix for naming the zip backup files when storing documents
     -q, --query <f1:val1 AND f2:val2>          Solr Query for filtering which documents are retrieved
@@ -72,9 +72,9 @@ OPTIONS:
 $ solrcopy backup --url http://localhost:8983/solr --from demo --query 'price:[1 TO 400] AND NOT popularity:10' --order price:desc weight:asc --limit 10000 --select id date name price weight popularity manu cat store features --into ./tmp
 ```
 
-``` bash
+``` text
 $ solrcopy help restore
-solrcopy-restore 0.3.0
+solrcopy-restore 0.4.0
 Restore documents from local backup files into a Apache Solr core
 
 USAGE:
@@ -92,9 +92,9 @@ OPTIONS:
                                        SOLR_COPY_DIR=]
     -i, --into <core>                  Case sensitive name of the Solr core to upload documents
     -p, --pattern <core*.zip>          Search pattern for matching names of the zip backup files
-    -r, --readers <count>              Number parallel threads reading documents from source folder [default: 1]
+    -r, --readers <count>              Number parallel threads reading documents from solr core [default: 1]
     -u, --url <localhost:8983/solr>    Url pointing to the Solr cluster [env: SOLR_COPY_URL=]
-    -w, --writers <count>              Number parallel threads indexing documents in the solr core [default: 1]
+    -w, --writers <count>              Number parallel threads writing documents into zip archives [default: 1]
 
 $ solrcopy restore --url http://localhost:8983/solr  --from ./tmp --into target
 ```
@@ -104,9 +104,8 @@ $ solrcopy restore --url http://localhost:8983/solr  --from ./tmp --into target
 ![Build Test Lints](https://github.com/juarezr/solrcopy/workflows/build-test-and-lint.yml/badge.svg)
 
 - solrcopy backup/restore
+  - Should work well in most common cases.
   - Works for me... :)
-  - Needs finishing some `TODO`
-  - Lightly tested
 - Packaging:
   - Not started yet
 - Check the issues in github
@@ -124,6 +123,14 @@ $ solrcopy restore --url http://localhost:8983/solr  --from ./tmp --into target
 2. [solrdump](https://github.com/ubleipzig/solrdump)
 
 ---
+
+## Building
+
+For compiling a version from source:
+
+1. Install rust following the instructions on [https://rustup.rs](https://rustup.rs)
+2. Build with the command: `cargo build --release`
+3. Install locally with the command: `cargo install`
 
 ## Development
 

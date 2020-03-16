@@ -173,6 +173,14 @@ pub struct Commit {
 }
 
 #[derive(StructOpt, Debug)]
+/// Command line tool for backup and restore of documents stored in cores of Apache Solr.
+///
+/// Solrcopy is a command for doing backup and restore of documents stored on Solr cores. 
+/// It let you filter docs by using a expression, limit quantity, define order and desired 
+/// columns to export. The data is stored as json inside local zip files. It is agnostic 
+/// to data format, content and storage place. Because of this data is restored exactly 
+/// as extracted and your responsible for extracting, storing and updating the correct data 
+/// from and into correct cores.
 pub enum Arguments {
     /// Dumps documents from a Apache Solr core into local backup files
     Backup(Backup),
