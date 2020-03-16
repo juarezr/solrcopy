@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use regex::{Captures, Regex};
-use std::{convert::TryInto, env, num::ParseIntError, str::FromStr};
+use std::{convert::TryInto, env, str::FromStr};
 
 // region Constants
 
@@ -32,10 +32,12 @@ pub fn env_var(var_name: &str, replacement: &str) -> String {
     }
 }
 
-pub fn env_value(var_name: &str, replacement: isize) -> Result<isize, ParseIntError> {
+pub fn env_value(var_name: &str, replacement: isize) -> isize {
     match env::var(var_name) {
-        Ok(var_value) => isize::from_str(&var_value),
-        Err(_) => Ok(replacement),
+        Ok(var_value) => isize::from_str(&var_value).unwrap_or_else(|_| {
+            panic!("Variable '{}' is not a integer value: {}", var_name, var_value)
+        }),
+        Err(_) => replacement,
     }
 }
 
@@ -119,11 +121,11 @@ impl StringHelpers for str {
         let positive = last_pos > 0;
         let smaller = ulast_pos < text_len;
 
-        let finish: usize = if positive && smaller { 
+        let finish: usize = if positive && smaller {
             ulast_pos
         } else if !positive && smaller {
             text_len - ulast_pos
-        } else { 
+        } else {
             text_len
         };
         if finish <= starts {
@@ -133,15 +135,14 @@ impl StringHelpers for str {
         Some(snippet)
     }
 
-
-    fn find_text_between<'a>(&'a self, starts_text: &str, ends_text: &str) -> Option<&'a str>{
+    fn find_text_between<'a>(&'a self, starts_text: &str, ends_text: &str) -> Option<&'a str> {
         let (start_pos, prefix) = self.match_indices(starts_text).next()?;
         let (ends_pos, _suffix) = self.rmatch_indices(ends_text).next()?;
 
         let starting = start_pos + prefix.len();
         if starting < ends_pos {
             let snippet = &self[starting..ends_pos];
-            Some(snippet)               
+            Some(snippet)
         } else {
             None
         }

@@ -5,7 +5,7 @@ use reqwest::{
 
 use std::time::Duration;
 
-use crate::{fails::*, helpers::*};
+use crate::helpers::*;
 
 // region Http Client
 
@@ -22,9 +22,9 @@ const SOLR_COPY_TIMEOUT: &str = "SOLR_COPY_TIMEOUT";
 const SOLR_COPY_RETRIES: &str = "SOLR_COPY_RETRIES";
 
 impl SolrClient {
-    pub fn new() -> BoxedResult<Self> {
-        let timeout = env_value(SOLR_COPY_TIMEOUT, 60)?;
-        let retries = env_value(SOLR_COPY_RETRIES, 4)?;
+    pub fn new() -> Result<Self, reqwest::Error> {
+        let timeout = env_value(SOLR_COPY_TIMEOUT, 60);
+        let retries = env_value(SOLR_COPY_RETRIES, 4);
 
         let client = Client::builder()
             .timeout(Duration::from_secs(timeout.to_u64()))
@@ -34,65 +34,72 @@ impl SolrClient {
         Ok(SolrClient { http: client, max_retries: retries.to_usize(), retry_count: 0 })
     }
 
-    pub fn get_as_text(&mut self, url: &str) -> BoxedResult<String> {
+    pub fn get_as_text(&mut self, url: &str) -> Result<String, reqwest::Error> {
+        let request = self.http.get(url);
+        self.handle_request(&request)
+    }
+
+    pub fn post_as_json(&mut self, url: &str, content: String) -> Result<String, reqwest::Error> {
+        let request = self.http.post(url).headers(json_headers()).body(content);
+        self.handle_request(&request)
+    }
+
+    fn handle_request(
+        &mut self, builder: &reqwest::blocking::RequestBuilder,
+    ) -> Result<String, reqwest::Error> {
         loop {
-            let response = self.http.get(url).send();
-            match response {
-                Ok(success) => {
-                    if self.retry_count > 0 {
-                        self.retry_count -= 1;
-                    }
-                    let text = success.text()?;
-                    break Ok(text);
-                }
-                Err(fail) => {
-                    if fail.is_timeout() && self.retry_count < self.max_retries {
-                        self.retry_count += 1;
-                        wait(20);
-                        continue;
-                    }
-                    break rethrow(fail);
-                }
+            let request = builder.try_clone().unwrap();
+            let result = request.send();
+            let (retry, response) = match result {
+                Ok(content) => self.handle_response(content),
+                Err(failure) => self.handle_timeout(failure),
+            };
+            if retry {
+                continue;
             }
+            break response;
         }
     }
 
-    pub(crate) fn post_as_json(&mut self, url: &str, content: String) -> BoxedResult<String> {
-        let retries = 0;
-
-        loop {
-            let response =
-                self.http.post(url).headers(construct_headers()).body(content.clone()).send();
-
-            match response {
-                Ok(success) => {
-                    let text = success.text()?;
-                    break Ok(text);
-                }
-                Err(fail) => {
-                    if fail.is_timeout() && retries < self.max_retries {
-                        self.max_retries += 1;
-                        wait(20);
-                        continue;
-                    }
-                    break rethrow(fail);
-                }
-            }
+    fn handle_response(
+        &mut self, response: reqwest::blocking::Response,
+    ) -> (bool, Result<String, reqwest::Error>) {
+        if self.retry_count > 0 {
+            self.retry_count -= 1;
         }
+        let resp = match response.error_for_status() {
+            Ok(success) => match success.text() {
+                Ok(retrieved) => Ok(retrieved),
+                Err(parsing) => Err(parsing),
+            },
+            Err(cause) => Err(cause),
+        };
+        (false, resp)
+    }
+
+    fn handle_timeout(
+        &mut self, failure: reqwest::Error,
+    ) -> (bool, Result<String, reqwest::Error>) {
+        let retry = failure.is_timeout() && self.retry_count < self.max_retries;
+        if retry {
+            self.retry_count += 1;
+            wait(20);
+        }
+        (retry, Err(failure))
     }
 }
 
-pub(crate) fn http_get_as_text(url: &str) -> BoxedResult<String> {
+pub fn http_get_as_text(url: &str) -> Result<String, reqwest::Error> {
     let mut con = SolrClient::new()?;
     con.get_as_text(url)
 }
 
-pub(crate) fn http_post_as_json(url: &str, content: String) -> BoxedResult<String> {
+pub fn http_post_as_json(url: &str, content: String) -> Result<String, reqwest::Error> {
     let mut con = SolrClient::new()?;
     con.post_as_json(url, content)
 }
 
-fn construct_headers() -> HeaderMap {
+fn json_headers() -> HeaderMap {
     let mut headers = HeaderMap::new();
     headers.insert(USER_AGENT, HeaderValue::from_static("reqwest"));
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));

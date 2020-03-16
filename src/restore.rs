@@ -125,7 +125,7 @@ fn start_reading_archive(reader: usize, iterator: Receiver<&PathBuf>, producer: 
             let can_open = ArchiveReader::create_reader(&archive_path);
             match can_open {
                 Err(cause) => {
-                    error!("Error in thread #{} reading documents in archive: {}", reader, cause);
+                    error!("Error in thread #{} while reading docs in zip: {}", reader, cause);
                     break;
                 }
                 Ok(archive_reader) => {
@@ -151,10 +151,11 @@ fn start_indexing_docs(
         if let Ok(docs) = received {
             let failed = client.post_as_json(&url, docs);
             if let Err(cause) = failed {
-                error!("Error in thread #{} writing file into archive: {}", writer, cause);
+                error!("Error in thread # {} while sending docs to solr core: {:?}", writer, cause);
                 break;
+            } else {
+                progress.send(0).unwrap();
             }
-            progress.send(0).unwrap();
         } else {
             break;
         }

@@ -110,11 +110,11 @@ fn start_retrieving_docs(reader: usize, iterator: Receiver<Step>, producer: Send
     loop {
         let received = iterator.recv();
         if let Ok(step) = received {
-            let solr_url = &step.url;
-            let response = client.get_as_text(solr_url);
+            let src = &step.url;
+            let response = client.get_as_text(src);
             match response {
                 Err(cause) => {
-                    error!("Error in thread #{} retrieving documents from solr: {}", reader, cause);
+                    error!("Error in thread #{} retrieving docs from solr: {}", reader, cause);
                     break;
                 }
                 Ok(content) => {
@@ -122,10 +122,7 @@ fn start_retrieving_docs(reader: usize, iterator: Receiver<Step>, producer: Send
                     let parsed = SolrCore::parse_docs_from_query(&content);
                     match parsed {
                         None => {
-                            error!(
-                                "Error parsing docs fetched in solr query results: {}",
-                                solr_url
-                            );
+                            error!("Error in thread #{} parsing from solr query: {}", reader, src);
                             break;
                         }
                         Some(json) => {
