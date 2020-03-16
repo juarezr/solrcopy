@@ -46,7 +46,7 @@ pub fn throw<T>(message: String) -> BoxedResult<T> {
     Err(Box::new(Failed::new(&message)))
 }
 
-pub fn rethrow<'a, T, E>(failure: E) -> BoxedResult<T>
+pub fn rethrow<T, E>(failure: E) -> BoxedResult<T>
 where
     E: Error + 'static,
 {
