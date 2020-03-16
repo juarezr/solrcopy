@@ -163,20 +163,22 @@ impl StringHelpers for str {
 }
 
 pub trait RegexHelpers {
-    fn get_group<'a>(&'a self, json: &'a str, group_number: usize) -> Option<&'a str>;
+    fn get_group<'a>(&'a self, text_to_search: &'a str, group_number: usize) -> Option<&'a str>;
 
-    fn get_groups<'a>(&self, json: &'a str) -> Option<Captures<'a>>;
+    fn get_groups<'a>(&self, text_to_search: &'a str) -> Option<Captures<'a>>;
 
-    fn get_group_values<'a>(&self, json: &'a str, group_number: usize) -> Vec<&'a str>;
+    fn get_group_values<'a>(&self, text_to_search: &'a str, group_number: usize) -> Vec<&'a str>;
 
-    fn get_matches<'a>(&self, json: &'a str) -> Vec<&'a str>;
+    fn get_matches<'a>(&self, text_to_search: &'a str) -> Vec<&'a str>;
 
-    fn get_match_values(&self, json: &str) -> Vec<String>;
+    fn get_match_values(&self, text_to_search: &str) -> Vec<String>;
+
+    fn find_text_up_to<'a>(&self, text_to_search: &'a str, limit: isize) -> Option<&'a str>;
 }
 
 impl RegexHelpers for Regex {
-    fn get_group<'a>(&self, json: &'a str, group_number: usize) -> Option<&'a str> {
-        let mut matches = self.captures_iter(json);
+    fn get_group<'a>(&self, text_to_search: &'a str, group_number: usize) -> Option<&'a str> {
+        let mut matches = self.captures_iter(text_to_search);
         let group = matches.next();
         match group {
             None => None,
@@ -187,29 +189,43 @@ impl RegexHelpers for Regex {
         }
     }
 
-    fn get_groups<'a>(&self, json: &'a str) -> Option<Captures<'a>> {
-        let mut matches = self.captures_iter(json);
+    fn get_groups<'a>(&self, text_to_search: &'a str) -> Option<Captures<'a>> {
+        let mut matches = self.captures_iter(text_to_search);
         matches.next()
     }
 
-    fn get_group_values<'a>(&self, json: &'a str, group_number: usize) -> Vec<&'a str> {
-        let matches = self.captures_iter(json);
+    fn get_group_values<'a>(&self, text_to_search: &'a str, group_number: usize) -> Vec<&'a str> {
+        let matches = self.captures_iter(text_to_search);
         let caps = matches.map(|cap| cap.get(group_number));
         let filt = caps.filter(|opt| opt.is_some());
         let maps = filt.map(|opt| opt.unwrap().as_str());
         maps.collect::<Vec<_>>()
     }
 
-    fn get_matches<'a>(&self, json: &'a str) -> Vec<&'a str> {
-        let matches = self.find_iter(json);
+    fn get_matches<'a>(&self, text_to_search: &'a str) -> Vec<&'a str> {
+        let matches = self.find_iter(text_to_search);
         let maps = matches.map(|m| m.as_str());
         maps.collect::<Vec<_>>()
     }
 
-    fn get_match_values(&self, json: &str) -> Vec<String> {
-        let matches = self.find_iter(json);
+    fn get_match_values(&self, text_to_search: &str) -> Vec<String> {
+        let matches = self.find_iter(text_to_search);
         let maps = matches.map(|m| m.as_str().to_string());
         maps.collect::<Vec<_>>()
+    }
+
+    fn find_text_up_to<'a>(&self, text_to_search: &'a str, limit: isize) -> Option<&'a str> {
+        let text_len = text_to_search.len();
+        let finish = if limit < 0 { text_len - 2 } else { text_len.min(limit as usize) };
+        if finish <= 0 {
+            return None;
+        }
+        let starts = self.find(&text_to_search)?.end();
+        if finish <= starts {
+            return None;
+        }
+        let docs = &text_to_search[starts..finish];
+        Some(docs)
     }
 }
 
