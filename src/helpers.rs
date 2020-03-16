@@ -1,10 +1,7 @@
 #![allow(dead_code)]
 
 use regex::{Captures, Regex};
-use std::convert::TryInto;
-use std::env;
-use std::num::ParseIntError;
-use std::str::FromStr;
+use std::{convert::TryInto, env, num::ParseIntError, str::FromStr};
 
 // region Constants
 

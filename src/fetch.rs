@@ -80,8 +80,7 @@ impl SolrCore {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::fetch::*;
-    use crate::helpers::EMPTY_STR;
+    use crate::{fetch::*, helpers::EMPTY_STR};
 
     const CORE_1ROW: &str = r#"{
         "response":{"numFound":46,"start":0,

@@ -5,8 +5,7 @@ use reqwest::{
 
 use std::time::Duration;
 
-use crate::fails::*;
-use crate::helpers::*;
+use crate::{fails::*, helpers::*};
 
 // region Http Client
 
