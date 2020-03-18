@@ -1,13 +1,13 @@
-use crossbeam::{
-    channel::{Receiver, Sender},
-    crossbeam_channel::bounded,
-    thread,
-};
+use crossbeam_channel::{bounded, Receiver, Sender};
+use crossbeam_utils::thread;
 use log::{debug, error, info};
 
+use std::sync::{atomic::AtomicBool, Arc};
 use std::{path::PathBuf, time::Instant};
 
-use crate::{args::Restore, bars::*, connection::SolrClient, fails::*, helpers::*, ingest::*};
+use crate::{
+    args::Restore, bars::*, connection::SolrClient, fails::*, helpers::*, ingest::*, state::*,
+};
 
 pub(crate) fn restore_main(params: Restore) -> Result<(), BoxedError> {
     debug!("  {:?}", params);
@@ -27,14 +27,15 @@ pub(crate) fn restore_main(params: Restore) -> Result<(), BoxedError> {
 
     let started = Instant::now();
 
-    unzip_archives(params, &found)?;
+    let updated = unzip_archives(params, &found)?;
 
-    info!("Updated solr core {} in {:?}.", core, started.elapsed());
+    info!("Updated {} batches in solr core {} in {:?}.", updated, core, started.elapsed());
     Ok(())
 }
 
-fn unzip_archives(params: Restore, found: &[PathBuf]) -> Result<(), BoxedError> {
+fn unzip_archives(params: Restore, found: &[PathBuf]) -> Result<usize, BoxedError> {
     let doc_count = estimate_document_count(found)?;
+    let mut updated = 0;
 
     thread::scope(|pool| {
         let transfer = &params.transfer;
@@ -88,13 +89,14 @@ fn unzip_archives(params: Restore, found: &[PathBuf]) -> Result<(), BoxedError> 
         let perc_bar = new_wide_bar(doc_count);
         for _ in reporter.iter() {
             perc_bar.inc(1);
+            updated += 1;
         }
         perc_bar.finish_and_clear();
         drop(reporter);
     })
     .unwrap();
 
-    Ok(())
+    Ok(updated)
 }
 
 fn estimate_document_count(found: &[PathBuf]) -> Result<u64, BoxedError> {
@@ -126,54 +128,76 @@ fn start_listing_archives<'a>(found: &'a [PathBuf], generator: Sender<&'a PathBu
 }
 
 fn start_reading_archive(reader: usize, iterator: Receiver<&PathBuf>, producer: Sender<String>) {
+    let ctrl_c = monitor_term_sinal();
+
     loop {
         let received = iterator.recv();
-        if let Ok(archive_path) = received {
-            let can_open = ArchiveReader::create_reader(&archive_path);
-            match can_open {
-                Err(cause) => {
-                    error!("Error in thread #{} while reading docs in zip: {}", reader, cause);
-                    break;
-                }
-                Ok(archive_reader) => {
-                    for docs in archive_reader {
-                        let status = producer.send(docs);
-                        if status.is_err() {
-                            break;
-                        }
-                    }
-                }
-            }
-        } else {
+        let failed = match received {
+            Ok(archive_path) => handle_reading_archive(reader, &producer, archive_path, &ctrl_c),
+            Err(_) => true,
+        };
+        if failed || ctrl_c.aborted() {
             break;
         }
     }
     drop(producer);
 }
 
+fn handle_reading_archive(
+    reader: usize, producer: &Sender<String>, archive_path: &PathBuf, ctrl_c: &Arc<AtomicBool>,
+) -> bool {
+    let can_open = ArchiveReader::create_reader(&archive_path);
+    match can_open {
+        Err(cause) => {
+            error!("Error in thread #{} while reading docs in zip: {}", reader, cause);
+            true
+        }
+        Ok(archive_reader) => {
+            for docs in archive_reader {
+                let status = producer.send(docs);
+                if status.is_err() || ctrl_c.aborted() {
+                    return true;
+                }
+            }
+            false
+        }
+    }
+}
+
 fn start_indexing_docs(
     writer: usize, url: &str, consumer: Receiver<String>, progress: Sender<u64>,
 ) {
-    let mut client = SolrClient::new().unwrap();
+    let ctrl_c = monitor_term_sinal();
 
+    let mut client = SolrClient::new().unwrap();
     loop {
         let received = consumer.recv();
-        if let Ok(docs) = received {
-            let failed = client.post_as_json(&url, docs);
-            if let Err(cause) = failed {
-                error!("Error in thread # {} while sending docs to solr core: {:?}", writer, cause);
-                break;
-            } else {
-                let status = progress.send(0);
-                if status.is_err() {
-                    break;
-                }
-            }
-        } else {
+        if ctrl_c.aborted() {
+            break;
+        }
+        let failed = match received {
+            Ok(docs) => handle_received_batch(docs, writer, url, &mut client, &progress),
+            Err(_) => true,
+        };
+        if failed || ctrl_c.aborted() {
             break;
         }
     }
     drop(consumer);
+}
+
+fn handle_received_batch(
+    docs: String, writer: usize, url: &str, client: &mut SolrClient, progress: &Sender<u64>,
+) -> bool {
+    let failed = client.post_as_json(&url, docs);
+    wait(1);
+    if let Err(cause) = failed {
+        error!("Error in thread # {} while sending docs to solr core: {:?}", writer, cause);
+        true
+    } else {
+        let status = progress.send(0);
+        status.is_err()
+    }
 }
 
 // endregion

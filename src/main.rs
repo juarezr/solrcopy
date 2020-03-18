@@ -36,6 +36,7 @@ mod helpers;
 mod ingest;
 mod restore;
 mod save;
+mod state;
 mod steps;
 
 use structopt::StructOpt;

@@ -1,8 +1,5 @@
-use crossbeam::{
-    channel::{Receiver, Sender},
-    crossbeam_channel::bounded,
-    thread,
-};
+use crossbeam_channel::{bounded, Receiver, Sender};
+use crossbeam_utils::thread;
 use log::{debug, error, info};
 
 use std::{path::PathBuf, time::Instant};
@@ -14,6 +11,7 @@ use crate::{
     fails::BoxedFailure,
     helpers::*,
     save::Archiver,
+    state::*,
     steps::{Documents, Requests, SolrCore, Step},
 };
 
@@ -98,9 +96,11 @@ pub(crate) fn backup_main(params: Backup) -> BoxedFailure {
 // region Channels
 
 fn start_querying_core(requests: Requests, generator: Sender<Step>) {
+    let ctrl_c = monitor_term_sinal();
+
     for step in requests {
         let status = generator.send(step);
-        if status.is_err() {
+        if status.is_err() || ctrl_c.aborted() {
             break;
         }
     }
@@ -108,42 +108,52 @@ fn start_querying_core(requests: Requests, generator: Sender<Step>) {
 }
 
 fn start_retrieving_docs(reader: usize, iterator: Receiver<Step>, producer: Sender<Documents>) {
-    let mut client = SolrClient::new().unwrap();
+    let ctrl_c = monitor_term_sinal();
 
+    let mut client = SolrClient::new().unwrap();
     loop {
         let received = iterator.recv();
-        if let Ok(step) = received {
-            let src = &step.url;
-            let response = client.get_as_text(src);
-            match response {
-                Err(cause) => {
-                    error!("Error in thread #{} retrieving docs from solr: {}", reader, cause);
-                    break;
-                }
-                Ok(content) => {
-                    // TODO: print a warning about unbalanced shard in solr could configurations
-                    let parsed = SolrCore::parse_docs_from_query(&content);
-                    match parsed {
-                        None => {
-                            error!("Error in thread #{} parsing from solr query: {}", reader, src);
-                            break;
-                        }
-                        Some(json) => {
-                            // TODO: pass &str instead of String
-                            let docs = Documents { step, docs: json.to_string() };
-                            let status = producer.send(docs);
-                            if status.is_err() {
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        } else {
+        if ctrl_c.aborted() {
+            break;
+        }
+        let failed = match received {
+            Ok(step) => handle_received_batch(reader, &producer, step, &mut client),
+            Err(_) => true,
+        };
+        if failed || ctrl_c.aborted() {
             break;
         }
     }
     drop(producer);
+}
+
+fn handle_received_batch(
+    reader: usize, producer: &Sender<Documents>, step: Step, client: &mut SolrClient,
+) -> bool {
+    let src = &step.url;
+    let response = client.get_as_text(src);
+    match response {
+        Err(cause) => {
+            error!("Error in thread #{} retrieving docs from solr: {}", reader, cause);
+            true
+        }
+        Ok(content) => {
+            // TODO: print a warning about unbalanced shard in solr could configurations
+            let parsed = SolrCore::parse_docs_from_query(&content);
+            match parsed {
+                None => {
+                    error!("Error in thread #{} parsing from solr query: {}", reader, src);
+                    true
+                }
+                Some(json) => {
+                    // TODO: pass &str instead of String
+                    let docs = Documents { step, docs: json.to_string() };
+                    let status = producer.send(docs);
+                    status.is_err()
+                }
+            }
+        }
+    }
 }
 
 fn start_storing_docs(
@@ -153,18 +163,19 @@ fn start_storing_docs(
     let mut archiver = Archiver::write_on(&dir, &name, max);
     loop {
         let received = consumer.recv();
-        if let Ok(docs) = received {
-            let failed = archiver.write_documents(&docs);
-            if let Err(cause) = failed {
-                error!("Error in thread #{} writing file into archive: {}", writer, cause);
-                break;
+        match received {
+            Ok(docs) => {
+                let failed = archiver.write_documents(&docs);
+                if let Err(cause) = failed {
+                    error!("Error in thread #{} writing file into archive: {}", writer, cause);
+                    break;
+                }
+                let status = progress.send(0);
+                if status.is_err() {
+                    break;
+                }
             }
-            let status = progress.send(0);
-            if status.is_err() {
-                break;
-            }
-        } else {
-            break;
+            Err(_) => break,
         }
     }
     drop(consumer);
