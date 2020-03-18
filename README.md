@@ -14,7 +14,7 @@ Command line tool for backup and restore of documents stored in cores of [Apache
 - Check the issues in github
 - Patches welcome!
 
-[![Send me some cookies](http://img.shields.io/liberapay/receives/juarezr.svg?logo=liberapay)](https://liberapay.com/juarezr/donate)
+[<img alt="Send some cookies" src="http://img.shields.io/liberapay/receives/juarezr.svg?logo=liberapay">](https://liberapay.com/juarezr/donate)
 
 ## Usage
 
