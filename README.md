@@ -14,6 +14,8 @@ Command line tool for backup and restore of documents stored in cores of [Apache
 - Check the issues in github
 - Patches welcome!
 
+[![Send me some cookies](http://img.shields.io/liberapay/receives/juarezr.svg?logo=liberapay)](https://liberapay.com/juarezr/donate)
+
 ## Usage
 
 1. Use the command `solrcopy backup` for dumping documents from a Solr core into local zip files.
