@@ -1,3 +1,40 @@
+debian (0.40.1) unstable; urgency=low
+
+  * feature: handle app interrupt on Crl+C or Ctrl+Break (Closes: #5)
+
+-- Juarez Rudsatz <juarezr@gmail.com>  Mar, 16 Mar 2020 00:40:00 -0300
+
+debian (0.40.0) unstable; urgency=low
+
+  * feature: retry on http timeout errors  (Closes: #6)
+  * feature: add --max-files for splitting zip files
+  * feature: initial support for deb and rpm (WIP: #2)
+  * improved: error handling for 4xx
+  * improved: cli documentation
+  * fixed: error parsing documents retrieved from Solr (Important for #1)
+  * fixed: some minor bugs also
+  * refactored: added rustfmt.toml for code formmatting
+
+-- Juarez Rudsatz <juarezr@gmail.com>  Mar, 16 Mar 2020 00:40:00 -0300
+
+debian (0.30.0) unstable; urgency=low
+
+  * feature: process backup/restore in parallel (Closes: #3)
+  * feature: add --readers --writers for controlling parallel workers
+  * feature: initial support for deb and rpm  (WIP: #2)
+  * feature: generate shell completions on build
+  * feature: check build, lint, code formmatting on push with github action
+  * feature: new command commit
+  * improved: parse suffixes in quantity for --limit like 100KB (base 10)
+  * improved: use compression deflate in zip output
+  * improved: cli documentation
+  * fixed: warnings from clippy
+  * fixed: many bugs, errors handling, and testing issues
+  * refactored: created a container with solr for testing
+  * refactored: formatted source code with cargo fmt
+
+-- Juarez Rudsatz <juarezr@gmail.com>  Mar, 11 Mar 2020 00:30:00 -0300
+
 debian (0.21.1) unstable; urgency=low
 
   * Initial release (Closes: #1)
