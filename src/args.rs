@@ -28,7 +28,11 @@ pub struct Backup {
     #[structopt(short, long, value_name = "field1:asc field2:desc")]
     pub order: Vec<SortField>,
 
-    /// Maximum number of documents for retrieving from the core (like 100M)
+    /// Skip the fisrt of documents returned from the query by this quantity.
+    #[structopt(short = "k", long, parse(try_from_str = parse_quantity), default_value = "0", min_values = 0, value_name = "quantity")]
+    pub skip: usize,
+
+    /// Maximum quantity of documents for retrieving from the core (like 100M)
     #[structopt(short, long, parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
     pub limit: Option<usize>,
 
@@ -395,6 +399,8 @@ pub mod tests {
         TEST_SELECT_FIELDS,
         "--prefix",
         "output_filename",
+        "--skip",
+        "3",
         "--limit",
         "42",
         "--doc-count",
@@ -445,6 +451,7 @@ pub mod tests {
                 assert_eq!(get.from, TEST_ARGS_BACKUP[5]);
                 assert_eq!(get.into.to_str().unwrap(), TEST_ARGS_BACKUP[7]);
                 assert_eq!(get.query, Some(TEST_ARGS_BACKUP[9].to_string()));
+                assert_eq!(get.skip, 3);
                 assert_eq!(get.limit, Some(42));
                 assert_eq!(get.doc_count, 5);
                 assert_eq!(get.max_files, 6);

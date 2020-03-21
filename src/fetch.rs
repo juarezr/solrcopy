@@ -10,7 +10,15 @@ impl Backup {
 
         let json = http_get_as_text(&diagnostics_query_url)?;
 
-        SolrCore::parse_core_schema(self, &json)
+        let res = SolrCore::parse_core_schema(self, &json)?;
+
+        if res.num_found <= self.skip {
+            throw(format!(
+                "Requested {} in --skip but found {} docs with the query.",
+                self.skip, res.num_found
+            ))?;
+        }
+        Ok(res)
     }
 }
 

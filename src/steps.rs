@@ -94,7 +94,7 @@ impl Backup {
         let fl = self.get_query_fields(core_fields);
         let query = self.get_query_url(&fl);
         let num_docs = core_info.num_found.min(self.limit.unwrap_or(std::usize::MAX));
-        Requests { curr: 0, limit: num_docs, batch: self.doc_count, url: query }
+        Requests { curr: self.skip, limit: num_docs, batch: self.doc_count, url: query }
     }
 
     pub fn get_query_fields(&self, core_fields: &[String]) -> String {
@@ -185,6 +185,6 @@ mod tests {
             assert_eq!(url.starts_with(&query), true);
             i += 1;
         }
-        assert_eq!(i, 9);
+        assert_eq!(i, 8);
     }
 }
