@@ -1,78 +1,9 @@
-// region depedencies
-
 use regex::Regex;
 use std::{fmt, path::PathBuf, str::FromStr};
 use structopt::StructOpt;
 use url::Url;
 
 use crate::helpers::*;
-
-// endregion
-
-// region Order By
-
-pub enum SortDirection {
-    Asc,
-    Desc,
-}
-
-impl fmt::Debug for SortDirection {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                SortDirection::Asc => "asc",
-                _ => "desc",
-            }
-        )
-    }
-}
-
-pub struct SortField {
-    pub field: String,
-    pub direction: SortDirection,
-}
-
-impl fmt::Display for SortField {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}%20{:?}", self.field, self.direction)
-    }
-}
-
-impl fmt::Debug for SortField {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{:?}", self.field, self.direction)
-    }
-}
-
-impl FromStr for SortField {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.is_empty() {
-            Err("missing value".to_string())
-        } else {
-            lazy_static! {
-                static ref REO: Regex = Regex::new("^(\\w+)(([:\\s=])(asc|desc))?$").unwrap();
-            }
-            match REO.captures(s) {
-                None => Err(s.to_string()),
-                Some(cap) => {
-                    let sort_dir = if cap.get_as_str(4) == "desc" {
-                        SortDirection::Desc
-                    } else {
-                        SortDirection::Asc
-                    };
-                    let sort_field = cap.get_as_str(1).to_string();
-                    Ok(SortField { field: sort_field, direction: sort_dir })
-                }
-            }
-        }
-    }
-}
-
-// endregion
 
 // region Cli structs
 
@@ -332,6 +263,71 @@ impl CommitMode {
             CommitMode::None => EMPTY_STRING,
             CommitMode::Soft => separator.append("softCommit=true"),
             CommitMode::Hard => separator.append("commit=true"),
+        }
+    }
+}
+
+// endregion
+
+// region Order By
+
+pub enum SortDirection {
+    Asc,
+    Desc,
+}
+
+impl fmt::Debug for SortDirection {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                SortDirection::Asc => "asc",
+                _ => "desc",
+            }
+        )
+    }
+}
+
+pub struct SortField {
+    pub field: String,
+    pub direction: SortDirection,
+}
+
+impl fmt::Display for SortField {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}%20{:?}", self.field, self.direction)
+    }
+}
+
+impl fmt::Debug for SortField {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{:?}", self.field, self.direction)
+    }
+}
+
+impl FromStr for SortField {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.is_empty() {
+            Err("missing value".to_string())
+        } else {
+            lazy_static! {
+                static ref REO: Regex = Regex::new("^(\\w+)(([:\\s=])(asc|desc))?$").unwrap();
+            }
+            match REO.captures(s) {
+                None => Err(s.to_string()),
+                Some(cap) => {
+                    let sort_dir = if cap.get_as_str(4) == "desc" {
+                        SortDirection::Desc
+                    } else {
+                        SortDirection::Asc
+                    };
+                    let sort_field = cap.get_as_str(1).to_string();
+                    Ok(SortField { field: sort_field, direction: sort_dir })
+                }
+            }
         }
     }
 }
