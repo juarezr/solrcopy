@@ -73,13 +73,14 @@ OPTIONS:
     -f, --from <core>                          Case sensitive name of the Solr core for extracting documents
     -i, --into </path/to/output>               Existing folder for writing the zip backup files containing the extracted
                                                documents [env: SOLR_COPY_DIR=]
-    -l, --limit <quantity>                     Maximum number of documents for retrieving from the core (like 100M)
+    -l, --limit <quantity>                     Maximum quantity of documents for retrieving from the core (like 100M)
     -m, --max-files <quantity>                 Max number of files of documents stored in each zip file [default: 200]
     -o, --order <field1:asc field2:desc>...    Solr core fields names for sorting documents for retrieval
     -p, --prefix <name>                        Optional prefix for naming the zip backup files when storing documents
     -q, --query <f1:val1 AND f2:val2>          Solr Query for filtering which documents are retrieved
     -r, --readers <count>                      Number parallel threads reading documents from solr core [default: 1]
     -s, --select <field1 field2>...            Names of core fields retrieved in each document [default: all but _*]
+    -k, --skip <quantity>                      Skip this quantity of documents in the Solr Query [default: 0]
     -u, --url <localhost:8983/solr>            Url pointing to the Solr cluster [env: SOLR_COPY_URL=]
     -w, --writers <count>                      Number parallel threads writing documents into zip archives [default: 1]
 

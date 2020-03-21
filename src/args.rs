@@ -28,7 +28,7 @@ pub struct Backup {
     #[structopt(short, long, value_name = "field1:asc field2:desc")]
     pub order: Vec<SortField>,
 
-    /// Skip the fisrt of documents returned from the query by this quantity.
+    /// Skip this quantity of documents in the Solr Query
     #[structopt(short = "k", long, parse(try_from_str = parse_quantity), default_value = "0", min_values = 0, value_name = "quantity")]
     pub skip: usize,
 
