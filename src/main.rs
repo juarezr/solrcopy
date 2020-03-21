@@ -39,8 +39,8 @@ mod steps;
 
 use structopt::StructOpt;
 
-use args::Arguments;
-use fails::*;
+use crate::args::{Arguments, Backup, Restore};
+use crate::fails::{BoxedError,throw};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let parsed = Arguments::parse_from_args()?;
@@ -58,20 +58,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 impl Arguments {
     pub fn parse_from_args() -> Result<Self, BoxedError> {
         let res = Self::from_args();
-        res.check_dir()?;
+        res.validate()?;
         Ok(res)
     }
 
-    pub fn check_dir(&self) -> Result<(), BoxedError> {
-        let dir = match &self {
-            Self::Backup(get) => &get.into,
-            Self::Restore(put) => &put.from,
-            Self::Commit(_) => return Ok(()),
-        };
-        if !dir.exists() {
-            throw(format!("Missing folder of zip backup files: {:?}", dir))?
+    pub fn validate(&self) -> Result<(), BoxedError> {
+        match self {
+            Self::Backup(get) => get.validate(),
+            Self::Restore(put) => put.validate(),
+            Self::Commit(_) =>  Ok(()),
         }
-        Ok(())
     }
 
     fn start_log(&self) {
@@ -86,6 +82,31 @@ impl Arguments {
             env_logger::builder().filter_level(log::LevelFilter::Info).init();
         }
     }
+}
+
+pub trait Validation {
+    fn validate(&self) -> Result<(), BoxedError> {
+        Ok(())
+    }
+}
+
+impl Validation for Backup {
+    fn validate(&self) -> Result<(), BoxedError> {
+        assert_dir_exists(&self.into)
+    }
+}
+
+impl Validation for Restore {
+    fn validate(&self) -> Result<(), BoxedError> {
+        assert_dir_exists(&self.from)
+    }
+}
+
+fn assert_dir_exists(dir: &std::path::PathBuf) -> Result<(), BoxedError> {
+    if !dir.exists() {
+        throw(format!("Missing folder of zip backup files: {:?}", dir))?;
+    }
+    Ok(())
 }
 
 // endregion
