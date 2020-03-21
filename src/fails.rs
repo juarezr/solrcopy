@@ -2,11 +2,9 @@
 
 use std::{error::Error, fmt};
 
-pub type BoxedError = Box<dyn Error>;
+pub type BoxedResult<T> = Result<T, Box<dyn Error>>;
 
-pub type BoxedResult<T> = Result<T, BoxedError>;
-
-pub type BoxedFailure = Result<(), BoxedError>;
+pub type BoxedError = Result<(), Box<dyn Error>>;
 
 pub struct Failed {
     details: String,

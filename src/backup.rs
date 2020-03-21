@@ -8,14 +8,14 @@ use crate::{
     args::Backup,
     bars::new_wide_bar,
     connection::SolrClient,
-    fails::BoxedFailure,
+    fails::BoxedError,
     helpers::*,
     save::Archiver,
     state::*,
     steps::{Documents, Requests, SolrCore, Step},
 };
 
-pub(crate) fn backup_main(params: Backup) -> BoxedFailure {
+pub(crate) fn backup_main(params: Backup) -> BoxedError {
     debug!("  {:?}", params);
 
     let core_info = params.inspect_core()?;

@@ -155,7 +155,7 @@ mod tests {
     };
 
     impl Arguments {
-        pub fn get(&self) -> Result<&Backup, BoxedError> {
+        pub fn get(&self) -> BoxedResult<&Backup> {
             match &self {
                 Self::Backup(gets) => Ok(&gets),
                 _ => raise("command must be 'backup' !"),

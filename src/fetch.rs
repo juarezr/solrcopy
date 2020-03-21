@@ -5,7 +5,7 @@ use super::{args::Backup, connection::http_get_as_text, fails::*, helpers::*, st
 // region Solr Core
 
 impl Backup {
-    pub fn inspect_core(&self) -> Result<SolrCore, BoxedError> {
+    pub fn inspect_core(&self) -> BoxedResult<SolrCore> {
         let diagnostics_query_url = self.get_query_for_diagnostics();
 
         let json = http_get_as_text(&diagnostics_query_url)?;
@@ -23,7 +23,7 @@ impl Backup {
 }
 
 impl SolrCore {
-    fn parse_core_schema(gets: &Backup, json: &str) -> Result<Self, BoxedError> {
+    fn parse_core_schema(gets: &Backup, json: &str) -> BoxedResult<Self> {
         let core_name = &gets.from;
 
         let total_docs = Self::parse_num_found(json)?;
@@ -45,7 +45,7 @@ impl SolrCore {
         Ok(res)
     }
 
-    fn parse_num_found(json: &str) -> Result<usize, BoxedError> {
+    fn parse_num_found(json: &str) -> BoxedResult<usize> {
         lazy_static! {
             static ref REGNF: Regex = Regex::new("\"numFound\":(\\d+),").unwrap();
         }

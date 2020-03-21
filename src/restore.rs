@@ -9,7 +9,7 @@ use crate::{
     args::Restore, bars::*, connection::SolrClient, fails::*, helpers::*, ingest::*, state::*,
 };
 
-pub(crate) fn restore_main(params: Restore) -> Result<(), BoxedError> {
+pub(crate) fn restore_main(params: Restore) -> BoxedError {
     debug!("  {:?}", params);
 
     let found = params.find_archives()?;
@@ -33,7 +33,7 @@ pub(crate) fn restore_main(params: Restore) -> Result<(), BoxedError> {
     Ok(())
 }
 
-fn unzip_archives(params: Restore, found: &[PathBuf]) -> Result<usize, BoxedError> {
+fn unzip_archives(params: Restore, found: &[PathBuf]) -> BoxedResult<usize> {
     let doc_count = estimate_document_count(found)?;
     let mut updated = 0;
 
@@ -99,7 +99,7 @@ fn unzip_archives(params: Restore, found: &[PathBuf]) -> Result<usize, BoxedErro
     Ok(updated)
 }
 
-fn estimate_document_count(found: &[PathBuf]) -> Result<u64, BoxedError> {
+fn estimate_document_count(found: &[PathBuf]) -> BoxedResult<u64> {
     // Estimate number of json files inside all zip files
     let zip_count = found.len();
 
@@ -207,7 +207,7 @@ mod tests {
     use crate::{args::*, fails::*};
 
     impl Arguments {
-        pub fn put(&self) -> Result<&Restore, BoxedError> {
+        pub fn put(&self) -> BoxedResult<&Restore> {
             match &self {
                 Self::Restore(puts) => Ok(&puts),
                 _ => raise("command must be 'restore' !"),
