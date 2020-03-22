@@ -26,7 +26,7 @@ jobs:
           toolchain: stable
           default: true
           override: true
-          components: rustfmt, clippy
+          components: rustfmt, clippy, cargo-deb
 
       - name: Run cargo build
         uses: actions-rs/cargo@v1
@@ -51,5 +51,19 @@ jobs:
         with:
           command: fmt
           args: --all -- --check
+
+      - name: Run cargo deb
+        uses: actions-rs/cargo@v1
+        if: success()
+        with:
+          command: deb
+          args: --verbose -- --release 
+
+      - name: Upload debian artifact
+        uses: actions/upload-artifact@v1
+        if: success()
+        with:
+          name: debian-package
+          path: target/debian
 
 # end of file
