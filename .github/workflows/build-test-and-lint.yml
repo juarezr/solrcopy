@@ -26,7 +26,7 @@ jobs:
           toolchain: stable
           default: true
           override: true
-          components: rustfmt, clippy, cargo-deb
+          components: rustfmt, clippy
 
       - name: Run cargo build
         uses: actions-rs/cargo@v1
@@ -51,6 +51,13 @@ jobs:
         with:
           command: fmt
           args: --all -- --check
+
+      - name: Install cargo deb
+        uses: actions-rs/cargo@v1
+        if: success()
+        with:
+          command: install
+          args: cargo-deb 
 
       - name: Run cargo deb
         uses: actions-rs/cargo@v1
