@@ -40,11 +40,11 @@ jobs:
           command: test 
 
       - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
+        uses: actions-rs/clippy-check@v1
         continue-on-error: true   # show all errors
         with:
-          command: clippy
-          args: --all --all-features -- -Dwarnings
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-features
 
       - name: Run cargo fmt
         uses: actions-rs/cargo@v1
@@ -64,7 +64,7 @@ jobs:
         if: success()
         with:
           command: deb
-          args: --verbose -- --release 
+          args: --verbose
 
       - name: Upload debian artifact
         uses: actions/upload-artifact@v1
