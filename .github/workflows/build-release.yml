@@ -1,6 +1,6 @@
 on:
   release:
-    types: [created, published, edited]
+    types: [published, edited]
 
 name: build-release
 
@@ -11,70 +11,61 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Parse Release Tag
-        id: parse_release
-        run: echo "::set-env name=RELEASE_VERSION::${GITHUB_REF#refs/tags/}"
-
-      - name: Check output
-        env:
-          RELEASE_VERSION2: ${{ steps.parse_release.outputs.tag }}
+      - name: Get release version
         run: |
-          echo "RELEASE_VERSION  IS: $RELEASE_VERSION"
-          echo "RELEASE_VERSION2 IS: $RELEASE_VERSION2"
+          echo ::set-env name=RELEASE_VERSION::${${{ github.event.release.tag_name }}:1}
           echo "github.event.release.tag_name : ${{ github.event.release.tag_name }}"
           echo "github.event.release.upload_url : ${{ github.event.release.upload_url }}"
           echo "github.event_path : ${{ github.event_path }}"
-          cat ${{ github.event_path }}
+          # cat ${{ github.event_path }}
 
-      # - name: Checkout sources
-      #   uses: actions/checkout@v2
+      - name: Checkout sources
+        uses: actions/checkout@v2
 
-      # - name: Install stable toolchain
-      #   uses: actions-rs/toolchain@v1
-      #   with:
-      #     profile: default
-      #     toolchain: stable
-      #     default: true
-      #     override: true
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: default
+          toolchain: stable
+          default: true
+          override: true
 
-      # - name: Run cargo build
-      #   uses: actions-rs/cargo@v1
-      #   with:
-      #     command: build
-      #     args: --release --verbose
+      - name: Run cargo build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --verbose
 
-      # - name: Run cargo test
-      #   uses: actions-rs/cargo@v1
-      #   with:
-      #     command: test 
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test 
 
-      # - name: Install cargo deb rpm
-      #   uses: actions-rs/cargo@v1
-      #   if: success()
-      #   with:
-      #     command: install
-      #     args: cargo-deb 
+      - name: Install cargo deb rpm
+        uses: actions-rs/cargo@v1
+        if: success()
+        with:
+          command: install
+          args: cargo-deb 
 
-      # - name: Run cargo deb
-      #   uses: actions-rs/cargo@v1
-      #   if: success()
-      #   with:
-      #     command: deb
-      #     args: --verbose
+      - name: Run cargo deb
+        uses: actions-rs/cargo@v1
+        if: success()
+        with:
+          command: deb
+          args: --verbose
 
-      # - name: Upload Release Asset
-      #   id: upload-release-asset 
-      #   uses: actions/upload-release-asset@v1
-      #   if: success()
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
-      #      # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. 
-      #      # See this blog post for more info:                          
-      #     asset_path: target/debian/solrcopy_${{ env.GITHUB_REF }}_amd64.deb
-      #     asset_name: solrcopy_${{ env.GITHUB_REF }}_amd64.deb
-      #     asset_content_type: application/vnd.debian.binary-package
+      - name: Upload Release Asset
+        id: upload-release-asset 
+        uses: actions/upload-release-asset@v1
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: target/debian/solrcopy_${{ env.RELEASE_VERSION }}_amd64.deb
+          asset_name: solrcopy_${{ env.RELEASE_VERSION }}_amd64.deb
+          asset_content_type: application/vnd.debian.binary-package
 
 # TODO:
 # sudo apt install -y rpm
