@@ -12,8 +12,8 @@ on: [push, pull_request]
 name: build-test-and-lint
 
 jobs:
-  sources:
-    name: Building Testing Linting
+  ci:
+    name: ci-check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -51,26 +51,5 @@ jobs:
         with:
           command: fmt
           args: --all -- --check
-
-      - name: Install cargo deb
-        uses: actions-rs/cargo@v1
-        if: success()
-        with:
-          command: install
-          args: cargo-deb 
-
-      - name: Run cargo deb
-        uses: actions-rs/cargo@v1
-        if: success()
-        with:
-          command: deb
-          args: --verbose
-
-      - name: Upload debian artifact
-        uses: actions/upload-artifact@v1
-        if: success()
-        with:
-          name: debian-package
-          path: target/debian
 
 # end of file
