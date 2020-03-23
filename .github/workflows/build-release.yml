@@ -12,17 +12,23 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Parse Release Tag
-        id: this_release
-        run: echo ::set-output name=this_release::${GITHUB_REF#refs/*/}
+        id: parse_release
+        #run: echo ::set-output name=this_release::${GITHUB_REF#refs/*/}
+        run: |
+          echo "::set-env name=RELEASE_VERSION::${GITHUB_REF#refs/tags/}"
+          echo "version is: ${{ env.RELEASE_VERSION }}"
+          echo ::set-output name=RELEASE_VERSION2::${GITHUB_REF#refs/*/}
+          echo "version is: ${{ env.RELEASE_VERSION2 }}"
 
       - name: Check output
         env:
-          RELEASE_VERSION: ${{ steps.vars.outputs.this_release }}
+          RELEASE_VERSION3: ${{ steps.parse_release.outputs.tag }}
         run: |
-          echo "RELEASE_VERSION IS: $RELEASE_VERSION"
-          echo "steps.vars.outputs.this_release : ${{ steps.vars.outputs.this_release }}"
+          echo "RELEASE_VERSION  IS: $RELEASE_VERSION"
+          echo "RELEASE_VERSION2 IS: $RELEASE_VERSION2"
+          echo "steps.parse_release.outputs.tag : ${{ steps.parse_release.outputs.tag }}"
+          echo "github.event.release.upload_url : ${{ github.event.release.upload_url }}"
           echo "github.event_path : ${{ github.event_path }}"
-          echo "github.event.upload_url : ${{ github.event.upload_url }}"
           cat ${{ github.event_path }}
 
       # - name: Checkout sources
