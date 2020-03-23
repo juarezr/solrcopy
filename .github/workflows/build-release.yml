@@ -38,17 +38,12 @@ jobs:
           command: build
           args: --release --verbose
 
-      - name: Run cargo test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test 
-
       - name: Install cargo deb rpm
         uses: actions-rs/cargo@v1
         if: success()
         with:
           command: install
-          args: cargo-deb 
+          args: cargo-deb cargo-rpm
 
       - name: Run cargo deb
         uses: actions-rs/cargo@v1
@@ -57,7 +52,22 @@ jobs:
           command: deb
           args: --verbose
 
-      - name: Upload Release Asset
+      - name: Create binary package
+        run: tar -C target/release -czvf target/release/solrcopy-${{ env.RELEASE_VERSION }}-amd64.tar.gz solrcopy
+
+      - name: Install rpm tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends rpm
+
+      - name: Run cargo rpm
+        uses: actions-rs/cargo@v1
+        if: success()
+        with:
+          command: rpm
+          args: --verbose
+
+      - name: Upload Debian Package
         id: upload-release-asset 
         uses: actions/upload-release-asset@v1
         if: success()
@@ -69,8 +79,28 @@ jobs:
           asset_name: solrcopy_${{ env.RELEASE_VERSION }}_amd64.deb
           asset_content_type: application/vnd.debian.binary-package
 
-# TODO:
-# sudo apt install -y rpm
+      - name: Upload RPM Package
+        id: upload-release-asset 
+        uses: actions/upload-release-asset@v1
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: target/release/rpmbuild/RPMS/x86_64/solrcopy-${{ env.RELEASE_VERSION }}-1.x86_64.rpm
+          asset_name: solrcopy-${{ env.RELEASE_VERSION }}-1.x86_64.rpm
+          asset_content_type: application/x-rpm
 
+      - name: Upload binary package
+        id: upload-release-asset 
+        uses: actions/upload-release-asset@v1
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: target/release/solrcopy-${{ env.RELEASE_VERSION }}-amd64.tar.gz
+          asset_name: solrcopy-${{ env.RELEASE_VERSION }}-amd64.tar.gz
+          asset_content_type: application/octet-stream
 
 # end of file
