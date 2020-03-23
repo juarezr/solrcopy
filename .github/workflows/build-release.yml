@@ -1,27 +1,29 @@
 on:
   release:
-    types: [created, edited]
+    types: [created, published, edited]
+
 name: build-release
 
 jobs:
   building:
-    name: ci-check
+    name: releasing
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      FIRST_NAME: https://uploads.github.com/repos/octocat/Hello-World/releases/1/assets?name=foo.zip
     steps:
-      - name: Set output
-        id: release_tag
-        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+      - name: Parse Release Tag
+        id: this_release
+        run: echo ::set-output name=this_release::${GITHUB_REF#refs/*/}
+
       - name: Check output
         env:
-          RELEASE_VERSION: ${{ steps.vars.outputs.release_tag }}
+          RELEASE_VERSION: ${{ steps.vars.outputs.this_release }}
         run: |
-          echo $RELEASE_VERSION
-          echo ${{ steps.vars.outputs.release_tag }}
-          echo ${{ github.event_path }}
-          echo ${{ github.event.upload_url }}
+          echo "RELEASE_VERSION IS: $RELEASE_VERSION"
+          echo "steps.vars.outputs.this_release : ${{ steps.vars.outputs.this_release }}"
+          echo "github.event_path : ${{ github.event_path }}"
+          echo "github.event.upload_url : ${{ github.event.upload_url }}"
+          cat ${{ github.event_path }}
 
       # - name: Checkout sources
       #   uses: actions/checkout@v2
