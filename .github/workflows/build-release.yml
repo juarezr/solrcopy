@@ -91,7 +91,8 @@ jobs:
 
       - name: Create windows binary package
         if: matrix.os == 'windows'
-        run: zip -j target/${{ matrix.target }}/artifact/solrcopy-${{ env.RELEASE_VERSION }}-${{ matrix.target }}.zip target/${{ matrix.target }}/release/solrcopy.exe
+        run: ls -l target/${{ matrix.target }}/release
+        run: zip -j target/${{ matrix.target }}/artifact/solrcopy-${{ env.RELEASE_VERSION }}-${{ matrix.target }}.zip target/${{ matrix.target }}/release/solrcop*
 
       - name: Run cargo rpm
         uses: actions-rs/cargo@v1
