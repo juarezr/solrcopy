@@ -5,9 +5,26 @@ on:
 name: build-release
 
 jobs:
-  building:
+  releasing:
     name: releasing
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        build: [linux, win-msvc]
+        # build: [linux, linux-arm, macos, win-msvc, win32-msvc]  # rustc --print target-list
+        include:
+        - build: linux-x86_64
+          os: linux
+          target: x86_64-unknown-linux-gnu
+        - build: windows-x86_64
+          os: windows
+          target: x86_64-pc-windows-msvc
+        # - build: macos
+        #   os: darwin
+        #   target: x86_64-apple-darwin
+        # - build: win32-i686
+        #   os: windows
+        #   target: i686-pc-windows-msvc    
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -21,83 +38,109 @@ jobs:
           echo "github.event_path : ${{ github.event_path }}"
           # cat ${{ github.event_path }}
 
-      - name: Checkout sources
-        uses: actions/checkout@v2
-
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: default
           toolchain: stable
-          default: true
+          target: ${{ matrix.target }}
           override: true
-
-      - name: Run cargo build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --verbose
 
       - name: Install cargo deb rpm
         uses: actions-rs/cargo@v1
-        if: success()
+        if: matrix.os == 'linux'
         with:
           command: install
           args: cargo-deb cargo-rpm
 
-      - name: Run cargo deb
-        uses: actions-rs/cargo@v1
-        if: success()
-        with:
-          command: deb
-          args: --verbose
-
-      - name: Create binary package
-        run: tar -C target/release -czvf target/release/solrcopy-${{ env.RELEASE_VERSION }}-amd64.tar.gz solrcopy
-
       - name: Install rpm tools
+        if: matrix.os == 'linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends rpm
 
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Create local folders
+        run: mkdir -p target/artifact
+
+      - name: Run cargo build
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: build
+          args: --release --verbose --target=${{ matrix.target }}
+
+      - name: Strip release binary (linux and macos)
+        if: matrix.os == 'linux' || matrix.os == 'darwin'
+        run: strip "target/${{ matrix.target }}/release/solrcopy"
+
+      - name: Run cargo deb
+        uses: actions-rs/cargo@v1
+        if: matrix.os == 'linux'
+        with:
+          command: deb
+          args: --verbose --no-build --target=${{ matrix.target }}
+
+      - name: Create linux binary package
+        if: matrix.os == 'linux'
+        run: tar -C target/${{ matrix.target }}/release -czvf target/${{ matrix.target }}/artifact/solrcopy-${{ env.RELEASE_VERSION }}-${{ matrix.target }}.tar.gz solrcopy
+
+      - name: Create windows binary package
+        if: matrix.os == 'windows'
+        run: zip -j target/${{ matrix.target }}/artifact/solrcopy-${{ env.RELEASE_VERSION }}-${{ matrix.target }}.zip target/${{ matrix.target }}/release/solrcopy.exe
+
       - name: Run cargo rpm
         uses: actions-rs/cargo@v1
-        if: success()
+        if: matrix.os == 'linux'
         with:
           command: rpm
           args: build --verbose
+          # rpmbuild -v -D _topdir target/${{ matrix.target }}/rpmbuild -D _tmppath target/${{ matrix.target }}/rpmbuild/tmp -ba SPECS/solrcopy.spec
 
       - name: Upload Debian Package
         uses: actions/upload-release-asset@v1
-        if: success()
+        if: matrix.os == 'linux'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: target/debian/solrcopy_${{ env.RELEASE_VERSION }}_amd64.deb
+          asset_path: target/${{ matrix.target }}/debian/solrcopy_${{ env.RELEASE_VERSION }}_amd64.deb
           asset_name: solrcopy_${{ env.RELEASE_VERSION }}_amd64.deb
           asset_content_type: application/vnd.debian.binary-package
 
       - name: Upload RPM Package
         uses: actions/upload-release-asset@v1
-        if: success()
+        if: matrix.os == 'linux'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: target/release/rpmbuild/RPMS/x86_64/solrcopy-${{ env.RELEASE_VERSION }}-1.x86_64.rpm
+          asset_path: target/${{ matrix.target }}/release/rpmbuild/RPMS/x86_64/solrcopy-${{ env.RELEASE_VERSION }}-1.x86_64.rpm
           asset_name: solrcopy-${{ env.RELEASE_VERSION }}-1.x86_64.rpm
           asset_content_type: application/x-rpm
 
-      - name: Upload binary package
+      - name: Upload linux binary package
         uses: actions/upload-release-asset@v1
-        if: success()
+        if: matrix.os == 'linux'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: target/release/solrcopy-${{ env.RELEASE_VERSION }}-amd64.tar.gz
-          asset_name: solrcopy-${{ env.RELEASE_VERSION }}-amd64.tar.gz
+          asset_path: target/${{ matrix.target }}/artifact/solrcopy-${{ env.RELEASE_VERSION }}-${{ matrix.target }}.tar.gz
+          asset_name: solrcopy-${{ env.RELEASE_VERSION }}-${{ matrix.target }}.tar.gz
+          asset_content_type: application/octet-stream
+
+      - name: Upload linux binary package
+        uses: actions/upload-release-asset@v1
+        if: matrix.os == 'windows'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: target/${{ matrix.target }}/artifact/solrcopy-${{ env.RELEASE_VERSION }}-${{ matrix.target }}.zip
+          asset_name: solrcopy-${{ env.RELEASE_VERSION }}-${{ matrix.target }}.zip
           asset_content_type: application/octet-stream
 
 # end of file
