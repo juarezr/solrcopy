@@ -17,10 +17,12 @@ jobs:
           os: linux
           target: x86_64-unknown-linux-gnu
           channel: stable
+          cross: false
         - build: win-gnu
           os: windows
           target: x86_64-pc-windows-gnu
           channel: nightly-x86_64-gnu
+          cross: true
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -70,7 +72,7 @@ jobs:
       - name: Run cargo build
         uses: actions-rs/cargo@v1
         with:
-          use-cross: true
+          use-cross: ${{ matrix.cross }}
           command: build
           args: --release --verbose --target=${{ matrix.target }}
 
