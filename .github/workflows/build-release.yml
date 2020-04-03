@@ -65,7 +65,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Create local folders
-        run: mkdir -p target/artifact
+        run: mkdir -p target/${{ matrix.target }}/artifact
 
       - name: Run cargo build
         uses: actions-rs/cargo@v1
@@ -93,7 +93,7 @@ jobs:
         if: matrix.os == 'windows'
         run: |
           ls -l target/${{ matrix.target }}/release
-          zip -j target/${{ matrix.target }}/artifact/solrcopy-${{ env.RELEASE_VERSION }}-${{ matrix.target }}.zip target/${{ matrix.target }}/release/solrcop*
+          zip -j target/${{ matrix.target }}/artifact/solrcopy-${{ env.RELEASE_VERSION }}-${{ matrix.target }}.zip target/${{ matrix.target }}/release/solrcopy.exe
 
       - name: Run cargo rpm
         uses: actions-rs/cargo@v1
@@ -136,7 +136,7 @@ jobs:
           asset_name: solrcopy-${{ env.RELEASE_VERSION }}-${{ matrix.target }}.tar.gz
           asset_content_type: application/octet-stream
 
-      - name: Upload linux binary package
+      - name: Upload windows binary package
         uses: actions/upload-release-asset@v1
         if: matrix.os == 'windows'
         env:
