@@ -10,21 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        build: [linux-x86_64, windows-x86_64]
-        # build: [linux, linux-arm, macos, win-msvc, win32-msvc]  # rustc --print target-list
+        build: [linux, win-msvc]
         include:
-        - build: linux-x86_64
+        - build: linux
           os: linux
           target: x86_64-unknown-linux-gnu
-        - build: windows-x86_64
+        - build: win-msvc
           os: windows
           target: x86_64-pc-windows-msvc
-        # - build: macos
-        #   os: darwin
-        #   target: x86_64-apple-darwin
-        # - build: win32-i686
-        #   os: windows
-        #   target: i686-pc-windows-msvc    
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -97,7 +90,7 @@ jobs:
         with:
           command: rpm
           args: build --verbose
-          # rpmbuild -v -D _topdir target/${{ matrix.target }}/rpmbuild -D _tmppath target/${{ matrix.target }}/rpmbuild/tmp -ba SPECS/solrcopy.spec
+      # rpmbuild -v -D _topdir target/${{ matrix.target }}/rpmbuild -D _tmppath target/${{ matrix.target }}/rpmbuild/tmp -ba SPECS/solrcopy.spec
 
       - name: Upload Debian Package
         uses: actions/upload-release-asset@v1
