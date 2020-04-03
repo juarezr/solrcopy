@@ -10,14 +10,17 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        build: [linux, win-msvc]
+        build: [linux, win-gnu]
+        # rustc --print target-list
         include:
         - build: linux
           os: linux
           target: x86_64-unknown-linux-gnu
-        - build: win-msvc
+          channel: stable
+        - build: win-gnu
           os: windows
-          target: x86_64-pc-windows-msvc
+          target: x86_64-pc-windows-gnu
+          channel: nightly-x86_64-gnu
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -31,7 +34,7 @@ jobs:
           echo "github.event_path : ${{ github.event_path }}"
           # cat ${{ github.event_path }}
 
-      - name: Install stable toolchain
+      - name: Install rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: default
@@ -51,6 +54,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends rpm
+
+      - name: Install mingw toolchain
+        if: matrix.os == 'windows'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends mingw-w64
 
       - name: Checkout sources
         uses: actions/checkout@v2
