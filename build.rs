@@ -24,11 +24,11 @@ pub(crate) fn build_artifacts() {
     let pkg_dir = std::env::var("CARGO_MANIFEST_DIR").expect("# Missing $CARGO_MANIFEST_DIR!");
     let target = std::env::var("TARGET").expect("# Missing $TARGET!");
 
-    let out_dir = if cfg!(debug_assertions) { 
-		format!("{}/target/debug", pkg_dir)
-	} else { 
-		format!("{}/target/{}/release", pkg_dir, target)
-	};
+    let out_dir = if cfg!(debug_assertions) {
+        format!("{}/target/debug", pkg_dir)
+    } else {
+        format!("{}/target/{}/release", pkg_dir, target)
+    };
     eprintln!("# out_dir: {}", out_dir);
 
     let pkg_name = std::env::var("CARGO_PKG_NAME").expect("# Missing $CARGO_PKG_NAME!");
