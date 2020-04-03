@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        build: [linux, win-msvc]
+        build: [linux-x86_64, windows-x86_64]
         # build: [linux, linux-arm, macos, win-msvc, win32-msvc]  # rustc --print target-list
         include:
         - build: linux-x86_64

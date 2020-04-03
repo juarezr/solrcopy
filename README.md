@@ -33,7 +33,7 @@ Command line tool for backup and restore of documents stored in cores of [Apache
 
 ``` text
 $ solrcopy --help
-solrcopy 0.4.1
+solrcopy 0.4.2
 Command line tool for backup and restore of documents stored in cores of Apache Solr.
 
 Solrcopy is a command for doing backup and restore of documents stored on Solr cores. It let you filter docs by using a
@@ -57,7 +57,7 @@ SUBCOMMANDS:
 
 ``` text
 $ solrcopy help backup
-solrcopy-backup 0.4.1
+solrcopy-backup 0.4.2
 Dumps documents from a Apache Solr core into local backup files
 
 USAGE:
@@ -89,7 +89,7 @@ $ solrcopy backup --url http://localhost:8983/solr --from demo --query 'price:[1
 
 ``` text
 $ solrcopy help restore
-solrcopy-restore 0.4.1
+solrcopy-restore 0.4.2
 Restore documents from local backup files into a Apache Solr core
 
 USAGE:
