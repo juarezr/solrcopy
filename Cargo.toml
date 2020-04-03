@@ -71,14 +71,21 @@ It is agnostic to data format, content and storage place. \
 Because of this data is restored exactly as extracted and your responsible for \
 extracting, storing and updating the correct data in correct cores."""
 
-# cargo rpm: used for generating a debian package
+# cargo rpm: used for generating a fedora package
 #  - https://github.com/RustRPM/cargo-rpm
 
 [package.metadata.rpm.cargo]
-buildflags = ["--release"]
+# profile = "release"
+target = "x86_64-unknown-linux-gnu"
+buildflags = ["--release", "--verbose"]
 
 [package.metadata.rpm.targets]
 solrcopy = { path = "/usr/bin/solrcopy" }
+
+# [package.metadata.rpm.files]
+# "solrcopy.bash" = { path = "/usr/share/bash-completion/completions/solrcopy" }
+# "solrcopy.fish" = { path = "/usr/share/fish/vendor_completions.d/solrcopy.fish" }
+# "_solrcopy" = { path = "/usr/share/zsh/vendor-completions/_solrcopy" }
 
 # TODO: man page: https://rust-cli.github.io/book/in-depth/docs.html
 
