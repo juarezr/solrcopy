@@ -1,4 +1,3 @@
-use ctrlc;
 use log::{debug, error};
 
 use std::sync::atomic::{AtomicBool, Ordering};

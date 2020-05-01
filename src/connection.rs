@@ -1,5 +1,3 @@
-use ureq;
-
 use std::{error::Error, fmt};
 
 use crate::helpers::*;
