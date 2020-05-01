@@ -9,8 +9,6 @@ Command line tool for backup and restore of documents stored in cores of [Apache
 - solrcopy backup/restore
   - Should work well in most common cases.
   - Works for me... :)
-- Packaging:
-  - Not started yet
 - Check the issues in github
 - Patches welcome!
 
@@ -21,7 +19,7 @@ Command line tool for backup and restore of documents stored in cores of [Apache
 1. Use the command `solrcopy backup` for dumping documents from a Solr core into local zip files.
    1. Use the switch `--query` for filtering the documents extracted by using a [Solr](https://lucene.apache.org/solr/guide/8_4/the-standard-query-parser.html) [Query](https://lucene.apache.org/solr/guide/8_4/the-standard-query-parser.html)
    2. Use the switch `--order` for specifing the sorting of documents extracted.
-   3. Use the switch `--limit` for restricting the number of documents extracted.
+   3. Use the switches `--limit` and `--skip` for restricting the number of documents extracted.
    4. Use the switch `--select` for restricting the columns extracted.
 2. Use the command `solrcopy restore` for uploading the extracted documents from local zip files into the same Solr core or another with same field names as extracted.
    1. The documents are updated in the target core in the same format that they were extracted.
@@ -33,7 +31,7 @@ Command line tool for backup and restore of documents stored in cores of [Apache
 
 ``` text
 $ solrcopy --help
-solrcopy 0.4.2
+solrcopy 0.4.3
 Command line tool for backup and restore of documents stored in cores of Apache Solr.
 
 Solrcopy is a command for doing backup and restore of documents stored on Solr cores. It let you filter docs by using a
@@ -57,7 +55,7 @@ SUBCOMMANDS:
 
 ``` text
 $ solrcopy help backup
-solrcopy-backup 0.4.2
+solrcopy-backup 0.4.3
 Dumps documents from a Apache Solr core into local backup files
 
 USAGE:
@@ -89,7 +87,7 @@ $ solrcopy backup --url http://localhost:8983/solr --from demo --query 'price:[1
 
 ``` text
 $ solrcopy help restore
-solrcopy-restore 0.4.2
+solrcopy-restore 0.4.3
 Restore documents from local backup files into a Apache Solr core
 
 USAGE:
@@ -102,7 +100,7 @@ FLAGS:
 
 OPTIONS:
     -c, --commit <mode>                Mode to perform commits of the index while updating documents in the core
-                                       [default: none]  [possible values: none, soft, hard]
+                                       [possible values: none, soft, hard, final, <num docs>] [default: final]
     -f, --from </path/to/zips>         Existing folder for reading the zip backup files containing documents [env:
                                        SOLR_COPY_DIR=]
     -i, --into <core>                  Case sensitive name of the Solr core to upload documents
@@ -112,6 +110,26 @@ OPTIONS:
     -w, --writers <count>              Number parallel threads writing documents into zip archives [default: 1]
 
 $ solrcopy restore --url http://localhost:8983/solr  --from ./tmp --into target
+```
+
+``` text
+$ solrcopy help commit
+solrcopy-commit 0.4.3
+Perform a commit in the Solr core index for persisting documents in disk/memory
+
+USAGE:
+    solrcopy commit [FLAGS] --into <core> --url <localhost:8983/solr>
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+        --verbose    Show details of the execution
+
+OPTIONS:
+    -i, --into <core>                  Case sensitive name of the Solr core to perform the commit
+    -u, --url <localhost:8983/solr>    Url pointing to the Solr cluster [env: SOLR_COPY_URL=]
+
+$ solrcopy commit --url http://localhost:8983/solr --into target
 ```
 
 ## Known Issues
@@ -212,6 +230,7 @@ $ docker exec -it test-container solr create_core -c target
       - `--order`
       - `--select`
       - `--batch`
+      - `--skip`
       - `--limit`
    2. Check the [Solr Query](https://lucene.apache.org/solr/guide/8_4/the-standard-query-parser.html) docs for understading this parameters.
 4. Test the parameters in Solr admin UI at your core in **solr address** (somenthing like: [http://localhost:8983/solr/#/corename](http://localhost:8983/solr/#/corename))

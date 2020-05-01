@@ -1,10 +1,25 @@
-debian (0.40.1) unstable; urgency=low
+debian (0.4.3) unstable; urgency=low
+
+  * feature: add modes final and <docs> for restore --commit
+  * improved: added a default commit on final
+  * improved: replace crate reqwest by ureq
+  * fixed: fixed url to solr update handler
+
+-- Juarez Rudsatz <juarezr@gmail.com>  Mar, 1 Ma 2020 00:04:03 -0300
+
+debian (0.4.2) unstable; urgency=low
+
+  * feature: continuos integration, cross compiling (Closes: #2)
+
+-- Juarez Rudsatz <juarezr@gmail.com>  Mar, 23 Mar 2020 00:04:02 -0300
+
+debian (0.4.1) unstable; urgency=low
 
   * feature: handle app interrupt on Crl+C or Ctrl+Break (Closes: #5)
 
--- Juarez Rudsatz <juarezr@gmail.com>  Mar, 16 Mar 2020 00:40:00 -0300
+-- Juarez Rudsatz <juarezr@gmail.com>  Mar, 23 Mar 2020 00:04:01 -0300
 
-debian (0.40.0) unstable; urgency=low
+debian (0.4.0) unstable; urgency=low
 
   * feature: retry on http timeout errors  (Closes: #6)
   * feature: add --max-files for splitting zip files
@@ -15,9 +30,9 @@ debian (0.40.0) unstable; urgency=low
   * fixed: some minor bugs also
   * refactored: added rustfmt.toml for code formmatting
 
--- Juarez Rudsatz <juarezr@gmail.com>  Mar, 16 Mar 2020 00:40:00 -0300
+-- Juarez Rudsatz <juarezr@gmail.com>  Mar, 16 Mar 2020 00:04:00 -0300
 
-debian (0.30.0) unstable; urgency=low
+debian (0.3.0) unstable; urgency=low
 
   * feature: process backup/restore in parallel (Closes: #3)
   * feature: add --readers --writers for controlling parallel workers
@@ -33,10 +48,10 @@ debian (0.30.0) unstable; urgency=low
   * refactored: created a container with solr for testing
   * refactored: formatted source code with cargo fmt
 
--- Juarez Rudsatz <juarezr@gmail.com>  Mar, 11 Mar 2020 00:30:00 -0300
+-- Juarez Rudsatz <juarezr@gmail.com>  Mar, 11 Mar 2020 00:03:00 -0300
 
-debian (0.21.1) unstable; urgency=low
+debian (0.2.1) unstable; urgency=low
 
   * Initial release (Closes: #1)
 
--- Juarez Rudsatz <juarezr@gmail.com>  Mar, 04 Mar 2020 00:21:01 -0300
+-- Juarez Rudsatz <juarezr@gmail.com>  Mar, 04 Mar 2020 00:02:01 -0300
