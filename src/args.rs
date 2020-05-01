@@ -68,9 +68,14 @@ pub enum CommitMode {
     Soft,
     /// Perform a hard commit to disk of the documents (slow)
     Hard,
+    /// Perform a final hard commit to disk after updated all documents
+    Within { count: usize },
+    /// Perform a final hard commit to disk after updated all documents
+    Final,
 }
 
-const COMMIT_VALUES: &[&str] = &["none", "soft", "hard"];
+// const COMMIT_VALUES: &[&str] = &["none", "soft", "hard", "final", "<docs>"];
+// , possible_values = COMMIT_VALUES
 
 #[derive(StructOpt, Debug)]
 pub struct Restore {
@@ -79,7 +84,8 @@ pub struct Restore {
     pub into: String,
 
     /// Mode to perform commits of the index while updating documents in the core
-    #[structopt(short, long, default_value = "none", possible_values = COMMIT_VALUES, value_name = "mode")]
+    /// [possible values: none, soft, hard, final, <num docs>]
+    #[structopt(short, long, default_value = "final", parse(try_from_str = parse_commit_mode), value_name = "mode")]
     pub commit: CommitMode,
 
     /// Existing folder for reading the zip backup files containing documents
@@ -241,9 +247,23 @@ fn parse_file_prefix(src: &str) -> Result<String, String> {
     }
 }
 
+fn parse_commit_mode(s: &str) -> Result<CommitMode, String> {
+    let lower = s.to_ascii_lowercase();
+    match lower.as_str() {
+        "none" => Ok(CommitMode::None),
+        "soft" => Ok(CommitMode::Soft),
+        "hard" => Ok(CommitMode::Hard),
+        "final" => Ok(CommitMode::Final),
+        _ => match parse_quantity(&s) {
+            Ok(value) => Ok(CommitMode::Within { count: value }),
+            Err(_) => Err(format!("'{}'. [alowed: none, soft, hard, final, <num docs>]", s)),
+        },
+    }
+}
+
 impl Default for CommitMode {
     fn default() -> Self {
-        CommitMode::None
+        CommitMode::Final
     }
 }
 
@@ -251,22 +271,17 @@ impl FromStr for CommitMode {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let lower = s.to_ascii_lowercase();
-        match lower.as_str() {
-            "none" => Ok(CommitMode::None),
-            "soft" => Ok(CommitMode::Soft),
-            "hard" => Ok(CommitMode::Hard),
-            _ => Err(format!("'{}' is not a valid value for CommitMode", s)),
-        }
+        parse_commit_mode(s)
     }
 }
 
 impl CommitMode {
     pub fn as_param(&self, separator: &str) -> String {
         match self {
-            CommitMode::None => EMPTY_STRING,
             CommitMode::Soft => separator.append("softCommit=true"),
             CommitMode::Hard => separator.append("commit=true"),
+            CommitMode::Within { count } => format!("{}commitWithin={}", separator, count),
+            _ => EMPTY_STRING,
         }
     }
 }

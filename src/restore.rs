@@ -6,7 +6,13 @@ use std::sync::{atomic::AtomicBool, Arc};
 use std::{path::PathBuf, time::Instant};
 
 use crate::{
-    args::Restore, bars::*, connection::SolrClient, fails::*, helpers::*, ingest::*, state::*,
+    args::{Commit, CommitMode, Restore},
+    bars::*,
+    connection::SolrClient,
+    fails::*,
+    helpers::*,
+    ingest::*,
+    state::*,
 };
 
 pub(crate) fn restore_main(params: Restore) -> BoxedError {
@@ -96,6 +102,10 @@ fn unzip_archives(params: Restore, found: &[PathBuf]) -> BoxedResult<usize> {
     })
     .unwrap();
 
+    if CommitMode::Final == params.commit {
+        let params2 = Commit { into: params.into, options: params.options };
+        crate::commit::commit_main(params2)?;
+    }
     Ok(updated)
 }
 
