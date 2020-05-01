@@ -110,7 +110,7 @@ fn start_querying_core(requests: Requests, generator: Sender<Step>) {
 fn start_retrieving_docs(reader: usize, iterator: Receiver<Step>, producer: Sender<Documents>) {
     let ctrl_c = monitor_term_sinal();
 
-    let mut client = SolrClient::new().unwrap();
+    let mut client = SolrClient::new();
     loop {
         let received = iterator.recv();
         if ctrl_c.aborted() {

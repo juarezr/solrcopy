@@ -1,9 +1,6 @@
-use reqwest::{
-    blocking::Client,
-    header::{HeaderMap, HeaderValue, CONTENT_TYPE, USER_AGENT},
-};
+use ureq;
 
-use std::time::Duration;
+use std::{error::Error, fmt};
 
 use crate::helpers::*;
 
@@ -11,99 +8,134 @@ use crate::helpers::*;
 
 #[derive(Debug)]
 pub struct SolrClient {
-    http: Client,
+    http: ureq::Agent,
     max_retries: usize,
     retry_count: usize,
 }
 
-// TODO: authentication, proxy, tls, etc...
+#[derive(Debug)]
+pub struct SolrError {
+    status: String,
+    response: String,
+}
+
+impl SolrError {
+    pub fn new(message: String, body: String) -> Self {
+        SolrError { status: message, response: body }
+    }
+
+    fn say(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.status)
+    }
+}
+
+impl fmt::Display for SolrError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.say(f)
+    }
+}
+
+// impl fmt::Debug for SolrError {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         self.say(f)
+//     }
+// }
+
+impl Error for SolrError {
+    fn description(&self) -> &str {
+        &self.status
+    }
+}
+
+// TODO: authentication, proxy, etc...
 
 const SOLR_COPY_TIMEOUT: &str = "SOLR_COPY_TIMEOUT";
 const SOLR_COPY_RETRIES: &str = "SOLR_COPY_RETRIES";
 
 impl SolrClient {
-    pub fn new() -> Result<Self, reqwest::Error> {
-        let timeout = env_value(SOLR_COPY_TIMEOUT, 60);
+    pub fn new() -> Self {
         let retries = env_value(SOLR_COPY_RETRIES, 4);
-
-        let client = Client::builder()
-            .timeout(Duration::from_secs(timeout.to_u64()))
+        let client = ureq::agent()
             // .basic_auth("admin", Some("good password"))
-            .build()?;
+            .build();
 
-        Ok(SolrClient { http: client, max_retries: retries.to_usize(), retry_count: 0 })
+        SolrClient { http: client, max_retries: retries.to_usize(), retry_count: 0 }
     }
 
-    pub fn get_as_text(&mut self, url: &str) -> Result<String, reqwest::Error> {
-        let request = self.http.get(url);
-        self.handle_request(&request)
+    fn get_timeout() -> u64 {
+        let timeout: isize = env_value(SOLR_COPY_TIMEOUT, 60);
+        timeout.to_u64() * 1000
     }
 
-    pub fn post_as_json(&mut self, url: &str, content: String) -> Result<String, reqwest::Error> {
-        let request = self.http.post(url).headers(json_headers()).body(content);
-        self.handle_request(&request)
+    fn set_timeout(builder: &mut ureq::Request) -> &mut ureq::Request {
+        let timeout = Self::get_timeout();
+        builder
+            .timeout_connect(timeout)
+            .timeout_read(Self::get_timeout())
+            .timeout_write(Self::get_timeout())
     }
 
-    fn handle_request(
-        &mut self, builder: &reqwest::blocking::RequestBuilder,
-    ) -> Result<String, reqwest::Error> {
+    pub fn get_as_text(&mut self, url: &str) -> Result<String, SolrError> {
+        let mut builder = self.http.get(url);
+        let request = Self::set_timeout(&mut builder);
+        let response = request.call();
+        Self::handle_response(response)
+    }
+
+    pub fn post_as_json(&mut self, url: &str, content: String) -> Result<String, SolrError> {
+        let mut builder = self.http.post(url);
+        let req = Self::set_timeout(&mut builder);
+        let request = req.set("Content-Type", "application/json");
         loop {
-            let request = builder.try_clone().unwrap();
-            let result = request.send();
-            let (retry, response) = match result {
-                Ok(content) => self.handle_response(content),
-                Err(failure) => self.handle_timeout(failure),
-            };
-            if retry {
-                continue;
+            let response = request.send_string(&content);
+            let result = Self::handle_response(response);
+            match result {
+                Ok(returned) => {
+                    if self.retry_count > 0 {
+                        self.retry_count -= 1;
+                    }
+                    break Ok(returned);
+                }
+                Err(failed) => {
+                    // TODO:  let is_timeout = response.is_timeout();
+                    let retry = self.retry_count < self.max_retries;
+                    if !retry {
+                        break Err(failed);
+                    }
+                    self.retry_count += 1;
+                    wait(20);
+                }
             }
-            break response;
         }
     }
 
-    fn handle_response(
-        &mut self, response: reqwest::blocking::Response,
-    ) -> (bool, Result<String, reqwest::Error>) {
-        if self.retry_count > 0 {
-            self.retry_count -= 1;
+    fn handle_response(response: ureq::Response) -> Result<String, SolrError> {
+        if response.error() {
+            if response.synthetic() {
+                let cause = response.synthetic_error().as_ref().unwrap();
+                let msg = cause.status_text().to_string();
+                let text = cause.body_text();
+                Err(SolrError::new(msg, text))
+            } else {
+                let message = response.status_line().to_string();
+                let body = response.into_string().unwrap();
+                Err(SolrError::new(message, body))
+            }
+        } else {
+            let body = response.into_string().unwrap();
+            Ok(body)
         }
-        let resp = match response.error_for_status() {
-            Ok(success) => match success.text() {
-                Ok(retrieved) => Ok(retrieved),
-                Err(parsing) => Err(parsing),
-            },
-            Err(cause) => Err(cause),
-        };
-        (false, resp)
-    }
-
-    fn handle_timeout(
-        &mut self, failure: reqwest::Error,
-    ) -> (bool, Result<String, reqwest::Error>) {
-        let retry = failure.is_timeout() && self.retry_count < self.max_retries;
-        if retry {
-            self.retry_count += 1;
-            wait(20);
-        }
-        (retry, Err(failure))
     }
 }
 
-pub fn http_get_as_text(url: &str) -> Result<String, reqwest::Error> {
-    let mut con = SolrClient::new()?;
+pub fn http_get_as_text(url: &str) -> Result<String, SolrError> {
+    let mut con = SolrClient::new();
     con.get_as_text(url)
 }
 
-pub fn http_post_as_json(url: &str, content: String) -> Result<String, reqwest::Error> {
-    let mut con = SolrClient::new()?;
+pub fn http_post_as_json(url: &str, content: String) -> Result<String, SolrError> {
+    let mut con = SolrClient::new();
     con.post_as_json(url, content)
-}
-
-fn json_headers() -> HeaderMap {
-    let mut headers = HeaderMap::new();
-    headers.insert(USER_AGENT, HeaderValue::from_static("reqwest"));
-    headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-    headers
 }
 
 // endregion
