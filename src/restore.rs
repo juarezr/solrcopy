@@ -73,6 +73,7 @@ fn unzip_archives(params: Restore, found: &[PathBuf]) -> BoxedResult<usize> {
         drop(sender);
 
         let update_hadler_url = params.get_update_url();
+        debug!("Solr Update Handler: {}", update_hadler_url);
 
         for iw in 0..transfer.writers {
             let consumer = receiver.clone();
@@ -102,11 +103,16 @@ fn unzip_archives(params: Restore, found: &[PathBuf]) -> BoxedResult<usize> {
     })
     .unwrap();
 
-    if CommitMode::Final == params.commit {
-        let params2 = Commit { into: params.into, options: params.options };
-        crate::commit::commit_main(params2)?;
+    let ctrl_c = monitor_term_sinal();
+    if ctrl_c.aborted() {
+        raise("# Execution aborted by user!")
+    } else {
+        if updated > 0 && CommitMode::Final == params.commit {
+            let params2 = Commit { into: params.into, options: params.options };
+            crate::commit::commit_main(params2)?;
+        }
+        Ok(updated)
     }
-    Ok(updated)
 }
 
 fn estimate_document_count(found: &[PathBuf]) -> BoxedResult<u64> {

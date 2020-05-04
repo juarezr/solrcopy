@@ -2,13 +2,14 @@ use crossbeam_channel::{bounded, Receiver, Sender};
 use crossbeam_utils::thread;
 use log::{debug, error, info};
 
+use std::sync::{atomic::AtomicBool, Arc};
 use std::{path::PathBuf, time::Instant};
 
 use crate::{
     args::Backup,
     bars::new_wide_bar,
     connection::SolrClient,
-    fails::BoxedError,
+    fails::*,
     helpers::*,
     save::Archiver,
     state::*,
@@ -25,6 +26,7 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
 
     info!("Starting retrieving {} documents from solr core {}.", num_found, params.from);
 
+    let ctrl_c = monitor_term_sinal();
     let started = Instant::now();
 
     thread::scope(|pool| {
@@ -39,7 +41,7 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
         let (progress, reporter) = bounded::<u64>(transfer.writers);
 
         pool.spawn(|_| {
-            start_querying_core(requests, generator);
+            start_querying_core(requests, generator, &ctrl_c);
         });
 
         for ir in 0..transfer.readers {
@@ -89,15 +91,17 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
     })
     .unwrap();
 
-    info!("Dowloaded {} documents in {:?}.", num_found, started.elapsed());
-    Ok(())
+    if ctrl_c.aborted() {
+        raise("# Execution aborted by user!")
+    } else {
+        info!("Dowloaded {} documents in {:?}.", num_found, started.elapsed());
+        Ok(())
+    }
 }
 
 // region Channels
 
-fn start_querying_core(requests: Requests, generator: Sender<Step>) {
-    let ctrl_c = monitor_term_sinal();
-
+fn start_querying_core(requests: Requests, generator: Sender<Step>, ctrl_c: &Arc<AtomicBool>) {
     for step in requests {
         let status = generator.send(step);
         if status.is_err() || ctrl_c.aborted() {
