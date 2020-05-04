@@ -96,6 +96,11 @@ pub struct Restore {
     #[structopt(short, long, value_name = "core*.zip")]
     pub pattern: Option<String>,
 
+    /// Extra parameter for Solr Update Handler.
+    /// See: https://lucene.apache.org/solr/guide/transforming-and-indexing-custom-json.html
+    #[structopt(short, long, value_name = "useParams=my_params")]
+    pub extra: Option<String>,
+
     #[structopt(flatten)]
     pub options: CommonArgs,
 
