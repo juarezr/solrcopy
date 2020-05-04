@@ -166,7 +166,7 @@ impl StringHelpers for str {
 
     #[inline]
     fn with_prefix(&self, prefix: &str) -> String {
-        if self.starts_with(prefix) {
+        if self.is_empty() || self.starts_with(prefix) {
             return self.to_string();
         }
         let mut res = prefix.to_owned();
@@ -176,7 +176,7 @@ impl StringHelpers for str {
 
     #[inline]
     fn with_suffix(&self, suffix: &str) -> String {
-        if self.ends_with(suffix) {
+        if self.is_empty() || self.ends_with(suffix) {
             return self.to_string();
         }
         let mut res = String::with_capacity(self.len() + suffix.len());
