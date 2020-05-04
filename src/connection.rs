@@ -65,7 +65,8 @@ impl SolrClient {
     }
 
     fn get_timeout() -> u64 {
-        let timeout: isize = env_value(SOLR_COPY_TIMEOUT, 60);
+        let def = if cfg!(debug_assertions) { 6 } else { 60 };
+        let timeout: isize = env_value(SOLR_COPY_TIMEOUT, def);
         timeout.to_u64() * 1000
     }
 
