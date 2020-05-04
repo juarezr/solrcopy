@@ -17,9 +17,13 @@ fn start_monitoring_term_sinal() -> Arc<AtomicBool> {
     let aborting = handler.clone();
 
     ctrlc::set_handler(move || {
-        error!("# Received Ctrl-C signal!!! Aborting...\n");
-
-        handler.store(true, Ordering::SeqCst);
+        if handler.aborted() {
+            error!("# Received abort signal (Ctrl-C) from user again!!! Aborting...\n");
+            std::process::abort();
+        } else {
+            error!("# Received Ctrl-C signal!!! Stopping threads...\n");
+            handler.store(true, Ordering::SeqCst);
+        }
     })
     .expect("Error setting Ctrl-C handler");
 
@@ -32,9 +36,8 @@ fn start_monitoring_term_sinal() -> Arc<AtomicBool> {
 
 // region trait Suggaring
 
-pub trait UserInterruption
-where
-    Self: Sized,
+pub trait UserInterruption // where
+// Self: Sized,
 {
     fn aborted(&self) -> bool;
 }
