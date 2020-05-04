@@ -13,8 +13,8 @@ pub struct SolrClient {
 
 #[derive(Debug)]
 pub struct SolrError {
-    status: String,
-    response: String,
+    pub status: String,
+    pub response: String,
 }
 
 impl SolrError {
@@ -23,7 +23,11 @@ impl SolrError {
     }
 
     fn say(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.status)
+        if self.response.is_empty() {
+            write!(f, "{}", self.status)
+        } else {
+            write!(f, "{}\n{}", self.status, self.response)
+        }
     }
 }
 
@@ -80,12 +84,12 @@ impl SolrClient {
         Self::handle_response(response)
     }
 
-    pub fn post_as_json(&mut self, url: &str, content: String) -> Result<String, SolrError> {
+    pub fn post_as_json(&mut self, url: &str, content: &str) -> Result<String, SolrError> {
         let mut builder = self.http.post(url);
         let req = Self::set_timeout(&mut builder);
         let request = req.set("Content-Type", "application/json");
         loop {
-            let response = request.send_string(&content);
+            let response = request.send_string(content);
             let result = Self::handle_response(response);
             match result {
                 Ok(returned) => {
@@ -131,7 +135,7 @@ pub fn http_get_as_text(url: &str) -> Result<String, SolrError> {
     con.get_as_text(url)
 }
 
-pub fn http_post_as_json(url: &str, content: String) -> Result<String, SolrError> {
+pub fn http_post_as_json(url: &str, content: &str) -> Result<String, SolrError> {
     let mut con = SolrClient::new();
     con.post_as_json(url, content)
 }

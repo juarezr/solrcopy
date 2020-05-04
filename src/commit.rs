@@ -7,7 +7,7 @@ pub(crate) fn commit_main(params: Commit) -> Result<(), Box<dyn std::error::Erro
 
     let url = params.get_update_url();
 
-    let content = "{ \"commit\": {} } ".to_string();
+    let content = "{ \"commit\": {} } ";
 
     http_post_as_json(&url, content)?;
 

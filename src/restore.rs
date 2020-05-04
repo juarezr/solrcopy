@@ -205,10 +205,14 @@ fn start_indexing_docs(
 fn handle_received_batch(
     docs: String, writer: usize, url: &str, client: &mut SolrClient, progress: &Sender<u64>,
 ) -> bool {
-    let failed = client.post_as_json(&url, docs);
-    // wait(1);
+    let failed = client.post_as_json(&url, &docs);
     if let Err(cause) = failed {
-        error!("Error in thread # {} while sending docs to solr core: {:?}", writer, cause);
+        error!("Error in thread #{} while sending docs to solr core: {}", writer, cause);
+        if docs.len() < 400 {
+            error!("JSON: {}", docs);
+        } else {
+            error!("JSON: {}...", &docs[0..400]);
+        }
         true
     } else {
         let status = progress.send(0);
