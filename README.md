@@ -31,7 +31,7 @@ Command line tool for backup and restore of documents stored in cores of [Apache
 
 ``` text
 $ solrcopy --help
-solrcopy 0.4.3
+solrcopy 0.4.4
 Command line tool for backup and restore of documents stored in cores of Apache Solr.
 
 Solrcopy is a command for doing backup and restore of documents stored on Solr cores. It let you filter docs by using a
@@ -55,7 +55,7 @@ SUBCOMMANDS:
 
 ``` text
 $ solrcopy help backup
-solrcopy-backup 0.4.3
+solrcopy-backup 0.4.4
 Dumps documents from a Apache Solr core into local backup files
 
 USAGE:
@@ -87,7 +87,7 @@ $ solrcopy backup --url http://localhost:8983/solr --from demo --query 'price:[1
 
 ``` text
 $ solrcopy help restore
-solrcopy-restore 0.4.3
+solrcopy-restore 0.4.4
 Restore documents from local backup files into a Apache Solr core
 
 USAGE:
@@ -99,22 +99,24 @@ FLAGS:
         --verbose    Show details of the execution
 
 OPTIONS:
-    -c, --commit <mode>                Mode to perform commits of the index while updating documents in the core
-                                       [possible values: none, soft, hard, final, <num docs>] [default: final]
-    -f, --from </path/to/zips>         Existing folder for reading the zip backup files containing documents [env:
-                                       SOLR_COPY_DIR=]
-    -i, --into <core>                  Case sensitive name of the Solr core to upload documents
-    -p, --pattern <core*.zip>          Search pattern for matching names of the zip backup files
-    -r, --readers <count>              Number parallel threads reading documents from solr core [default: 1]
-    -u, --url <localhost:8983/solr>    Url pointing to the Solr cluster [env: SOLR_COPY_URL=]
-    -w, --writers <count>              Number parallel threads writing documents into zip archives [default: 1]
+    -c, --commit <mode>                  Mode to perform commits of the index while updating documents in the core
+                                         [possible values: none, soft, hard, final, <num docs>] [default: final]
+    -e, --extra <useParams=my_params>    Extra parameter for Solr Update Handler. See:
+                                         https://lucene.apache.org/solr/guide/transforming-and-indexing-custom-json.html
+    -f, --from </path/to/zips>           Existing folder for reading the zip backup files containing documents [env:
+                                         SOLR_COPY_DIR=]
+    -i, --into <core>                    Case sensitive name of the Solr core to upload documents
+    -p, --pattern <core*.zip>            Search pattern for matching names of the zip backup files
+    -r, --readers <count>                Number parallel threads reading documents from solr core [default: 1]
+    -u, --url <localhost:8983/solr>      Url pointing to the Solr cluster [env: SOLR_COPY_URL=]
+    -w, --writers <count>                Number parallel threads writing documents into zip archives [default: 1]
 
 $ solrcopy restore --url http://localhost:8983/solr  --from ./tmp --into target
 ```
 
 ``` text
 $ solrcopy help commit
-solrcopy-commit 0.4.3
+solrcopy-commit 0.4.4
 Perform a commit in the Solr core index for persisting documents in disk/memory
 
 USAGE:

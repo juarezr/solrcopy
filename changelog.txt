@@ -1,3 +1,11 @@
+debian (0.4.4) unstable; urgency=low
+
+  * feature: add param --extra for restore command
+  * improved: show better error messages with restore command
+  * improved: abort signal handling on ctrl+c
+
+-- Juarez Rudsatz <juarezr@gmail.com>  Mar, 1 Ma 2020 00:04:04 -0300
+
 debian (0.4.3) unstable; urgency=low
 
   * feature: add modes final and <docs> for restore --commit
