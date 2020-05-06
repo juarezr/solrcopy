@@ -1,6 +1,6 @@
 use log::{debug, info};
 
-use super::{args::Commit, connection::http_post_as_json, helpers::*};
+use super::{args::Commit, connection::SolrClient, helpers::*};
 
 pub(crate) fn commit_main(params: Commit) -> Result<(), Box<dyn std::error::Error>> {
     debug!("  {:?}", params);
@@ -9,7 +9,7 @@ pub(crate) fn commit_main(params: Commit) -> Result<(), Box<dyn std::error::Erro
 
     let content = "{ \"commit\": {} } ";
 
-    http_post_as_json(&url, content)?;
+    SolrClient::send_post_as_json(&url, content)?;
 
     info!("Commited ocuments in {}.", url);
 

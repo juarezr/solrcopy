@@ -1,4 +1,3 @@
-#![allow(warnings)]
 use std::{error::Error, fmt};
 
 use crate::helpers::*;
@@ -222,16 +221,6 @@ impl SolrClient {
     }
 
     // endregion
-}
-
-pub fn http_get_as_text(url: &str) -> Result<String, SolrError> {
-    let mut con = SolrClient::new();
-    con.get_as_text(url)
-}
-
-pub fn http_post_as_json(url: &str, content: &str) -> Result<String, SolrError> {
-    let mut con = SolrClient::new();
-    con.post_as_json(url, content)
 }
 
 // endregion
