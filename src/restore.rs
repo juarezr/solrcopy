@@ -2,7 +2,10 @@ use crossbeam_channel::{bounded, Receiver, Sender};
 use crossbeam_utils::thread;
 use log::{debug, error, info};
 
-use std::sync::{atomic::AtomicBool, Arc};
+use std::sync::{
+    atomic::{AtomicBool, AtomicUsize, Ordering},
+    Arc,
+};
 use std::{path::PathBuf, time::Instant};
 
 use crate::{
@@ -72,6 +75,7 @@ fn unzip_archives(params: Restore, found: &[PathBuf]) -> BoxedResult<usize> {
         drop(sequence);
         drop(sender);
 
+        let update_errors = Arc::new(AtomicUsize::new(0));
         let update_hadler_url = params.get_update_url();
         debug!("Solr Update Handler: {}", update_hadler_url);
 
@@ -80,13 +84,15 @@ fn unzip_archives(params: Restore, found: &[PathBuf]) -> BoxedResult<usize> {
             let updater = progress.clone();
 
             let url = update_hadler_url.clone();
+            let error_count = Arc::clone(&update_errors);
+            let max_errors = params.max_errors;
 
             let writer = iw;
             let thread_name = format!("Writer_{}", writer);
             pool.builder()
                 .name(thread_name)
                 .spawn(move |_| {
-                    start_indexing_docs(writer, &url, consumer, updater);
+                    start_indexing_docs(writer, &url, consumer, updater, error_count, max_errors);
                 })
                 .unwrap();
         }
@@ -182,6 +188,7 @@ fn handle_reading_archive(
 
 fn start_indexing_docs(
     writer: usize, url: &str, consumer: Receiver<String>, progress: Sender<u64>,
+    error_count: Arc<AtomicUsize>, max_errors: usize,
 ) {
     let ctrl_c = monitor_term_sinal();
 
@@ -193,7 +200,10 @@ fn start_indexing_docs(
         }
         let failed = match received {
             Ok(docs) => handle_received_batch(docs, writer, url, &mut client, &progress),
-            Err(_) => true,
+            Err(_) => {
+                let current = error_count.fetch_add(1, Ordering::SeqCst);
+                current > max_errors
+            }
         };
         if failed || ctrl_c.aborted() {
             break;

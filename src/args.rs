@@ -88,6 +88,11 @@ pub struct Restore {
     #[structopt(short, long, default_value = "40k", parse(try_from_str = parse_commit_mode), value_name = "mode")]
     pub commit: CommitMode,
 
+    /// Extra parameter for Solr Update Handler.
+    /// See: https://lucene.apache.org/solr/guide/transforming-and-indexing-custom-json.html
+    #[structopt(short, long, value_name = "useParams=my_params")]
+    pub extra: Option<String>,
+
     /// Existing folder for reading the zip backup files containing documents
     #[structopt(short, long, parse(from_os_str), env = SOLR_COPY_DIR, value_name = "/path/to/zips")]
     pub from: PathBuf,
@@ -96,16 +101,15 @@ pub struct Restore {
     #[structopt(short, long, value_name = "core*.zip")]
     pub pattern: Option<String>,
 
-    /// Extra parameter for Solr Update Handler.
-    /// See: https://lucene.apache.org/solr/guide/transforming-and-indexing-custom-json.html
-    #[structopt(short, long, value_name = "useParams=my_params")]
-    pub extra: Option<String>,
-
     #[structopt(flatten)]
     pub options: CommonArgs,
 
     #[structopt(flatten)]
     pub transfer: ParallelArgs,
+
+    /// How many times should continue on source document errors
+    #[structopt(short, long, default_value = "0", min_values = 0, value_name = "count", parse(try_from_str = parse_quantity_max))]
+    pub max_errors: usize,
 }
 
 #[derive(StructOpt, Debug)]
@@ -202,6 +206,17 @@ fn parse_quantity(src: &str) -> Result<usize, String> {
                 },
             }
         }
+    }
+}
+
+fn parse_quantity_max(s: &str) -> Result<usize, String> {
+    let lower = s.to_ascii_lowercase();
+    match lower.as_str() {
+        "max" => Ok(std::usize::MAX),
+        _ => match parse_quantity(&s) {
+            Ok(value) => Ok(value),
+            Err(_) => Err(format!("'{}'. [alowed: all, <quantity>]", s)),
+        },
     }
 }
 
