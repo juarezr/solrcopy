@@ -219,9 +219,9 @@ fn handle_received_batch(
     if let Err(cause) = failed {
         error!("Error in thread #{} while sending docs to solr core: {}", writer, cause);
         if docs.len() < 400 {
-            error!("JSON: {}", docs);
+            error!("  JSON: {}", docs);
         } else {
-            error!("JSON: {}...", &docs[0..400]);
+            error!("  JSON: {}...", &docs[0..400]);
         }
         true
     } else {

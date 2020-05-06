@@ -52,7 +52,7 @@ pub struct Backup {
 
     /// Number of documents retrieved from solr in each reader step
     #[structopt(short, long, default_value = "4k", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
-    pub doc_count: usize,
+    pub batch_size: usize,
 
     /// Max number of files of documents stored in each zip file
     #[structopt(short, long, default_value = "200", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
@@ -91,7 +91,7 @@ pub struct Restore {
     /// Extra parameter for Solr Update Handler.
     /// See: https://lucene.apache.org/solr/guide/transforming-and-indexing-custom-json.html
     #[structopt(short, long, value_name = "useParams=my_params")]
-    pub extra: Option<String>,
+    pub params: Option<String>,
 
     /// Existing folder for reading the zip backup files containing documents
     #[structopt(short, long, parse(from_os_str), env = SOLR_COPY_DIR, value_name = "/path/to/zips")]
@@ -99,7 +99,7 @@ pub struct Restore {
 
     /// Search pattern for matching names of the zip backup files
     #[structopt(short, long, value_name = "core*.zip")]
-    pub pattern: Option<String>,
+    pub search: Option<String>,
 
     #[structopt(flatten)]
     pub options: CommonArgs,
@@ -438,7 +438,7 @@ pub mod tests {
         "3",
         "--limit",
         "42",
-        "--doc-count",
+        "--batch-size",
         "5",
         "--max-files",
         "6",
@@ -458,7 +458,7 @@ pub mod tests {
         "./tmp",
         "--into",
         "target",
-        "--pattern",
+        "--search",
         "*.zip",
         "--commit",
         "soft",
@@ -488,7 +488,7 @@ pub mod tests {
                 assert_eq!(get.query, Some(TEST_ARGS_BACKUP[9].to_string()));
                 assert_eq!(get.skip, 3);
                 assert_eq!(get.limit, Some(42));
-                assert_eq!(get.doc_count, 5);
+                assert_eq!(get.batch_size, 5);
                 assert_eq!(get.max_files, 6);
                 assert_eq!(get.transfer.readers, 7);
                 assert_eq!(get.transfer.writers, 9);
@@ -506,7 +506,7 @@ pub mod tests {
                 assert_eq!(put.options.url, TEST_ARGS_RESTORE[3]);
                 assert_eq!(put.from.to_str().unwrap(), TEST_ARGS_RESTORE[5]);
                 assert_eq!(put.into, TEST_ARGS_RESTORE[7]);
-                assert_eq!(put.pattern.unwrap(), TEST_ARGS_RESTORE[9]);
+                assert_eq!(put.search.unwrap(), TEST_ARGS_RESTORE[9]);
                 assert_eq!(put.commit, CommitMode::Soft);
                 assert_eq!(put.commit.as_param("?"), "?softCommit=true");
                 assert_eq!(put.options.verbose, true);

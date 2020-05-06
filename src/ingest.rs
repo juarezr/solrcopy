@@ -17,7 +17,7 @@ impl Restore {
     }
 
     pub fn get_pattern(&self) -> String {
-        let wilcard: String = match &self.pattern {
+        let wilcard: String = match &self.search {
             Some(pat) => {
                 if pat.ends_with(".zip") || pat.contains('*') {
                     pat.to_owned()
@@ -40,7 +40,7 @@ impl Restore {
             self.into.clone(),
             "/update/json/docs?overwrite=true".to_string(),
             self.commit.as_param("&"),
-            self.extra.as_ref().unwrap_or(&EMPTY_STRING).with_prefix("&"),
+            self.params.as_ref().unwrap_or(&EMPTY_STRING).with_prefix("&"),
         ];
         parts.concat()
     }

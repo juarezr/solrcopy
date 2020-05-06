@@ -98,7 +98,7 @@ impl Backup {
         let fl = self.get_query_fields(core_fields);
         let query = self.get_query_url(&fl);
         let end_limit = self.get_docs_to_retrieve(core_info);
-        Requests { curr: self.skip, limit: end_limit, batch: self.doc_count, url: query }
+        Requests { curr: self.skip, limit: end_limit, batch: self.batch_size, url: query }
     }
 
     pub fn get_query_fields(&self, core_fields: &[String]) -> String {
