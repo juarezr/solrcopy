@@ -85,7 +85,7 @@ pub struct Restore {
 
     /// Mode to perform commits of the index while updating documents in the core
     /// [possible values: none, soft, hard, final, <num docs>]
-    #[structopt(short, long, default_value = "final", parse(try_from_str = parse_commit_mode), value_name = "mode")]
+    #[structopt(short, long, default_value = "40k", parse(try_from_str = parse_commit_mode), value_name = "mode")]
     pub commit: CommitMode,
 
     /// Existing folder for reading the zip backup files containing documents
@@ -268,7 +268,7 @@ fn parse_commit_mode(s: &str) -> Result<CommitMode, String> {
 
 impl Default for CommitMode {
     fn default() -> Self {
-        CommitMode::Final
+        CommitMode::Within { count: 40000 }
     }
 }
 
