@@ -89,12 +89,16 @@ impl Backup {
         format!("{}_docs_{}_seq_{}.zip", prefix, num_found, BRACKETS)
     }
 
+    pub fn get_docs_to_retrieve(&self, core_info: &SolrCore) -> usize {
+        core_info.num_found.min(self.limit.unwrap_or(std::usize::MAX))
+    }
+
     pub fn get_steps(&self, core_info: &SolrCore) -> Requests {
         let core_fields: &[String] = &core_info.fields;
         let fl = self.get_query_fields(core_fields);
         let query = self.get_query_url(&fl);
-        let num_docs = core_info.num_found.min(self.limit.unwrap_or(std::usize::MAX));
-        Requests { curr: self.skip, limit: num_docs, batch: self.doc_count, url: query }
+        let end_limit = self.get_docs_to_retrieve(core_info);
+        Requests { curr: self.skip, limit: end_limit, batch: self.doc_count, url: query }
     }
 
     pub fn get_query_fields(&self, core_fields: &[String]) -> String {

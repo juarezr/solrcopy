@@ -22,9 +22,17 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
     let core_info = params.inspect_core()?;
     debug!("  {:?}", core_info);
 
+    let end_limit = params.get_docs_to_retrieve(&core_info);
+    let num_retrieving = end_limit - params.skip;
     let num_found = core_info.num_found.to_u64();
 
-    info!("Starting retrieving {} documents from solr core {}.", num_found, params.from);
+    info!(
+        "Starting retrieving between {} and {} from {} documents of solr core {}.",
+        params.skip + 1,
+        end_limit,
+        num_found,
+        params.from
+    );
 
     let ctrl_c = monitor_term_sinal();
     let started = Instant::now();
@@ -82,7 +90,7 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
         drop(receiver);
         drop(progress);
 
-        let perc_bar = new_wide_bar(num_found);
+        let perc_bar = new_wide_bar(num_retrieving.to_u64());
         for _ in reporter.iter() {
             perc_bar.inc(params.doc_count.to_u64());
         }
@@ -94,7 +102,7 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
     if ctrl_c.aborted() {
         raise("# Execution aborted by user!")
     } else {
-        info!("Dowloaded {} documents in {:?}.", num_found, started.elapsed());
+        info!("Dowloaded {} documents in {:?}.", num_retrieving, started.elapsed());
         Ok(())
     }
 }
