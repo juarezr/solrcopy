@@ -7,7 +7,7 @@ use std::{path::PathBuf, time::Instant};
 
 use crate::{
     args::Backup,
-    bars::new_wide_bar,
+    bars::foreach_progress,
     connection::SolrClient,
     fails::*,
     helpers::*,
@@ -25,6 +25,7 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
     let end_limit = params.get_docs_to_retrieve(&core_info);
     let num_retrieving = end_limit - params.skip;
     let num_found = core_info.num_found.to_u64();
+    let mut retrieved = 0;
 
     info!(
         "Starting retrieving between {} and {} from {} documents of solr core {}.",
@@ -93,19 +94,24 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
         drop(receiver);
         drop(progress);
 
-        let perc_bar = new_wide_bar(num_retrieving.to_u64());
-        for _ in reporter.iter() {
-            perc_bar.inc(params.docs_per_step.to_u64());
-        }
-        perc_bar.finish_and_clear();
-        drop(reporter);
+        retrieved = foreach_progress(
+            reporter,
+            num_retrieving,
+            params.docs_per_step,
+            params.options.is_quiet(),
+        );
     })
     .unwrap();
 
     if ctrl_c.aborted() {
         raise("# Execution aborted by user!")
     } else {
-        info!("Dowloaded {} documents in {:?}.", num_retrieving, started.elapsed());
+        info!(
+            "Dowloaded {} of {} documents in {:?}.",
+            retrieved,
+            num_retrieving,
+            started.elapsed()
+        );
         Ok(())
     }
 }

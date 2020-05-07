@@ -10,10 +10,9 @@ use std::{path::PathBuf, time::Instant};
 
 use crate::{
     args::{Commit, CommitMode, Restore},
-    bars::*,
+    bars::foreach_progress,
     connection::SolrClient,
     fails::*,
-    helpers::*,
     ingest::*,
     state::*,
 };
@@ -102,13 +101,7 @@ fn unzip_archives(params: Restore, found: &[PathBuf]) -> BoxedResult<usize> {
         drop(receiver);
         drop(progress);
 
-        let perc_bar = new_wide_bar(doc_count);
-        for _ in reporter.iter() {
-            perc_bar.inc(1);
-            updated += 1;
-        }
-        perc_bar.finish_and_clear();
-        drop(reporter);
+        updated = foreach_progress(reporter, doc_count, 1, params.options.is_quiet());
     })
     .unwrap();
 
@@ -124,7 +117,7 @@ fn unzip_archives(params: Restore, found: &[PathBuf]) -> BoxedResult<usize> {
     }
 }
 
-fn estimate_document_count(found: &[PathBuf]) -> BoxedResult<u64> {
+fn estimate_document_count(found: &[PathBuf]) -> BoxedResult<usize> {
     // Estimate number of json files inside all zip files
     let zip_count = found.len();
 
@@ -134,7 +127,7 @@ fn estimate_document_count(found: &[PathBuf]) -> BoxedResult<u64> {
         None => throw(format!("Error opening archive: {:?}", first))?,
         Some(doc_count) => {
             let doc_total = doc_count * zip_count;
-            Ok(doc_total.to_u64())
+            Ok(doc_total)
         }
     }
 }
