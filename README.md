@@ -31,7 +31,7 @@ Command line tool for backup and restore of documents stored in cores of [Apache
 
 ``` text
 $ solrcopy --help
-solrcopy 0.4.4
+solrcopy 0.5.0
 Command line tool for backup and restore of documents stored in cores of Apache Solr.
 
 Solrcopy is a command for doing backup and restore of documents stored on Solr cores. It let you filter docs by using a
@@ -55,23 +55,29 @@ SUBCOMMANDS:
 
 ``` text
 $ solrcopy help backup
-solrcopy-backup 0.4.4
+solrcopy-backup 0.5.0
 Dumps documents from a Apache Solr core into local backup files
 
 USAGE:
-    solrcopy backup [FLAGS] [OPTIONS] --from <core> --into </path/to/output> --url <localhost:8983/solr>
+    solrcopy backup [OPTIONS] --from <core> --into </path/to/output> --url <localhost:8983/solr>
 
 FLAGS:
     -h, --help       Prints help information
     -V, --version    Prints version information
-        --verbose    Show details of the execution
 
 OPTIONS:
-    -d, --doc-count <quantity>                 Number of documents retrieved from solr in each reader step [default: 4k]
+    -b, --batch-size <quantity>                Number of documents retrieved from solr in each reader step [default: 4k]
     -f, --from <core>                          Case sensitive name of the Solr core for extracting documents
     -i, --into </path/to/output>               Existing folder for writing the zip backup files containing the extracted
                                                documents [env: SOLR_COPY_DIR=]
     -l, --limit <quantity>                     Maximum quantity of documents for retrieving from the core (like 100M)
+        --log-file-level <level>               What level of detail should write messages to the file [default: debug]
+                                               [possible values: off, error, warn, info, debug, trace]
+        --log-file-path <path/to/file>         Write messages to a local file
+        --log-level <level>                    What level of detail should print messages [default: info]  [possible
+                                               values: off, error, warn, info, debug, trace]
+        --log-mode <mode>                      What output should be used to output [default: mixed]  [possible values:
+                                               none, stdout, stderr, mixed]
     -m, --max-files <quantity>                 Max number of files of documents stored in each zip file [default: 200]
     -o, --order <field1:asc field2:desc>...    Solr core fields names for sorting documents for retrieval
     -p, --prefix <name>                        Optional prefix for naming the zip backup files when storing documents
@@ -87,49 +93,64 @@ $ solrcopy backup --url http://localhost:8983/solr --from demo --query 'price:[1
 
 ``` text
 $ solrcopy help restore
-solrcopy-restore 0.4.4
+solrcopy-restore 0.5.0
 Restore documents from local backup files into a Apache Solr core
 
 USAGE:
-    solrcopy restore [FLAGS] [OPTIONS] --from </path/to/zips> --into <core> --url <localhost:8983/solr>
+    solrcopy restore [OPTIONS] --from </path/to/zips> --into <core> --url <localhost:8983/solr>
 
 FLAGS:
     -h, --help       Prints help information
     -V, --version    Prints version information
-        --verbose    Show details of the execution
 
 OPTIONS:
-    -c, --commit <mode>                  Mode to perform commits of the index while updating documents in the core
-                                         [possible values: none, soft, hard, final, <num docs>] [default: final]
-    -e, --extra <useParams=my_params>    Extra parameter for Solr Update Handler. See:
-                                         https://lucene.apache.org/solr/guide/transforming-and-indexing-custom-json.html
-    -f, --from </path/to/zips>           Existing folder for reading the zip backup files containing documents [env:
-                                         SOLR_COPY_DIR=]
-    -i, --into <core>                    Case sensitive name of the Solr core to upload documents
-    -p, --pattern <core*.zip>            Search pattern for matching names of the zip backup files
-    -r, --readers <count>                Number parallel threads reading documents from solr core [default: 1]
-    -u, --url <localhost:8983/solr>      Url pointing to the Solr cluster [env: SOLR_COPY_URL=]
-    -w, --writers <count>                Number parallel threads writing documents into zip archives [default: 1]
+    -c, --commit <mode>                   Mode to perform commits of the index while updating documents in the core
+                                          [possible values: none, soft, hard, final, <num docs>] [default: 40k]
+    -f, --from </path/to/zips>            Existing folder for reading the zip backup files containing documents [env:
+                                          SOLR_COPY_DIR=]
+    -i, --into <core>                     Case sensitive name of the Solr core to upload documents
+        --log-file-level <level>          What level of detail should write messages to the file [default: debug]
+                                          [possible values: off, error, warn, info, debug, trace]
+        --log-file-path <path/to/file>    Write messages to a local file
+        --log-level <level>               What level of detail should print messages [default: info]  [possible values:
+                                          off, error, warn, info, debug, trace]
+        --log-mode <mode>                 What output should be used to output [default: mixed]  [possible values: none,
+                                          stdout, stderr, mixed]
+    -m, --max-errors <count>              How many times should continue on source document errors [default: 0]
+    -p, --params <useParams=my_params>    Extra parameter for Solr Update Handler. See:
+                                          https://lucene.apache.org/solr/guide/transforming-
+                                          and-indexing-custom-json.html
+    -r, --readers <count>                 Number parallel threads reading documents from solr core [default: 1]
+    -s, --search <core*.zip>              Search pattern for matching names of the zip backup files
+    -u, --url <localhost:8983/solr>       Url pointing to the Solr cluster [env: SOLR_COPY_URL=]
+    -w, --writers <count>                 Number parallel threads writing documents into zip archives [default: 1]
+# juarezr@D2019599 [13:25:49-03] ~/src/github/solrcopy  @master
 
 $ solrcopy restore --url http://localhost:8983/solr  --from ./tmp --into target
 ```
 
 ``` text
 $ solrcopy help commit
-solrcopy-commit 0.4.4
+solrcopy-commit 0.5.0
 Perform a commit in the Solr core index for persisting documents in disk/memory
 
 USAGE:
-    solrcopy commit [FLAGS] --into <core> --url <localhost:8983/solr>
+    solrcopy commit [OPTIONS] --into <core> --url <localhost:8983/solr>
 
 FLAGS:
     -h, --help       Prints help information
     -V, --version    Prints version information
-        --verbose    Show details of the execution
 
 OPTIONS:
-    -i, --into <core>                  Case sensitive name of the Solr core to perform the commit
-    -u, --url <localhost:8983/solr>    Url pointing to the Solr cluster [env: SOLR_COPY_URL=]
+    -i, --into <core>                     Case sensitive name of the Solr core to perform the commit
+        --log-file-level <level>          What level of detail should write messages to the file [default: debug]
+                                          [possible values: off, error, warn, info, debug, trace]
+        --log-file-path <path/to/file>    Write messages to a local file
+        --log-level <level>               What level of detail should print messages [default: info]  [possible values:
+                                          off, error, warn, info, debug, trace]
+        --log-mode <mode>                 What output should be used to output [default: mixed]  [possible values: none,
+                                          stdout, stderr, mixed]
+    -u, --url <localhost:8983/solr>       Url pointing to the Solr cluster [env: SOLR_COPY_URL=]
 
 $ solrcopy commit --url http://localhost:8983/solr --into target
 ```
