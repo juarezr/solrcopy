@@ -1,3 +1,4 @@
+use log::debug;
 use std::{error::Error, fmt};
 
 use crate::helpers::*;
@@ -182,6 +183,7 @@ impl SolrClient {
 
     fn convert_synthetic_error(can_retry: bool, cause: &ureq::Error) -> Option<SolrError> {
         if can_retry {
+            debug!("Retry: {}", cause.to_string());
             return None;
         }
         let msg = cause.status_text().to_string();
@@ -190,21 +192,23 @@ impl SolrClient {
     }
 
     fn handle_solr_error(can_retry: bool, response: ureq::Response) -> Option<SolrError> {
+        let message = response.status_line().to_string();
         // Retry on status 503 Service Temporarily Unavailable
         if can_retry && response.status() == 503 {
+            debug!("Retry: {}", message);
             return None;
         }
-        let message = response.status_line().to_string();
         let body = response.into_string().unwrap();
         Some(SolrError::new(message, body))
     }
 
     fn handle_receive_error(can_retry: bool, error: std::io::Error) -> Option<SolrError> {
+        let msg = error.to_string();
+        let text = format!("{:?}", error);
         if can_retry {
+            debug!("Retry: {} -> {}", msg, text);
             return None;
         }
-        let msg = error.to_string();
-        let text = format!("{}", error);
         Some(SolrError::new(msg, text))
     }
 

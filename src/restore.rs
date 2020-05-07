@@ -57,6 +57,7 @@ fn unzip_archives(params: Restore, found: &[PathBuf]) -> BoxedResult<usize> {
 
         pool.spawn(move |_| {
             start_listing_archives(found, generator);
+            debug!("Finished generator thread");
         });
 
         for ir in 0..transfer.readers {
@@ -69,6 +70,7 @@ fn unzip_archives(params: Restore, found: &[PathBuf]) -> BoxedResult<usize> {
                 .name(thread_name)
                 .spawn(move |_| {
                     start_reading_archive(reader, iterator, producer);
+                    debug!("Finished reader #{}", reader);
                 })
                 .unwrap();
         }
@@ -93,6 +95,7 @@ fn unzip_archives(params: Restore, found: &[PathBuf]) -> BoxedResult<usize> {
                 .name(thread_name)
                 .spawn(move |_| {
                     start_indexing_docs(writer, &url, consumer, updater, error_count, max_errors);
+                    debug!("Finished writer #{}", writer);
                 })
                 .unwrap();
         }

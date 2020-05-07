@@ -50,6 +50,7 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
 
         pool.spawn(|_| {
             start_querying_core(requests, generator, &ctrl_c);
+            debug!("Finished generator thread");
         });
 
         for ir in 0..transfer.readers {
@@ -62,6 +63,7 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
                 .name(thread_name)
                 .spawn(move |_| {
                     start_retrieving_docs(reader, iterator, producer);
+                    debug!("Finished reader #{}", reader);
                 })
                 .unwrap();
         }
@@ -84,6 +86,7 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
                 .name(thread_name)
                 .spawn(move |_| {
                     start_storing_docs(writer, dir, name, max, consumer, updater);
+                    debug!("Finished writer #{}", writer);
                 })
                 .unwrap();
         }

@@ -1,3 +1,4 @@
+use log::debug;
 use regex::Regex;
 
 use super::{args::Backup, connection::SolrClient, fails::*, helpers::*, steps::SolrCore};
@@ -7,6 +8,7 @@ use super::{args::Backup, connection::SolrClient, fails::*, helpers::*, steps::S
 impl Backup {
     pub fn inspect_core(&self) -> BoxedResult<SolrCore> {
         let diagnostics_query_url = self.get_query_for_diagnostics();
+        debug!("Solr Query URL: {}", diagnostics_query_url);
 
         let json = SolrClient::query_get_as_text(&diagnostics_query_url)?;
 
