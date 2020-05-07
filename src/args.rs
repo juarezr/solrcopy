@@ -140,15 +140,30 @@ pub enum Arguments {
     Commit(Commit),
 }
 
+const LOG_LEVEL_VALUES: &[&str] = &["off", "error", "warn", "info", "debug", "trace"];
+const LOG_TERM_VALUES: &[&str] = &["none", "stdout", "stderr", "mixed"];
+
 #[derive(StructOpt, Debug)]
 pub struct CommonArgs {
     /// Url pointing to the Solr cluster
     #[structopt(short, long, env = SOLR_COPY_URL, parse(try_from_str = parse_solr_url), value_name = "localhost:8983/solr")]
     pub url: String,
 
-    /// Show details of the execution
-    #[structopt(long)]
-    pub verbose: bool,
+    /// What level of detail should print messages
+    #[structopt(long, value_name = "level", default_value = "info", possible_values = LOG_LEVEL_VALUES)]
+    pub log_level: String,
+
+    /// What output should be used to output
+    #[structopt(long, value_name = "mode", default_value = "mixed", possible_values = LOG_TERM_VALUES)]
+    pub log_mode: String,
+
+    /// Write messages to a local file
+    #[structopt(long, value_name = "path/to/file", parse(from_os_str))]
+    pub log_file_path: Option<PathBuf>,
+
+    /// What level of detail should write messages to the file
+    #[structopt(long, value_name = "level", default_value = "debug", possible_values = LOG_LEVEL_VALUES)]
+    pub log_file_level: String,
 }
 
 #[derive(StructOpt, Debug)]
@@ -446,7 +461,14 @@ pub mod tests {
         "7",
         "--writers",
         "9",
-        "--verbose",
+        "--log-level",
+        "debug",
+        "--log-mode",
+        "mixed",
+        "--log-file-level",
+        "debug",
+        "--log-file-path",
+        "/tmp/test.log",
     ];
 
     const TEST_ARGS_RESTORE: &'static [&'static str] = &[
@@ -462,7 +484,8 @@ pub mod tests {
         "*.zip",
         "--commit",
         "soft",
-        "--verbose",
+        "--log-level",
+        "debug",
     ];
 
     const TEST_ARGS_COMMIT: &'static [&'static str] = &[
@@ -472,7 +495,8 @@ pub mod tests {
         "http://solr-server.com:8983/solr",
         "--into",
         "mileage",
-        "--verbose",
+        "--log-level",
+        "debug",
     ];
 
     // endregion
@@ -492,7 +516,7 @@ pub mod tests {
                 assert_eq!(get.max_files, 6);
                 assert_eq!(get.transfer.readers, 7);
                 assert_eq!(get.transfer.writers, 9);
-                assert_eq!(get.options.verbose, true);
+                assert_eq!(get.options.log_level, "debug");
             }
             _ => panic!("command must be 'backup' !"),
         };
@@ -509,7 +533,7 @@ pub mod tests {
                 assert_eq!(put.search.unwrap(), TEST_ARGS_RESTORE[9]);
                 assert_eq!(put.commit, CommitMode::Soft);
                 assert_eq!(put.commit.as_param("?"), "?softCommit=true");
-                assert_eq!(put.options.verbose, true);
+                assert_eq!(put.options.log_level, "debug");
             }
             _ => panic!("command must be 'restore' !"),
         };
@@ -522,7 +546,7 @@ pub mod tests {
             Arguments::Commit(put) => {
                 assert_eq!(put.options.url, TEST_ARGS_COMMIT[3]);
                 assert_eq!(put.into, TEST_ARGS_COMMIT[5]);
-                assert_eq!(put.options.verbose, true);
+                assert_eq!(put.options.log_level, "debug");
             }
             _ => panic!("command must be 'commit' !"),
         };

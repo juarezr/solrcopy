@@ -30,7 +30,7 @@
                 "--max-files", "3", 
                 "--readers", "1", 
                 "--writers", "1", 
-                "--verbose", 
+                "--log-level", "debug",
             ],
             "env": { 
                 "RUST_BACKTRACE": "full"
@@ -57,7 +57,7 @@
                 "--search", "demo", 
                 "--into", "target",
                 "--commit", "soft",
-                "--verbose", 
+                "--log-level",  "debug",
             ],
             "env": { 
                 "RUST_BACKTRACE": "full"
@@ -80,7 +80,7 @@
                 "commit", 
                 "--url", "http://localhost:8983/solr", 
                 "--into", "target",
-                // "--verbose", 
+                // "--log-level",  "debug",
             ],
             "env": { 
                 "RUST_BACKTRACE": "full"

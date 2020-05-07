@@ -15,7 +15,7 @@
 // #![deny(unused_results)]
 
 // switches for develoment only
-//
+
 // #![allow(unused_variables)]
 // #![allow(unused_imports)]
 // #![allow(dead_code)]
@@ -37,14 +37,20 @@ mod save;
 mod state;
 mod steps;
 
+use simplelog::{
+    CombinedLogger, Config, LevelFilter, SharedLogger, TermLogger, TerminalMode, WriteLogger,
+};
 use structopt::StructOpt;
 
-use crate::args::{Arguments, Backup, Restore};
+use crate::args::{Arguments, Backup, CommonArgs, Restore};
 use crate::fails::{throw, BoxedError, BoxedResult};
+
+use std::fs::File;
+use std::str::FromStr;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let parsed = Arguments::parse_from_args()?;
-    parsed.start_log();
+    parsed.start_log()?;
 
     match parsed {
         Arguments::Backup(gets) => backup::backup_main(gets),
@@ -70,16 +76,44 @@ impl Arguments {
         }
     }
 
-    fn start_log(&self) {
-        let verbose = match &self {
-            Self::Backup(get) => get.options.verbose,
-            Self::Restore(put) => put.options.verbose,
-            Self::Commit(com) => com.options.verbose,
-        };
-        if verbose {
-            env_logger::builder().filter_level(log::LevelFilter::Debug).init();
-        } else {
-            env_logger::builder().filter_level(log::LevelFilter::Info).init();
+    pub fn get_options(&self) -> &CommonArgs {
+        match &self {
+            Self::Backup(get) => &get.options,
+            Self::Restore(put) => &put.options,
+            Self::Commit(com) => &com.options,
+        }
+    }
+
+    fn start_log(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let options = self.get_options();
+
+        let mut enabled: Vec<Box<dyn SharedLogger>> = Vec::new();
+        if options.log_mode != "none" {
+            let level = Self::parse_level_filter(options.log_level.as_str())?;
+            let mode = Self::parse_term_mode(options.log_mode.as_str())?;
+            enabled.push(TermLogger::new(level, Config::default(), mode).unwrap());
+        }
+        if let Some(filepath) = &options.log_file_path {
+            let level2 = Self::parse_level_filter(options.log_file_level.as_str())?;
+            let file_to_log = File::create(filepath).unwrap();
+            enabled.push(WriteLogger::new(level2, Config::default(), file_to_log));
+        }
+        CombinedLogger::init(enabled).unwrap();
+        Ok(())
+    }
+    fn parse_level_filter(s: &str) -> BoxedResult<LevelFilter> {
+        match LevelFilter::from_str(s) {
+            Ok(res) => Ok(res),
+            Err(_) => throw(format!("'{}'. [alowed: off, error, warn, info, debug, trace]", s)),
+        }
+    }
+    fn parse_term_mode(mode: &str) -> BoxedResult<TerminalMode> {
+        let mode_str = mode.to_ascii_lowercase();
+        match mode_str.as_ref() {
+            "stdout" => Ok(TerminalMode::Stdout),
+            "stderr" => Ok(TerminalMode::Stderr),
+            "mixed" => Ok(TerminalMode::Mixed),
+            _ => throw(format!("Unknown terminal mode: {}", mode_str)),
         }
     }
 }
