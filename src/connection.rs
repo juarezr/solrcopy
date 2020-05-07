@@ -54,7 +54,7 @@ const SOLR_COPY_TIMEOUT: &str = "SOLR_COPY_TIMEOUT";
 const SOLR_COPY_RETRIES: &str = "SOLR_COPY_RETRIES";
 
 const SOLR_DEF_TIMEOUT: isize = 60;
-const SOLR_DEF_RETRIES: isize = 4;
+const SOLR_DEF_RETRIES: isize = 8;
 
 impl SolrClient {
     pub fn new() -> Self {
@@ -183,33 +183,38 @@ impl SolrClient {
 
     fn convert_synthetic_error(can_retry: bool, cause: &ureq::Error) -> Option<SolrError> {
         if can_retry {
-            debug!("Retry: {}", cause.to_string());
+            debug!("Synthetic Error: Retry: {}", cause.to_string());
             return None;
         }
-        let msg = cause.status_text().to_string();
-        let text = cause.body_text();
-        Some(SolrError::new(msg, text))
+        let message = cause.status_text().to_string();
+        let body = cause.body_text();
+        debug!("Synthetic Error: Aborting: {} -> {}", message, body);
+        Some(SolrError::new(message, body))
     }
 
     fn handle_solr_error(can_retry: bool, response: ureq::Response) -> Option<SolrError> {
         let message = response.status_line().to_string();
+        // Retry on status 502 Bad Gateway
         // Retry on status 503 Service Temporarily Unavailable
-        if can_retry && response.status() == 503 {
-            debug!("Retry: {}", message);
+        // Retry on status 504 Gateway Timeout
+        if can_retry && response.server_error() {
+            debug!("Solr Error: Retry: {}", message);
             return None;
         }
         let body = response.into_string().unwrap();
+        debug!("Solr Error: Aborting: {} -> {}", message, body);
         Some(SolrError::new(message, body))
     }
 
     fn handle_receive_error(can_retry: bool, error: std::io::Error) -> Option<SolrError> {
-        let msg = error.to_string();
-        let text = format!("{:?}", error);
+        let message = error.to_string();
+        let body = format!("{:?}", error);
         if can_retry {
-            debug!("Retry: {} -> {}", msg, text);
+            debug!("Receive Error: Retry: {} -> {}", message, body);
             return None;
         }
-        Some(SolrError::new(msg, text))
+        debug!("Receive Error: Retry: {} -> {}", message, body);
+        Some(SolrError::new(message, body))
     }
 
     // region Helpers
