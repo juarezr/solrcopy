@@ -141,7 +141,7 @@ pub enum Arguments {
 }
 
 const LOG_LEVEL_VALUES: &[&str] = &["off", "error", "warn", "info", "debug", "trace"];
-const LOG_TERM_VALUES: &[&str] = &["none", "stdout", "stderr", "mixed"];
+const LOG_TERM_VALUES: &[&str] = &["stdout", "stderr", "mixed"];
 
 #[derive(StructOpt, Debug)]
 pub struct CommonArgs {
@@ -194,7 +194,7 @@ pub struct ParallelArgs {
 
 // endregion
 
-// region Cli impl
+// region param pasing
 
 fn parse_quantity(src: &str) -> Result<usize, String> {
     lazy_static! {
@@ -293,6 +293,16 @@ fn parse_commit_mode(s: &str) -> Result<CommitMode, String> {
             Ok(value) => Ok(CommitMode::Within { count: value }),
             Err(_) => Err(format!("'{}'. [alowed: none, soft, hard, final, <num docs>]", s)),
         },
+    }
+}
+
+// endregion
+
+// region Cli impl
+
+impl CommonArgs {
+    pub fn is_quiet(&self) -> bool {
+        self.log_level.to_ascii_lowercase() == "off"
     }
 }
 

@@ -88,7 +88,7 @@ impl Arguments {
         let options = self.get_options();
 
         let mut enabled: Vec<Box<dyn SharedLogger>> = Vec::new();
-        if options.log_mode != "none" {
+        if !options.is_quiet() {
             let level = Self::parse_level_filter(options.log_level.as_str())?;
             let mode = Self::parse_term_mode(options.log_mode.as_str())?;
             enabled.push(TermLogger::new(level, Config::default(), mode).unwrap());
@@ -101,12 +101,14 @@ impl Arguments {
         CombinedLogger::init(enabled).unwrap();
         Ok(())
     }
+
     fn parse_level_filter(s: &str) -> BoxedResult<LevelFilter> {
         match LevelFilter::from_str(s) {
             Ok(res) => Ok(res),
             Err(_) => throw(format!("'{}'. [alowed: off, error, warn, info, debug, trace]", s)),
         }
     }
+
     fn parse_term_mode(mode: &str) -> BoxedResult<TerminalMode> {
         let mode_str = mode.to_ascii_lowercase();
         match mode_str.as_ref() {
