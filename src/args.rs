@@ -25,7 +25,7 @@ pub struct Backup {
     pub select: Vec<String>,
 
     /// Solr core fields names for sorting documents for retrieval
-    #[structopt(short, long, value_name = "field1:asc field2:desc")]
+    #[structopt(short, long, value_name = "f1:asc f2:desc")]
     pub order: Vec<SortField>,
 
     /// Skip this quantity of documents in the Solr Query
@@ -52,7 +52,7 @@ pub struct Backup {
 
     /// Number of documents retrieved from solr in each reader step
     #[structopt(short, long, default_value = "4k", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
-    pub batch_size: usize,
+    pub docs_per_step: usize,
 
     /// Max number of files of documents stored in each zip file
     #[structopt(short, long, default_value = "200", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
@@ -153,7 +153,7 @@ pub struct CommonArgs {
     #[structopt(long, value_name = "level", default_value = "info", possible_values = LOG_LEVEL_VALUES)]
     pub log_level: String,
 
-    /// What output should be used to output
+    /// Terminal output to print messages
     #[structopt(long, value_name = "mode", default_value = "mixed", possible_values = LOG_TERM_VALUES)]
     pub log_mode: String,
 
@@ -453,7 +453,7 @@ pub mod tests {
         "3",
         "--limit",
         "42",
-        "--batch-size",
+        "--docs-per-step",
         "5",
         "--max-files",
         "6",
@@ -512,7 +512,7 @@ pub mod tests {
                 assert_eq!(get.query, Some(TEST_ARGS_BACKUP[9].to_string()));
                 assert_eq!(get.skip, 3);
                 assert_eq!(get.limit, Some(42));
-                assert_eq!(get.batch_size, 5);
+                assert_eq!(get.docs_per_step, 5);
                 assert_eq!(get.max_files, 6);
                 assert_eq!(get.transfer.readers, 7);
                 assert_eq!(get.transfer.writers, 9);

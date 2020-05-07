@@ -26,7 +26,7 @@
                 "--select", "id", "date", "name", "price", "weight", "popularity", "manu", "cat", "store", "features",
                 "--limit", "25", 
                 "--into", "./tmp",
-                "--batch-size", "2", 
+                "--docs-per-step", "2", 
                 "--max-files", "3", 
                 "--readers", "1", 
                 "--writers", "1", 

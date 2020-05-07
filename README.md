@@ -66,7 +66,7 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
-    -b, --batch-size <quantity>                Number of documents retrieved from solr in each reader step [default: 4k]
+    -b, --docs-per-step <quantity>             Number of documents retrieved from solr in each reader step [default: 4k]
     -f, --from <core>                          Case sensitive name of the Solr core for extracting documents
     -i, --into </path/to/output>               Existing folder for writing the zip backup files containing the extracted
                                                documents [env: SOLR_COPY_DIR=]

@@ -95,7 +95,7 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
 
         let perc_bar = new_wide_bar(num_retrieving.to_u64());
         for _ in reporter.iter() {
-            perc_bar.inc(params.batch_size.to_u64());
+            perc_bar.inc(params.docs_per_step.to_u64());
         }
         perc_bar.finish_and_clear();
         drop(reporter);
