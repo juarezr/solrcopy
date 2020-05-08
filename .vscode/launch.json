@@ -30,7 +30,8 @@
                 "--max-files", "3", 
                 "--readers", "1", 
                 "--writers", "1", 
-                "--log-level", "debug",
+                // "--log-level", "debug",
+                "--log-level", "off",
             ],
             "env": { 
                 "RUST_BACKTRACE": "full"
