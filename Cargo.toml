@@ -1,6 +1,6 @@
 [package]
 name = "solrcopy"
-version = "0.5.2"
+version = "0.5.3"
 edition = "2018"
 
 authors = ["Juarez Rudsatz <juarezr@gmail.com>"]

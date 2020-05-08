@@ -1,10 +1,18 @@
+debian (0.5.3) unstable; urgency=low
+
+  * feature: new subcommand delete
+  * improved: refactored most of cmd line switches
+  * fixed: hardened --workaround-shards
+
+-- Juarez Rudsatz <juarezr@gmail.com>  Mar, 8 Ma 2020 00:05:03 -0300
+
 debian (0.5.1) unstable; urgency=low
 
   * feature: added --workaround-shards
   * improved: changed progress bar style
   * fix progress with --log-level off
 
--- Juarez Rudsatz <juarezr@gmail.com>  Mar, 8 Ma 2020 00:05:01 -0300
+-- Juarez Rudsatz <juarezr@gmail.com>  Mar, 7 Ma 2020 00:05:01 -0300
 
 debian (0.5.0) unstable; urgency=low
 
