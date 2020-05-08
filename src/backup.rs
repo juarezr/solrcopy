@@ -199,6 +199,7 @@ fn fetch_docs_from_solr(
                             trace!("#{} got num_found {} not {}", times, num_found, must_match);
                             if must_match != num_found.to_u64() && times < 13 {
                                 times += 1;
+                                wait(1);
                                 continue;
                             }
                         }
