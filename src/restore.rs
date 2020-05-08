@@ -111,7 +111,7 @@ fn finish_sending(params: Restore, updated: usize) -> BoxedResult<usize> {
     } else {
         if updated > 0 && !params.no_final_commit {
             // let params2 = Command { options: params.options };
-            crate::commit::commit_main(params.options.to_command())?;
+            crate::commit::commit_main(params.options.into_command())?;
         }
         Ok(updated)
     }

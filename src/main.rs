@@ -27,6 +27,7 @@ mod backup;
 mod bars;
 mod commit;
 mod connection;
+mod delete;
 mod fails;
 mod fetch;
 mod helpers;
@@ -55,7 +56,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Arguments::Backup(get) => backup::backup_main(get),
         Arguments::Restore(put) => restore::restore_main(put),
         Arguments::Commit(cmd) => commit::commit_main(cmd),
-        Arguments::Delete(_) => todo!(),
+        Arguments::Delete(del) => delete::delete_main(del),
     }
 }
 

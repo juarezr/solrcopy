@@ -100,9 +100,10 @@ pub struct Restore {
 
 #[derive(StructOpt, Debug)]
 pub struct Delete {
-    /// Solr Query for filtering which documents are removed in the core
-    /// Use '*:*' for excluding all documents in the core
-    /// There are no way of recovering excluded docs in the core
+    /// Solr Query for filtering which documents are removed in the core.
+    /// Use '*:*' for excluding all documents in the core.
+    /// There are no way of recovering excluded docs.
+    /// Use with caution and check twice.
     #[structopt(short, long, value_name = "f1:val1 AND f2:val2")]
     pub query: String,
 
@@ -356,7 +357,7 @@ impl CommonArgs {
         self.log_level.to_ascii_lowercase() == "off"
     }
 
-    pub fn to_command(self) -> Command {
+    pub fn into_command(self) -> Command {
         Command { options: self }
     }
 }
@@ -390,6 +391,17 @@ impl CommitMode {
             _ => EMPTY_STRING,
         }
     }
+
+    // pub fn as_xml(&self, separator: &str) -> String {
+    //     match self {
+    //         CommitMode::Soft => separator.append("<commit />"),
+    //         CommitMode::Hard => separator.append("<commit />"),
+    //         CommitMode::Within { millis } => {
+    //             separator.append(format!("<commitWithin>{}</commitWithin>", millis).as_str())
+    //         }
+    //         _ => EMPTY_STRING,
+    //     }
+    // }
 }
 
 // endregion
