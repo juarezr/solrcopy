@@ -9,12 +9,7 @@ use std::sync::{
 use std::{path::PathBuf, time::Instant};
 
 use crate::{
-    args::{Commit, Restore},
-    bars::foreach_progress,
-    connection::SolrClient,
-    fails::*,
-    ingest::*,
-    state::*,
+    args::Restore, bars::foreach_progress, connection::SolrClient, fails::*, ingest::*, state::*,
 };
 
 pub(crate) fn restore_main(params: Restore) -> BoxedError {
@@ -115,8 +110,8 @@ fn finish_sending(params: Restore, updated: usize) -> BoxedResult<usize> {
         raise("# Execution aborted by user!")
     } else {
         if updated > 0 && !params.no_final_commit {
-            let params2 = Commit { options: params.options };
-            crate::commit::commit_main(params2)?;
+            // let params2 = Command { options: params.options };
+            crate::commit::commit_main(params.options.to_command())?;
         }
         Ok(updated)
     }

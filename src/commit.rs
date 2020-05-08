@@ -1,8 +1,8 @@
 use log::{debug, info};
 
-use super::{args::Commit, connection::SolrClient, helpers::*};
+use super::{args::Command, connection::SolrClient, helpers::*};
 
-pub(crate) fn commit_main(params: Commit) -> Result<(), Box<dyn std::error::Error>> {
+pub(crate) fn commit_main(params: Command) -> Result<(), Box<dyn std::error::Error>> {
     debug!("  {:?}", params);
 
     let url = params.get_update_url();
@@ -16,7 +16,7 @@ pub(crate) fn commit_main(params: Commit) -> Result<(), Box<dyn std::error::Erro
     Ok(())
 }
 
-impl Commit {
+impl Command {
     fn get_update_url(&self) -> String {
         #[rustfmt::skip]
         let parts: Vec<String> = vec![

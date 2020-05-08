@@ -81,7 +81,7 @@ pub struct Restore {
 }
 
 #[derive(StructOpt, Debug)]
-pub struct Commit {
+pub struct Command {
     #[structopt(flatten)]
     pub options: CommonArgs,
 }
@@ -102,7 +102,7 @@ pub enum Arguments {
     /// Restore documents from local backup files into a Apache Solr core
     Restore(Restore),
     /// Perform a commit in the Solr core index for persisting documents in disk/memory
-    Commit(Commit),
+    Commit(Command),
 }
 
 const LOG_LEVEL_VALUES: &[&str] = &["off", "error", "warn", "info", "debug", "trace"];
@@ -330,6 +330,10 @@ fn parse_commit_mode(s: &str) -> Result<CommitMode, String> {
 impl CommonArgs {
     pub fn is_quiet(&self) -> bool {
         self.log_level.to_ascii_lowercase() == "off"
+    }
+
+    pub fn to_command(self) -> Command {
+        Command { options: self }
     }
 }
 
