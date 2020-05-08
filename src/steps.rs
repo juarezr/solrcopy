@@ -14,7 +14,7 @@ pub struct Step {
 pub struct Requests {
     pub curr: usize,
     pub limit: usize,
-    pub batch: usize,
+    pub num_docs: usize,
     pub url: String,
 }
 
@@ -36,8 +36,8 @@ pub struct SolrCore {
 
 impl Requests {
     pub fn len(&self) -> usize {
-        let res = self.limit / self.batch;
-        if self.limit % self.batch == 0 {
+        let res = self.limit / self.num_docs;
+        if self.limit % self.num_docs == 0 {
             res
         } else {
             res + 1
@@ -51,10 +51,10 @@ impl Iterator for Requests {
     fn next(&mut self) -> Option<Step> {
         if self.limit > self.curr {
             let remaining = self.limit - self.curr;
-            let rows = self.batch.min(remaining);
+            let rows = self.num_docs.min(remaining);
             let query = format!("{}&start={}&rows={}", self.url, self.curr, rows);
             let res = Step { url: query, curr: self.curr };
-            self.curr += self.batch;
+            self.curr += self.num_docs;
             Some(res)
         } else {
             None
@@ -78,12 +78,12 @@ impl Iterator for Requests {
 
 impl Backup {
     pub fn get_archive_pattern(&self, num_found: usize) -> String {
-        let prefix = match &self.prefix {
+        let prefix = match &self.zip_prefix {
             Some(text) => text.to_string(),
             None => {
                 let now: DateTime<Utc> = Utc::now();
                 let time = now.format("%Y%m%d_%H%M");
-                format!("{}_at_{}", &self.from, &time)
+                format!("{}_at_{}", &self.options.core, &time)
             }
         };
         format!("{}_docs_{}_seq_{}.zip", prefix, num_found, BRACKETS)
@@ -98,7 +98,7 @@ impl Backup {
         let fl = self.get_query_fields(core_fields);
         let query = self.get_query_url(&fl);
         let end_limit = self.get_docs_to_retrieve(core_info);
-        Requests { curr: self.skip, limit: end_limit, batch: self.docs_per_step, url: query }
+        Requests { curr: self.skip, limit: end_limit, num_docs: self.num_docs, url: query }
     }
 
     pub fn get_query_fields(&self, core_fields: &[String]) -> String {
@@ -135,7 +135,7 @@ impl Backup {
         };
         let parts = vec![
             self.options.url.with_suffix("/"),
-            self.from.clone(),
+            self.options.core.clone(),
             "/select?wt=json&indent=off&omitHeader=true".to_string(),
             format!("&q={}", filter),
             sort,

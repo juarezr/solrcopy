@@ -12,10 +12,6 @@ const SOLR_COPY_URL: &str = "SOLR_COPY_URL";
 
 #[derive(StructOpt, Debug)]
 pub struct Backup {
-    /// Case sensitive name of the Solr core for extracting documents
-    #[structopt(short, long, value_name = "core")]
-    pub from: String,
-
     /// Solr Query for filtering which documents are retrieved
     #[structopt(short, long, value_name = "f1:val1 AND f2:val2")]
     pub query: Option<String>,
@@ -36,13 +32,9 @@ pub struct Backup {
     #[structopt(short, long, parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
     pub limit: Option<usize>,
 
-    /// Existing folder for writing the zip backup files containing the extracted documents
-    #[structopt(short, long, parse(from_os_str), env = SOLR_COPY_DIR, value_name = "/path/to/output")]
-    pub into: PathBuf,
-
     /// Optional prefix for naming the zip backup files when storing documents
     #[structopt(short, long, parse(try_from_str = parse_file_prefix), value_name = "name")]
-    pub prefix: Option<String>,
+    pub zip_prefix: Option<String>,
 
     #[structopt(flatten)]
     pub options: CommonArgs,
@@ -50,13 +42,13 @@ pub struct Backup {
     #[structopt(flatten)]
     pub transfer: ParallelArgs,
 
-    /// Number of documents retrieved from solr in each reader step
+    /// Number of documents to retrieve from solr in each reader step
     #[structopt(short, long, default_value = "4k", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
-    pub docs_per_step: usize,
+    pub num_docs: usize,
 
     /// Max number of files of documents stored in each zip file
-    #[structopt(short, long, default_value = "200", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
-    pub max_files: usize,
+    #[structopt(short, long, default_value = "40", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
+    pub archive_files: usize,
 
     /// Use only when your Solr Cloud returns a distinct count of docs for some queries in a row.
     /// This may be caused by replication problems between cluster nodes of shard replicas of a core.
@@ -66,43 +58,16 @@ pub struct Backup {
     pub workaround_shards: usize,
 }
 
-#[derive(StructOpt, PartialEq, Debug)]
-/// Tells Solrt to performs a commit of the index while updating the core
-pub enum CommitMode {
-    /// Do not perform a commit
-    None,
-    /// Perform a soft commit to memory of the documents
-    Soft,
-    /// Perform a hard commit to disk of the documents (slow)
-    Hard,
-    /// Perform a final hard commit to disk after updated all documents
-    Within { count: usize },
-    /// Perform a final hard commit to disk after updated all documents
-    Final,
-}
-
-// const COMMIT_VALUES: &[&str] = &["none", "soft", "hard", "final", "<docs>"];
-// , possible_values = COMMIT_VALUES
-
 #[derive(StructOpt, Debug)]
 pub struct Restore {
-    /// Case sensitive name of the Solr core to upload documents
-    #[structopt(short, long, value_name = "core")]
-    pub into: String,
+    /// Mode to perform commits of the documents transaction log while updating the core
+    /// [possible values: none, soft, hard, <interval>]
+    #[structopt(short, long, default_value = "60s", parse(try_from_str = parse_commit_mode), value_name = "mode")]
+    pub flush: CommitMode,
 
-    /// Mode to perform commits of the index while updating documents in the core
-    /// [possible values: none, soft, hard, final, <num docs>]
-    #[structopt(short, long, default_value = "40k", parse(try_from_str = parse_commit_mode), value_name = "mode")]
-    pub commit: CommitMode,
-
-    /// Extra parameter for Solr Update Handler.
-    /// See: https://lucene.apache.org/solr/guide/transforming-and-indexing-custom-json.html
-    #[structopt(short, long, value_name = "useParams=my_params")]
-    pub params: Option<String>,
-
-    /// Existing folder for reading the zip backup files containing documents
-    #[structopt(short, long, parse(from_os_str), env = SOLR_COPY_DIR, value_name = "/path/to/zips")]
-    pub from: PathBuf,
+    /// Do not perform a final hard commit before finishing
+    #[structopt(short, long)]
+    pub no_final_commit: bool,
 
     /// Search pattern for matching names of the zip backup files
     #[structopt(short, long, value_name = "core*.zip")]
@@ -113,18 +78,10 @@ pub struct Restore {
 
     #[structopt(flatten)]
     pub transfer: ParallelArgs,
-
-    /// How many times should continue on source document errors
-    #[structopt(short, long, default_value = "0", min_values = 0, value_name = "count", parse(try_from_str = parse_quantity_max))]
-    pub max_errors: usize,
 }
 
 #[derive(StructOpt, Debug)]
 pub struct Commit {
-    /// Case sensitive name of the Solr core to perform the commit
-    #[structopt(short, long, value_name = "core")]
-    pub into: String,
-
     #[structopt(flatten)]
     pub options: CommonArgs,
 }
@@ -138,6 +95,7 @@ pub struct Commit {
 /// to data format, content and storage place. Because of this data is restored exactly
 /// as extracted and your responsible for extracting, storing and updating the correct data
 /// from and into correct cores.
+#[allow(clippy::large_enum_variant)]
 pub enum Arguments {
     /// Dumps documents from a Apache Solr core into local backup files
     Backup(Backup),
@@ -150,11 +108,29 @@ pub enum Arguments {
 const LOG_LEVEL_VALUES: &[&str] = &["off", "error", "warn", "info", "debug", "trace"];
 const LOG_TERM_VALUES: &[&str] = &["stdout", "stderr", "mixed"];
 
+#[derive(StructOpt, PartialEq, Debug)]
+/// Tells Solrt to performs a commit of the updated documents while updating the core
+pub enum CommitMode {
+    /// Do not perform commit
+    None,
+    /// Perform a hard commit by each step for flushing all uncommitted documents in a transaction log to disk
+    /// This is the safest and the slowest method
+    Hard,
+    /// Perform a soft commit of the transaction log for invalidating top-level caches and making documents searchable
+    Soft,
+    /// Force a hard commit of the transaction log in the defined milliseconds period
+    Within { millis: usize },
+}
+
 #[derive(StructOpt, Debug)]
 pub struct CommonArgs {
     /// Url pointing to the Solr cluster
     #[structopt(short, long, env = SOLR_COPY_URL, parse(try_from_str = parse_solr_url), value_name = "localhost:8983/solr")]
     pub url: String,
+
+    /// Case sensitive name of the core in the Solr server
+    #[structopt(short, long, value_name = "core")]
+    pub core: String,
 
     /// What level of detail should print messages
     #[structopt(long, value_name = "level", default_value = "info", possible_values = LOG_LEVEL_VALUES)]
@@ -176,6 +152,10 @@ pub struct CommonArgs {
 #[derive(StructOpt, Debug)]
 /// Dumps and restores documents from a Apache Solr core into local backup files
 pub struct ParallelArgs {
+    /// Existing folder for writing the zip backup files containing the extracted documents
+    #[structopt(short, long, parse(from_os_str), env = SOLR_COPY_DIR, value_name = "/path/to/output")]
+    pub dir: PathBuf,
+
     /// Number parallel threads reading documents from solr core
     #[structopt(
         short,
@@ -197,6 +177,15 @@ pub struct ParallelArgs {
         value_name = "count"
     )]
     pub writers: usize,
+
+    /// Extra parameter for Solr Update Handler.
+    /// See: https://lucene.apache.org/solr/guide/transforming-and-indexing-custom-json.html
+    #[structopt(short, long, value_name = "useParams=my_params")]
+    pub params: Option<String>,
+
+    /// How many times should continue on source document errors
+    #[structopt(short, long, default_value = "0", min_values = 0, value_name = "count", parse(try_from_str = parse_quantity_max))]
+    pub max_errors: usize,
 }
 
 // endregion
@@ -211,7 +200,7 @@ fn parse_quantity(src: &str) -> Result<usize, String> {
     let up = src.trim().to_ascii_uppercase();
 
     match REGKB.get_groups(&up) {
-        None => Err(format!("Wrong value: '{}'. Use numbers only, or suffix: K M G", src)),
+        None => Err(format!("Wrong value: '{}'. Use numbers only, or with suffix: K M G", src)),
         Some(parts) => {
             let number = parts.get_as_str(1);
             let multiplier = parts.get_as_str(2);
@@ -224,7 +213,10 @@ fn parse_quantity(src: &str) -> Result<usize, String> {
                     "M" | "MB" => Ok(quantity * 1_000_000),
                     "G" | "GB" => Ok(quantity * 1_000_000_000),
                     "T" | "TB" => Ok(quantity * 1_000_000_000_000),
-                    _ => Err(format!("Wrong value for multiplier '{}' in '{}'", multiplier, src)),
+                    _ => Err(format!(
+                        "Wrong value for quantity multiplier '{}' in '{}'",
+                        multiplier, src
+                    )),
                 },
             }
         }
@@ -239,6 +231,35 @@ fn parse_quantity_max(s: &str) -> Result<usize, String> {
             Ok(value) => Ok(value),
             Err(_) => Err(format!("'{}'. [alowed: all, <quantity>]", s)),
         },
+    }
+}
+
+fn parse_millis(src: &str) -> Result<usize, String> {
+    lazy_static! {
+        static ref REGKB: Regex = Regex::new("^([0-9]+)\\s*([a-zA-Z]*)$").unwrap();
+    }
+    let lower = src.trim().to_ascii_lowercase();
+
+    match REGKB.get_groups(&lower) {
+        None => Err(format!("Wrong interval: '{}'. Use numbers only, or with suffix: s m h", src)),
+        Some(parts) => {
+            let number = parts.get_as_str(1);
+            let multiplier = parts.get_as_str(2);
+            let parsed = number.parse::<usize>();
+            match parsed {
+                Err(_) => Err(format!("Wrong value for number: '{}'", src)),
+                Ok(quantity) => match multiplier {
+                    "ms" | "millis" | "milliseconds" => Ok(quantity),
+                    "" | "s" | "sec" | "secs" | "seconds" => Ok(quantity * 1000),
+                    "m" | "min" | "mins" | "minutes" => Ok(quantity * 60_000),
+                    "h" | "hr" | "hrs" | "hours" => Ok(quantity * 3_600_000),
+                    _ => Err(format!(
+                        "Wrong value for time multiplier '{}' in '{}'",
+                        multiplier, src
+                    )),
+                },
+            }
+        }
     }
 }
 
@@ -295,10 +316,9 @@ fn parse_commit_mode(s: &str) -> Result<CommitMode, String> {
         "none" => Ok(CommitMode::None),
         "soft" => Ok(CommitMode::Soft),
         "hard" => Ok(CommitMode::Hard),
-        "final" => Ok(CommitMode::Final),
-        _ => match parse_quantity(&s) {
-            Ok(value) => Ok(CommitMode::Within { count: value }),
-            Err(_) => Err(format!("'{}'. [alowed: none, soft, hard, final, <num docs>]", s)),
+        _ => match parse_millis(&s) {
+            Ok(value) => Ok(CommitMode::Within { millis: value }),
+            Err(_) => Err(format!("'{}'. [alowed: none, soft, hard, <secs>]", s)),
         },
     }
 }
@@ -315,7 +335,7 @@ impl CommonArgs {
 
 impl Default for CommitMode {
     fn default() -> Self {
-        CommitMode::Within { count: 40000 }
+        CommitMode::Within { millis: 40_000 }
     }
 }
 
@@ -332,7 +352,7 @@ impl CommitMode {
         match self {
             CommitMode::Soft => separator.append("softCommit=true"),
             CommitMode::Hard => separator.append("commit=true"),
-            CommitMode::Within { count } => format!("{}commitWithin={}", separator, count),
+            CommitMode::Within { millis } => format!("{}commitWithin={}", separator, millis),
             _ => EMPTY_STRING,
         }
     }
@@ -410,7 +430,7 @@ pub mod tests {
 
     // region Mockup
 
-    use crate::args::{parse_quantity, Arguments, CommitMode};
+    use crate::args::{parse_millis, parse_quantity, Arguments, CommitMode};
 
     use structopt::StructOpt;
 
@@ -452,9 +472,9 @@ pub mod tests {
         "backup",
         "--url",
         "http://solr-server.com:8983/solr",
-        "--from",
+        "--core",
         "mileage",
-        "--into",
+        "--dir",
         "./tmp",
         "--query",
         "ownerId:173826 AND periodCode:1",
@@ -464,15 +484,15 @@ pub mod tests {
         "vehiclePlate:asc",
         "--select",
         TEST_SELECT_FIELDS,
-        "--prefix",
-        "output_filename",
+        "--zip-prefix",
+        "zip_filename",
         "--skip",
         "3",
         "--limit",
         "42",
-        "--docs-per-step",
+        "--num-docs",
         "5",
-        "--max-files",
+        "--archive-files",
         "6",
         "--readers",
         "7",
@@ -493,13 +513,13 @@ pub mod tests {
         "restore",
         "--url",
         "http://solr-server.com:8983/solr",
-        "--from",
+        "--dir",
         "./tmp",
-        "--into",
+        "--core",
         "target",
         "--search",
         "*.zip",
-        "--commit",
+        "--flush",
         "soft",
         "--log-level",
         "debug",
@@ -510,7 +530,7 @@ pub mod tests {
         "commit",
         "--url",
         "http://solr-server.com:8983/solr",
-        "--into",
+        "--core",
         "mileage",
         "--log-level",
         "debug",
@@ -524,13 +544,13 @@ pub mod tests {
         match parsed {
             Arguments::Backup(get) => {
                 assert_eq!(get.options.url, TEST_ARGS_BACKUP[3]);
-                assert_eq!(get.from, TEST_ARGS_BACKUP[5]);
-                assert_eq!(get.into.to_str().unwrap(), TEST_ARGS_BACKUP[7]);
+                assert_eq!(get.options.core, TEST_ARGS_BACKUP[5]);
+                assert_eq!(get.transfer.dir.to_str().unwrap(), TEST_ARGS_BACKUP[7]);
                 assert_eq!(get.query, Some(TEST_ARGS_BACKUP[9].to_string()));
                 assert_eq!(get.skip, 3);
                 assert_eq!(get.limit, Some(42));
-                assert_eq!(get.docs_per_step, 5);
-                assert_eq!(get.max_files, 6);
+                assert_eq!(get.num_docs, 5);
+                assert_eq!(get.archive_files, 6);
                 assert_eq!(get.transfer.readers, 7);
                 assert_eq!(get.transfer.writers, 9);
                 assert_eq!(get.options.log_level, "debug");
@@ -545,11 +565,11 @@ pub mod tests {
         match parsed {
             Arguments::Restore(put) => {
                 assert_eq!(put.options.url, TEST_ARGS_RESTORE[3]);
-                assert_eq!(put.from.to_str().unwrap(), TEST_ARGS_RESTORE[5]);
-                assert_eq!(put.into, TEST_ARGS_RESTORE[7]);
+                assert_eq!(put.transfer.dir.to_str().unwrap(), TEST_ARGS_RESTORE[5]);
+                assert_eq!(put.options.core, TEST_ARGS_RESTORE[7]);
                 assert_eq!(put.search.unwrap(), TEST_ARGS_RESTORE[9]);
-                assert_eq!(put.commit, CommitMode::Soft);
-                assert_eq!(put.commit.as_param("?"), "?softCommit=true");
+                assert_eq!(put.flush, CommitMode::Soft);
+                assert_eq!(put.flush.as_param("?"), "?softCommit=true");
                 assert_eq!(put.options.log_level, "debug");
             }
             _ => panic!("command must be 'restore' !"),
@@ -562,7 +582,7 @@ pub mod tests {
         match parsed {
             Arguments::Commit(put) => {
                 assert_eq!(put.options.url, TEST_ARGS_COMMIT[3]);
-                assert_eq!(put.into, TEST_ARGS_COMMIT[5]);
+                assert_eq!(put.options.core, TEST_ARGS_COMMIT[5]);
                 assert_eq!(put.options.log_level, "debug");
             }
             _ => panic!("command must be 'commit' !"),
@@ -591,13 +611,25 @@ pub mod tests {
 
     #[test]
     fn check_parse_quantity() {
-        assert_eq!(parse_quantity("3k"), Ok(3000));
-        assert_eq!(parse_quantity("4 k"), Ok(4000));
-        assert_eq!(parse_quantity("5kb"), Ok(5000));
-        assert_eq!(parse_quantity("666m"), Ok(666000000));
-        assert_eq!(parse_quantity("777mb"), Ok(777000000));
-        assert_eq!(parse_quantity("888mb"), Ok(888000000));
-        assert_eq!(parse_quantity("999 mb"), Ok(999000000));
+        assert_eq!(parse_quantity("3k"), Ok(3_000));
+        assert_eq!(parse_quantity("4 k"), Ok(4_000));
+        assert_eq!(parse_quantity("5kb"), Ok(5_000));
+        assert_eq!(parse_quantity("666m"), Ok(666_000_000));
+        assert_eq!(parse_quantity("777mb"), Ok(777_000_000));
+        assert_eq!(parse_quantity("888mb"), Ok(888_000_000));
+        assert_eq!(parse_quantity("999 mb"), Ok(999_000_000));
+    }
+
+    #[test]
+    fn check_parse_millis() {
+        assert_eq!(parse_millis("3ms"), Ok(3));
+        assert_eq!(parse_millis("4 ms"), Ok(4));
+        assert_eq!(parse_millis("5s"), Ok(5_000));
+        assert_eq!(parse_millis("666s"), Ok(666_000));
+        assert_eq!(parse_millis("7m"), Ok(420_000));
+        assert_eq!(parse_millis("8min"), Ok(480_000));
+        assert_eq!(parse_millis("9 minutes"), Ok(540_000));
+        assert_eq!(parse_millis("10h"), Ok(36_000_000));
     }
 }
 

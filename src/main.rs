@@ -19,7 +19,6 @@
 // #![allow(unused_variables)]
 // #![allow(unused_imports)]
 // #![allow(dead_code)]
-
 #[macro_use]
 extern crate lazy_static;
 
@@ -128,13 +127,13 @@ pub trait Validation {
 
 impl Validation for Backup {
     fn validate(&self) -> BoxedError {
-        assert_dir_exists(&self.into)
+        assert_dir_exists(&self.transfer.dir)
     }
 }
 
 impl Validation for Restore {
     fn validate(&self) -> BoxedError {
-        assert_dir_exists(&self.from)
+        assert_dir_exists(&self.transfer.dir)
     }
 }
 

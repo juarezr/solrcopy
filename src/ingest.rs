@@ -25,9 +25,9 @@ impl Restore {
                     format!("{}*", pat)
                 }
             }
-            None => format!("{}*.zip", self.into),
+            None => format!("{}*.zip", self.options.core),
         };
-        let mut path = self.from.clone();
+        let mut path = self.transfer.dir.clone();
         path.push(wilcard);
         let res = path.to_str().unwrap();
         res.to_string()
@@ -37,10 +37,10 @@ impl Restore {
         // E.g: http://localhost:8983/solr/mycore/update?wt=json&overwrite=true&commitWithin=1000&useParams=my_params
         let parts: Vec<String> = vec![
             self.options.url.with_suffix("/"),
-            self.into.clone(),
+            self.options.core.clone(),
             "/update/json/docs?overwrite=true".to_string(),
-            self.commit.as_param("&"),
-            self.params.as_ref().unwrap_or(&EMPTY_STRING).with_prefix("&"),
+            self.flush.as_param("&"),
+            self.transfer.params.as_ref().unwrap_or(&EMPTY_STRING).with_prefix("&"),
         ];
         parts.concat()
     }

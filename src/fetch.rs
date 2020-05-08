@@ -8,7 +8,7 @@ use super::{args::Backup, connection::SolrClient, fails::*, helpers::*, steps::S
 impl Backup {
     pub fn inspect_core(&self) -> BoxedResult<SolrCore> {
         let diagnostics_query_url = self.get_query_for_diagnostics();
-        debug!("Inspecting schema of core {} at: {}", self.from, diagnostics_query_url);
+        debug!("Inspecting schema of core {} at: {}", self.options.core, diagnostics_query_url);
 
         // try sometimes for finding the greatest num_found of docs answered by the core
         // Used for fixing problems with corrupted replicas of cores with more than 1 shard
@@ -36,7 +36,7 @@ impl Backup {
 
 impl SolrCore {
     fn parse_core_schema(gets: &Backup, json: &str) -> BoxedResult<Self> {
-        let core_name = &gets.from;
+        let core_name = &gets.options.core;
 
         let total_docs = Self::parse_num_found(json)?;
         if total_docs < 1 {

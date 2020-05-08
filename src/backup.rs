@@ -32,7 +32,7 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
         params.skip + 1,
         end_limit,
         num_found,
-        params.from
+        params.options.core
     );
 
     let ctrl_c = monitor_term_sinal();
@@ -77,9 +77,9 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
             let consumer = receiver.clone();
             let updater = progress.clone();
 
-            let dir = params.into.clone();
+            let dir = params.transfer.dir.clone();
             let name = output_pat.clone();
-            let max = params.max_files;
+            let max = params.archive_files;
 
             let writer = iw;
             let thread_name = format!("Writer_{}", writer);
@@ -94,12 +94,8 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
         drop(receiver);
         drop(progress);
 
-        retrieved = foreach_progress(
-            reporter,
-            num_retrieving,
-            params.docs_per_step,
-            params.options.is_quiet(),
-        );
+        retrieved =
+            foreach_progress(reporter, num_retrieving, params.num_docs, params.options.is_quiet());
     })
     .unwrap();
 

@@ -20,14 +20,14 @@
             "args": [
                 "backup", 
                 "--url", "http://localhost:8983/solr", 
-                "--from", "demo", 
+                "--core", "demo", 
                 "--query", "price:[1 TO 400] AND NOT popularity:10", 
                 "--order", "price:asc", "weight:asc", "id:asc",
                 "--select", "id", "date", "name", "price", "weight", "popularity", "manu", "cat", "store", "features",
                 "--limit", "25", 
-                "--into", "./tmp",
-                "--docs-per-step", "2", 
-                "--max-files", "3", 
+                "--dir", "./tmp",
+                "--num-docs", "2", 
+                "--archive-files", "3", 
                 "--readers", "1", 
                 "--writers", "1", 
                 // "--log-level", "debug",
@@ -54,10 +54,10 @@
             "args": [
                 "restore", 
                 "--url", "http://localhost:8983/solr", 
-                "--from", "./tmp", 
+                "--dir", "./tmp", 
                 "--search", "demo", 
-                "--into", "target",
-                "--commit", "soft",
+                "--core", "target",
+                "--flush", "soft",
                 "--log-level",  "debug",
             ],
             "env": { 
@@ -80,7 +80,7 @@
             "args": [
                 "commit", 
                 "--url", "http://localhost:8983/solr", 
-                "--into", "target",
+                "--core", "target",
                 // "--log-level",  "debug",
             ],
             "env": { 

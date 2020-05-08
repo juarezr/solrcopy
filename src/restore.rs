@@ -9,7 +9,7 @@ use std::sync::{
 use std::{path::PathBuf, time::Instant};
 
 use crate::{
-    args::{Commit, CommitMode, Restore},
+    args::{Commit, Restore},
     bars::foreach_progress,
     connection::SolrClient,
     fails::*,
@@ -30,18 +30,18 @@ pub(crate) fn restore_main(params: Restore) -> BoxedError {
         ))?;
     }
 
-    let core = params.into.clone();
-    info!("Indexing documents in solr core {} from: {:?}", core, params.from);
+    let core = params.options.core.clone();
+    info!("Indexing documents in solr core {} from: {:?}", core, params.transfer.dir);
 
     let started = Instant::now();
 
-    let updated = unzip_archives(params, &found)?;
+    let updated = unzip_archives_and_send(params, &found)?;
 
     info!("Updated {} batches in solr core {} in {:?}.", updated, core, started.elapsed());
     Ok(())
 }
 
-fn unzip_archives(params: Restore, found: &[PathBuf]) -> BoxedResult<usize> {
+fn unzip_archives_and_send(params: Restore, found: &[PathBuf]) -> BoxedResult<usize> {
     let doc_count = estimate_document_count(found)?;
     let mut updated = 0;
 
@@ -86,7 +86,7 @@ fn unzip_archives(params: Restore, found: &[PathBuf]) -> BoxedResult<usize> {
 
             let url = update_hadler_url.clone();
             let error_count = Arc::clone(&update_errors);
-            let max_errors = params.max_errors;
+            let max_errors = params.transfer.max_errors;
 
             let writer = iw;
             let thread_name = format!("Writer_{}", writer);
@@ -105,12 +105,17 @@ fn unzip_archives(params: Restore, found: &[PathBuf]) -> BoxedResult<usize> {
     })
     .unwrap();
 
+    finish_sending(params, updated)
+}
+
+fn finish_sending(params: Restore, updated: usize) -> BoxedResult<usize> {
     let ctrl_c = monitor_term_sinal();
+
     if ctrl_c.aborted() {
         raise("# Execution aborted by user!")
     } else {
-        if updated > 0 && CommitMode::Final == params.commit {
-            let params2 = Commit { into: params.into, options: params.options };
+        if updated > 0 && !params.no_final_commit {
+            let params2 = Commit { options: params.options };
             crate::commit::commit_main(params2)?;
         }
         Ok(updated)

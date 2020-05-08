@@ -21,7 +21,7 @@ impl Commit {
         #[rustfmt::skip]
         let parts: Vec<String> = vec![
             self.options.url.with_suffix("/"),
-            self.into.clone(),
+            self.options.core.clone(),
             "/update".to_string(),
         ];
         parts.concat()
