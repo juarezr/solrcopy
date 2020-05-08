@@ -1,6 +1,6 @@
 use crossbeam_channel::{bounded, Receiver, Sender};
 use crossbeam_utils::thread;
-use log::{debug, error, info};
+use log::{debug, error, info, trace};
 
 use std::sync::{atomic::AtomicBool, Arc};
 use std::{path::PathBuf, time::Instant};
@@ -20,11 +20,11 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
     debug!("  {:?}", params);
 
     let core_info = params.inspect_core()?;
-    debug!("  {:?}", core_info);
 
     let end_limit = params.get_docs_to_retrieve(&core_info);
     let num_retrieving = end_limit - params.skip;
     let num_found = core_info.num_found.to_u64();
+    let must_match = if params.workaround_shards > 0 { num_found } else { 0 };
     let mut retrieved = 0;
 
     info!(
@@ -63,7 +63,7 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
             pool.builder()
                 .name(thread_name)
                 .spawn(move |_| {
-                    start_retrieving_docs(reader, iterator, producer);
+                    start_retrieving_docs(reader, iterator, producer, must_match);
                     debug!("Finished reader #{}", reader);
                 })
                 .unwrap();
@@ -128,7 +128,9 @@ fn start_querying_core(requests: Requests, generator: Sender<Step>, ctrl_c: &Arc
     drop(generator);
 }
 
-fn start_retrieving_docs(reader: usize, iterator: Receiver<Step>, producer: Sender<Documents>) {
+fn start_retrieving_docs(
+    reader: usize, iterator: Receiver<Step>, producer: Sender<Documents>, must_match: u64,
+) {
     let ctrl_c = monitor_term_sinal();
 
     let mut client = SolrClient::new();
@@ -138,7 +140,7 @@ fn start_retrieving_docs(reader: usize, iterator: Receiver<Step>, producer: Send
             break;
         }
         let failed = match received {
-            Ok(step) => handle_received_batch(reader, &producer, step, &mut client),
+            Ok(step) => retrieve_docs_from_solr(reader, &producer, step, &mut client, must_match),
             Err(_) => true,
         };
         if failed || ctrl_c.aborted() {
@@ -148,30 +150,59 @@ fn start_retrieving_docs(reader: usize, iterator: Receiver<Step>, producer: Send
     drop(producer);
 }
 
-fn handle_received_batch(
+fn retrieve_docs_from_solr(
     reader: usize, producer: &Sender<Documents>, step: Step, client: &mut SolrClient,
+    must_match: u64,
 ) -> bool {
-    let src = &step.url;
-    let response = client.get_as_text(src);
+    let query_url = step.url.as_str();
+    let response = fetch_docs_from_solr(reader, client, query_url, must_match);
     match response {
-        Err(cause) => {
-            error!("Error in thread #{} retrieving docs from solr: {}", reader, cause);
-            true
-        }
+        Err(_) => true,
         Ok(content) => {
-            // TODO: print a warning about unbalanced shard in solr could configurations
             let parsed = SolrCore::parse_docs_from_query(&content);
             match parsed {
                 None => {
-                    error!("Error in thread #{} parsing from solr query: {}", reader, src);
+                    error!("Error in thread #{} parsing from solr query: {}", reader, query_url);
                     true
                 }
                 Some(json) => {
-                    // TODO: pass &str instead of String
                     let docs = Documents { step, docs: json.to_string() };
                     let status = producer.send(docs);
                     status.is_err()
                 }
+            }
+        }
+    }
+}
+
+fn fetch_docs_from_solr(
+    reader: usize, client: &mut SolrClient, query_url: &str, must_match: u64,
+) -> Result<String, ()> {
+    let mut times = 0;
+    loop {
+        let response = client.get_as_text(query_url);
+        match response {
+            Err(cause) => {
+                error!("Error in thread #{} retrieving docs from solr: {}", reader, cause);
+                return Err(());
+            }
+            Ok(content) => {
+                if must_match > 0 {
+                    match SolrCore::parse_num_found(&content) {
+                        Ok(num_found) => {
+                            trace!("#{} got num_found {} not {}", times, num_found, must_match);
+                            if must_match != num_found.to_u64() && times < 13 {
+                                times += 1;
+                                continue;
+                            }
+                        }
+                        Err(cause) => {
+                            error!("Error in Solr response: {}", cause);
+                            return Err(());
+                        }
+                    }
+                }
+                break Ok(content);
             }
         }
     }

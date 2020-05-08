@@ -8,18 +8,28 @@ use super::{args::Backup, connection::SolrClient, fails::*, helpers::*, steps::S
 impl Backup {
     pub fn inspect_core(&self) -> BoxedResult<SolrCore> {
         let diagnostics_query_url = self.get_query_for_diagnostics();
-        debug!("Solr Query URL: {}", diagnostics_query_url);
+        debug!("Inspecting schema of core {} at: {}", self.from, diagnostics_query_url);
 
-        let json = SolrClient::query_get_as_text(&diagnostics_query_url)?;
+        // try sometimes for finding the greatest num_found of docs answered by the core
+        // Used for fixing problems with corrupted replicas of cores with more than 1 shard
+        let times = (self.workaround_shards * 5) + 1;
 
-        let res = SolrCore::parse_core_schema(self, &json)?;
-
+        let mut res = SolrCore { num_found: 0, fields: vec![] };
+        for it in 0..times {
+            let json = SolrClient::query_get_as_text(&diagnostics_query_url)?;
+            let next = SolrCore::parse_core_schema(self, &json)?;
+            debug!("#{} Solr query returned num_found: {}", it, next.num_found);
+            if next.num_found > res.num_found {
+                res = next;
+            }
+        }
         if res.num_found <= self.skip {
             throw(format!(
                 "Requested {} in --skip but found {} docs with the query.",
                 self.skip, res.num_found
             ))?;
         }
+        debug!("Core schema: {:?}", res);
         Ok(res)
     }
 }
@@ -47,7 +57,7 @@ impl SolrCore {
         Ok(res)
     }
 
-    fn parse_num_found(json: &str) -> BoxedResult<usize> {
+    pub fn parse_num_found(json: &str) -> BoxedResult<usize> {
         lazy_static! {
             static ref REGNF: Regex = Regex::new("\"numFound\":(\\d+),").unwrap();
         }

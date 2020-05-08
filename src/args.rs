@@ -57,6 +57,13 @@ pub struct Backup {
     /// Max number of files of documents stored in each zip file
     #[structopt(short, long, default_value = "200", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
     pub max_files: usize,
+
+    /// Use only when your Solr Cloud returns a distinct count of docs for some queries in a row.
+    /// This may be caused by replication problems between cluster nodes of shard replicas of a core.
+    /// Response with 'num_found' bellow the greatest value are ignored for getting all possible docs.
+    /// Use with `--params shards=shard_name` for retrieving all docs for each shard of the core
+    #[structopt(long, default_value = "0", min_values = 0, max_values = 128, value_name = "count")]
+    pub workaround_shards: usize,
 }
 
 #[derive(StructOpt, PartialEq, Debug)]
