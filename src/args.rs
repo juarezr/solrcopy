@@ -31,27 +31,27 @@ pub enum Arguments {
 #[derive(StructOpt, Debug)]
 pub struct Backup {
     /// Solr Query for filtering which documents are retrieved
-    #[structopt(short, long, value_name = "f1:val1 AND f2:val2")]
+    #[structopt(short, long, display_order = 40, value_name = "f1:val1 AND f2:val2")]
     pub query: Option<String>,
 
-    /// Names of core fields retrieved in each document [default: all but _*]
-    #[structopt(short, long, value_name = "field1 field2")]
-    pub select: Vec<String>,
-
     /// Solr core fields names for sorting documents for retrieval
-    #[structopt(short, long, value_name = "f1:asc f2:desc")]
+    #[structopt(short, long, display_order = 41, value_name = "f1:asc f2:desc")]
     pub order: Vec<SortField>,
 
     /// Skip this quantity of documents in the Solr Query
-    #[structopt(short = "k", long, parse(try_from_str = parse_quantity), default_value = "0", min_values = 0, value_name = "quantity")]
+    #[structopt(short = "k", long, display_order = 42, parse(try_from_str = parse_quantity), default_value = "0", min_values = 0, value_name = "quantity")]
     pub skip: usize,
 
     /// Maximum quantity of documents for retrieving from the core (like 100M)
-    #[structopt(short, long, parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
+    #[structopt(short, long, display_order = 43, parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
     pub limit: Option<usize>,
 
+    /// Names of core fields retrieved in each document [default: all but _*]
+    #[structopt(short, long, display_order = 44, value_name = "field1 field2")]
+    pub select: Vec<String>,
+
     /// Optional prefix for naming the zip backup files when storing documents
-    #[structopt(short, long, parse(try_from_str = parse_file_prefix), value_name = "name")]
+    #[structopt(short, long, display_order = 60, parse(try_from_str = parse_file_prefix), value_name = "name")]
     pub zip_prefix: Option<String>,
 
     #[structopt(flatten)]
@@ -61,18 +61,25 @@ pub struct Backup {
     pub transfer: ParallelArgs,
 
     /// Number of documents to retrieve from solr in each reader step
-    #[structopt(short, long, default_value = "4k", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
+    #[structopt(short, long, display_order = 60, default_value = "4k", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
     pub num_docs: usize,
 
     /// Max number of files of documents stored in each zip file
-    #[structopt(short, long, default_value = "40", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
+    #[structopt(short, long, display_order = 61, default_value = "40", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
     pub archive_files: usize,
 
     /// Use only when your Solr Cloud returns a distinct count of docs for some queries in a row.
     /// This may be caused by replication problems between cluster nodes of shard replicas of a core.
     /// Response with 'num_found' bellow the greatest value are ignored for getting all possible docs.
     /// Use with `--params shards=shard_name` for retrieving all docs for each shard of the core
-    #[structopt(long, default_value = "0", min_values = 0, max_values = 128, value_name = "count")]
+    #[structopt(
+        long,
+        display_order = 70,
+        default_value = "0",
+        min_values = 0,
+        max_values = 99,
+        value_name = "count"
+    )]
     pub workaround_shards: usize,
 }
 
@@ -80,15 +87,15 @@ pub struct Backup {
 pub struct Restore {
     /// Mode to perform commits of the documents transaction log while updating the core
     /// [possible values: none, soft, hard, <interval>]
-    #[structopt(short, long, default_value = "60s", parse(try_from_str = parse_commit_mode), value_name = "mode")]
+    #[structopt(short, long, display_order = 40, default_value = "60s", parse(try_from_str = parse_commit_mode), value_name = "mode")]
     pub flush: CommitMode,
 
     /// Do not perform a final hard commit before finishing
-    #[structopt(short, long)]
+    #[structopt(short, long, display_order = 41)]
     pub no_final_commit: bool,
 
     /// Search pattern for matching names of the zip backup files
-    #[structopt(short, long, value_name = "core*.zip")]
+    #[structopt(short, long, display_order = 60, value_name = "core*.zip")]
     pub search: Option<String>,
 
     #[structopt(flatten)]
@@ -104,11 +111,11 @@ pub struct Delete {
     /// Use '*:*' for excluding all documents in the core.
     /// There are no way of recovering excluded docs.
     /// Use with caution and check twice.
-    #[structopt(short, long, value_name = "f1:val1 AND f2:val2")]
+    #[structopt(short, long, display_order = 40, value_name = "f1:val1 AND f2:val2")]
     pub query: String,
 
     /// Wether to perform a commits of transaction log after removing the documents
-    #[structopt(short, long, default_value = "soft", parse(try_from_str = parse_commit_mode), value_name = "mode", possible_values = COMMIT_AFTER_VALUES)]
+    #[structopt(short, display_order = 41, long, default_value = "soft", parse(try_from_str = parse_commit_mode), value_name = "mode", possible_values = COMMIT_AFTER_VALUES)]
     pub flush: CommitMode,
 
     #[structopt(flatten)]
@@ -150,41 +157,48 @@ pub enum CommitMode {
 #[derive(StructOpt, Debug)]
 pub struct CommonArgs {
     /// Url pointing to the Solr cluster
-    #[structopt(short, long, env = SOLR_COPY_URL, parse(try_from_str = parse_solr_url), value_name = "localhost:8983/solr")]
+    #[structopt(short, long, display_order = 10, env = SOLR_COPY_URL, parse(try_from_str = parse_solr_url), value_name = "localhost:8983/solr")]
     pub url: String,
 
     /// Case sensitive name of the core in the Solr server
-    #[structopt(short, long, value_name = "core")]
+    #[structopt(short, long, display_order = 20, value_name = "core")]
     pub core: String,
 
     /// What level of detail should print messages
-    #[structopt(long, value_name = "level", default_value = "info", possible_values = LOG_LEVEL_VALUES)]
+    #[structopt(short = "L", long, display_order = 90, value_name = "level", default_value = "info", possible_values = LOG_LEVEL_VALUES)]
     pub log_level: String,
 
     /// Terminal output to print messages
-    #[structopt(long, value_name = "mode", default_value = "mixed", possible_values = LOG_TERM_VALUES)]
+    #[structopt(short = "T", long, display_order = 91, value_name = "mode", default_value = "mixed", possible_values = LOG_TERM_VALUES)]
     pub log_mode: String,
 
     /// Write messages to a local file
-    #[structopt(long, value_name = "path/to/file", parse(from_os_str))]
+    #[structopt(
+        short = "F",
+        long,
+        display_order = 92,
+        value_name = "path/to/file",
+        parse(from_os_str)
+    )]
     pub log_file_path: Option<PathBuf>,
 
     /// What level of detail should write messages to the file
-    #[structopt(long, value_name = "level", default_value = "debug", possible_values = LOG_LEVEL_VALUES)]
+    #[structopt(short = "G", long, display_order = 93, value_name = "level", default_value = "debug", possible_values = LOG_LEVEL_VALUES)]
     pub log_file_level: String,
 }
 
 #[derive(StructOpt, Debug)]
 /// Dumps and restores documents from a Apache Solr core into local backup files
 pub struct ParallelArgs {
-    /// Existing folder for writing the zip backup files containing the extracted documents
-    #[structopt(short, long, parse(from_os_str), env = SOLR_COPY_DIR, value_name = "/path/to/output")]
+    /// Existing folder where the zip backup files containing the extracted documents are stored
+    #[structopt(short, display_order = 30, long, parse(from_os_str), env = SOLR_COPY_DIR, value_name = "/path/to/output")]
     pub dir: PathBuf,
 
-    /// Number parallel threads reading documents from solr core
+    /// Number parallel threads exchanging documents with the solr core
     #[structopt(
         short,
         long,
+        display_order = 80,
         default_value = "1",
         min_values = 1,
         max_values = 128,
@@ -192,10 +206,11 @@ pub struct ParallelArgs {
     )]
     pub readers: usize,
 
-    /// Number parallel threads writing documents into zip archives
+    /// Number parallel threads syncing documents with the zip archives
     #[structopt(
         short,
         long,
+        display_order = 80,
         default_value = "1",
         min_values = 1,
         max_values = 128,
@@ -205,11 +220,11 @@ pub struct ParallelArgs {
 
     /// Extra parameter for Solr Update Handler.
     /// See: https://lucene.apache.org/solr/guide/transforming-and-indexing-custom-json.html
-    #[structopt(short, long, value_name = "useParams=my_params")]
+    #[structopt(short, long, display_order = 50, value_name = "useParams=my_params")]
     pub params: Option<String>,
 
     /// How many times should continue on source document errors
-    #[structopt(short, long, default_value = "0", min_values = 0, value_name = "count", parse(try_from_str = parse_quantity_max))]
+    #[structopt(short, long, display_order = 51, default_value = "0", min_values = 0, value_name = "count", parse(try_from_str = parse_quantity_max))]
     pub max_errors: usize,
 }
 
