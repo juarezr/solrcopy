@@ -347,6 +347,12 @@ impl FromStr for CommitMode {
     }
 }
 
+impl ParallelArgs {
+    pub fn get_param(&self, separator: &str) -> String {
+        self.params.as_ref().unwrap_or(&EMPTY_STRING).with_prefix(separator)
+    }
+}
+
 impl CommitMode {
     pub fn as_param(&self, separator: &str) -> String {
         match self {

@@ -40,7 +40,7 @@ impl Restore {
             self.options.core.clone(),
             "/update/json/docs?overwrite=true".to_string(),
             self.flush.as_param("&"),
-            self.transfer.params.as_ref().unwrap_or(&EMPTY_STRING).with_prefix("&"),
+            self.transfer.get_param("&"),
         ];
         parts.concat()
     }

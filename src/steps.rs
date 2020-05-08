@@ -139,6 +139,7 @@ impl Backup {
             "/select?wt=json&indent=off&omitHeader=true".to_string(),
             format!("&q={}", filter),
             sort,
+            self.transfer.get_param("&"),
             selected.to_string(),
         ];
         parts.concat()
