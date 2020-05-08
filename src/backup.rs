@@ -58,12 +58,13 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
             let producer = sender.clone();
             let iterator = sequence.clone();
             let reader = ir;
+            let max_errors = params.transfer.max_errors;
 
             let thread_name = format!("Reader_{}", reader);
             pool.builder()
                 .name(thread_name)
                 .spawn(move |_| {
-                    start_retrieving_docs(reader, iterator, producer, must_match);
+                    start_retrieving_docs(reader, iterator, producer, must_match, max_errors);
                     debug!("Finished reader #{}", reader);
                 })
                 .unwrap();
@@ -126,8 +127,10 @@ fn start_querying_core(requests: Requests, generator: Sender<Step>, ctrl_c: &Arc
 
 fn start_retrieving_docs(
     reader: usize, iterator: Receiver<Step>, producer: Sender<Documents>, must_match: u64,
+    max_errors: usize,
 ) {
     let ctrl_c = monitor_term_sinal();
+    let mut error_count = 0;
 
     let mut client = SolrClient::new();
     loop {
@@ -139,7 +142,14 @@ fn start_retrieving_docs(
             Ok(step) => retrieve_docs_from_solr(reader, &producer, step, &mut client, must_match),
             Err(_) => true,
         };
-        if failed || ctrl_c.aborted() {
+        if failed {
+            if error_count < max_errors {
+                error_count += 1;
+            } else {
+                break;
+            }
+        }
+        if ctrl_c.aborted() {
             break;
         }
     }
