@@ -1,3 +1,11 @@
+debian (0.5.1) unstable; urgency=low
+
+  * feature: added --workaround-shards
+  * improved: changed progress bar style
+  * fix progress with --log-level off
+
+-- Juarez Rudsatz <juarezr@gmail.com>  Mar, 8 Ma 2020 00:05:01 -0300
+
 debian (0.5.0) unstable; urgency=low
 
   * feature: added --log-level --log-mode --log-file-path

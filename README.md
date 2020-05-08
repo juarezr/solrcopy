@@ -31,7 +31,7 @@ Command line tool for backup and restore of documents stored in cores of [Apache
 
 ``` text
 $ solrcopy --help
-solrcopy 0.5.0
+solrcopy 0.5.1
 Command line tool for backup and restore of documents stored in cores of Apache Solr.
 
 Solrcopy is a command for doing backup and restore of documents stored on Solr cores. It let you filter docs by using a
@@ -55,7 +55,7 @@ SUBCOMMANDS:
 
 ``` text
 $ solrcopy help backup
-solrcopy-backup 0.5.0
+solrcopy-backup 0.5.1
 Dumps documents from a Apache Solr core into local backup files
 
 USAGE:
@@ -66,34 +66,40 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
-    -b, --docs-per-step <quantity>             Number of documents retrieved from solr in each reader step [default: 4k]
-    -f, --from <core>                          Case sensitive name of the Solr core for extracting documents
-    -i, --into </path/to/output>               Existing folder for writing the zip backup files containing the extracted
-                                               documents [env: SOLR_COPY_DIR=]
-    -l, --limit <quantity>                     Maximum quantity of documents for retrieving from the core (like 100M)
-        --log-file-level <level>               What level of detail should write messages to the file [default: debug]
-                                               [possible values: off, error, warn, info, debug, trace]
-        --log-file-path <path/to/file>         Write messages to a local file
-        --log-level <level>                    What level of detail should print messages [default: info]  [possible
-                                               values: off, error, warn, info, debug, trace]
-        --log-mode <mode>                      What output should be used to output [default: mixed]  [possible values:
-                                               none, stdout, stderr, mixed]
-    -m, --max-files <quantity>                 Max number of files of documents stored in each zip file [default: 200]
-    -o, --order <field1:asc field2:desc>...    Solr core fields names for sorting documents for retrieval
-    -p, --prefix <name>                        Optional prefix for naming the zip backup files when storing documents
-    -q, --query <f1:val1 AND f2:val2>          Solr Query for filtering which documents are retrieved
-    -r, --readers <count>                      Number parallel threads reading documents from solr core [default: 1]
-    -s, --select <field1 field2>...            Names of core fields retrieved in each document [default: all but _*]
-    -k, --skip <quantity>                      Skip this quantity of documents in the Solr Query [default: 0]
-    -u, --url <localhost:8983/solr>            Url pointing to the Solr cluster [env: SOLR_COPY_URL=]
-    -w, --writers <count>                      Number parallel threads writing documents into zip archives [default: 1]
+    -d, --docs-per-step <quantity>        Number of documents retrieved from solr in each reader step [default: 4k]
+    -f, --from <core>                     Case sensitive name of the Solr core for extracting documents
+    -i, --into </path/to/output>          Existing folder for writing the zip backup files containing the extracted
+                                          documents [env: SOLR_COPY_DIR=]
+    -l, --limit <quantity>                Maximum quantity of documents for retrieving from the core (like 100M)
+        --log-file-level <level>          What level of detail should write messages to the file [default: debug]
+                                          [possible values: off, error, warn, info, debug, trace]
+        --log-file-path <path/to/file>    Write messages to a local file
+        --log-level <level>               What level of detail should print messages [default: info]  [possible values:
+                                          off, error, warn, info, debug, trace]
+        --log-mode <mode>                 Terminal output to print messages [default: mixed]  [possible values: stdout,
+                                          stderr, mixed]
+    -m, --max-files <quantity>            Max number of files of documents stored in each zip file [default: 200]
+    -o, --order <f1:asc f2:desc>...       Solr core fields names for sorting documents for retrieval
+    -p, --prefix <name>                   Optional prefix for naming the zip backup files when storing documents
+    -q, --query <f1:val1 AND f2:val2>     Solr Query for filtering which documents are retrieved
+    -r, --readers <count>                 Number parallel threads reading documents from solr core [default: 1]
+    -s, --select <field1 field2>...       Names of core fields retrieved in each document [default: all but _*]
+    -k, --skip <quantity>                 Skip this quantity of documents in the Solr Query [default: 0]
+    -u, --url <localhost:8983/solr>       Url pointing to the Solr cluster [env: SOLR_COPY_URL=]
+        --workaround-shards <count>       Use only when your Solr Cloud returns a distinct count of docs for some
+                                          queries in a row. This may be caused by replication problems between cluster
+                                          nodes of shard replicas of a core. Response with 'num_found' bellow the
+                                          greatest value are ignored for getting all possible docs. Use with `--params
+                                          shards=shard_name` for retrieving all docs for each shard of the core
+                                          [default: 0]
+    -w, --writers <count>                 Number parallel threads writing documents into zip archives [default: 1]
 
 $ solrcopy backup --url http://localhost:8983/solr --from demo --query 'price:[1 TO 400] AND NOT popularity:10' --order price:desc weight:asc --limit 10000 --select id date name price weight popularity manu cat store features --into ./tmp
 ```
 
 ``` text
 $ solrcopy help restore
-solrcopy-restore 0.5.0
+solrcopy-restore 0.5.1
 Restore documents from local backup files into a Apache Solr core
 
 USAGE:
@@ -114,8 +120,8 @@ OPTIONS:
         --log-file-path <path/to/file>    Write messages to a local file
         --log-level <level>               What level of detail should print messages [default: info]  [possible values:
                                           off, error, warn, info, debug, trace]
-        --log-mode <mode>                 What output should be used to output [default: mixed]  [possible values: none,
-                                          stdout, stderr, mixed]
+        --log-mode <mode>                 Terminal output to print messages [default: mixed]  [possible values: stdout,
+                                          stderr, mixed]
     -m, --max-errors <count>              How many times should continue on source document errors [default: 0]
     -p, --params <useParams=my_params>    Extra parameter for Solr Update Handler. See:
                                           https://lucene.apache.org/solr/guide/transforming-
@@ -124,14 +130,13 @@ OPTIONS:
     -s, --search <core*.zip>              Search pattern for matching names of the zip backup files
     -u, --url <localhost:8983/solr>       Url pointing to the Solr cluster [env: SOLR_COPY_URL=]
     -w, --writers <count>                 Number parallel threads writing documents into zip archives [default: 1]
-# juarezr@D2019599 [13:25:49-03] ~/src/github/solrcopy  @master
 
 $ solrcopy restore --url http://localhost:8983/solr  --from ./tmp --into target
 ```
 
 ``` text
 $ solrcopy help commit
-solrcopy-commit 0.5.0
+solrcopy-commit 0.5.1
 Perform a commit in the Solr core index for persisting documents in disk/memory
 
 USAGE:
@@ -148,8 +153,8 @@ OPTIONS:
         --log-file-path <path/to/file>    Write messages to a local file
         --log-level <level>               What level of detail should print messages [default: info]  [possible values:
                                           off, error, warn, info, debug, trace]
-        --log-mode <mode>                 What output should be used to output [default: mixed]  [possible values: none,
-                                          stdout, stderr, mixed]
+        --log-mode <mode>                 Terminal output to print messages [default: mixed]  [possible values: stdout,
+                                          stderr, mixed]
     -u, --url <localhost:8983/solr>       Url pointing to the Solr cluster [env: SOLR_COPY_URL=]
 
 $ solrcopy commit --url http://localhost:8983/solr --into target
