@@ -49,6 +49,7 @@ FLAGS:
 SUBCOMMANDS:
     backup     Dumps documents from a Apache Solr core into local backup files
     commit     Perform a commit in the Solr core index for persisting documents in disk/memory
+    delete     Removes documents from the Solr core definitively
     help       Prints this message or the help of the given subcommand(s)
     restore    Restore documents from local backup files into a Apache Solr core
 ```
@@ -137,6 +138,37 @@ OPTIONS:
     -w, --writers <count>                 Number parallel threads writing documents into zip archives [default: 1]
 
 $ solrcopy restore --url http://localhost:8983/solr  --dir ./tmp --core target
+```
+
+``` text
+$ solrcopy help delete
+solrcopy-delete 0.5.2
+Removes documents from the Solr core definitively
+
+USAGE:
+    solrcopy delete [OPTIONS] --core <core> --query <f1:val1 AND f2:val2> --url <localhost:8983/solr>
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+    -c, --core <core>                     Case sensitive name of the core in the Solr server
+    -f, --flush <mode>                    Wether to perform a commits of transaction log after removing the documents
+                                          [default: soft]  [possible values: none, soft, hard]
+        --log-file-level <level>          What level of detail should write messages to the file [default: debug]
+                                          [possible values: off, error, warn, info, debug, trace]
+        --log-file-path <path/to/file>    Write messages to a local file
+        --log-level <level>               What level of detail should print messages [default: info]  [possible values:
+                                          off, error, warn, info, debug, trace]
+        --log-mode <mode>                 Terminal output to print messages [default: mixed]  [possible values: stdout,
+                                          stderr, mixed]
+    -q, --query <f1:val1 AND f2:val2>     Solr Query for filtering which documents are removed in the core. Use '*:*'
+                                          for excluding all documents in the core. There are no way of recovering
+                                          excluded docs. Use with caution and check twice
+    -u, --url <localhost:8983/solr>       Url pointing to the Solr cluster [env: SOLR_COPY_URL=]
+
+$ solrcopy delete --url http://localhost:8983/solr --core target --query '*:*'
 ```
 
 ``` text
