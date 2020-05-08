@@ -89,4 +89,9 @@ solrcopy = { path = "/usr/bin/solrcopy" }
 
 # TODO: man page: https://rust-cli.github.io/book/in-depth/docs.html
 
+# [profile.release]
+# # used for cargo flamegraph --bin solrcopy --  <params>
+# debug = true
+# # echo -1 | sudo tee /proc/sys/kernel/perf_event_paranoid
+
 # end of the file
