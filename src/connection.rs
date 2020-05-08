@@ -94,9 +94,19 @@ impl SolrClient {
     }
 
     pub fn post_as_json(&mut self, url: &str, content: &str) -> Result<String, SolrError> {
+        self.post_with_content_type(url, "application/json", content)
+    }
+
+    pub fn post_as_xml(&mut self, url: &str, content: &str) -> Result<String, SolrError> {
+        self.post_with_content_type(url, "application/xml", content)
+    }
+
+    fn post_with_content_type(
+        &mut self, url: &str, content_type: &str, content: &str,
+    ) -> Result<String, SolrError> {
         let mut builder = self.http.post(url);
         let req = Self::set_timeout(&mut builder);
-        let request = req.set("Content-Type", "application/json");
+        let request = req.set("Content-Type", content_type);
         loop {
             let response = request.send_string(content);
             let result = self.handle_response(response);
@@ -227,6 +237,11 @@ impl SolrClient {
     pub fn send_post_as_json(url: &str, content: &str) -> Result<String, SolrError> {
         let mut con = SolrClient::new();
         con.post_as_json(url, content)
+    }
+
+    pub fn send_post_as_xml(url: &str, content: &str) -> Result<String, SolrError> {
+        let mut con = SolrClient::new();
+        con.post_as_xml(url, content)
     }
 
     // endregion
