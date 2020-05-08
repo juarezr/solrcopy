@@ -52,9 +52,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     parsed.start_log()?;
 
     match parsed {
-        Arguments::Backup(gets) => backup::backup_main(gets),
-        Arguments::Restore(puts) => restore::restore_main(puts),
-        Arguments::Commit(comt) => commit::commit_main(comt),
+        Arguments::Backup(get) => backup::backup_main(get),
+        Arguments::Restore(put) => restore::restore_main(put),
+        Arguments::Commit(cmd) => commit::commit_main(cmd),
+        Arguments::Delete(_) => todo!(),
     }
 }
 
@@ -71,7 +72,7 @@ impl Arguments {
         match self {
             Self::Backup(get) => get.validate(),
             Self::Restore(put) => put.validate(),
-            Self::Commit(_) => Ok(()),
+            Self::Commit(_) | Self::Delete(_) => Ok(()),
         }
     }
 
@@ -80,6 +81,7 @@ impl Arguments {
             Self::Backup(get) => &get.options,
             Self::Restore(put) => &put.options,
             Self::Commit(com) => &com.options,
+            Self::Delete(del) => &del.options,
         }
     }
 

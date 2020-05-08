@@ -7,8 +7,26 @@ use crate::helpers::*;
 
 // region Cli structs
 
-const SOLR_COPY_DIR: &str = "SOLR_COPY_DIR";
-const SOLR_COPY_URL: &str = "SOLR_COPY_URL";
+#[derive(StructOpt, Debug)]
+/// Command line tool for backup and restore of documents stored in cores of Apache Solr.
+///
+/// Solrcopy is a command for doing backup and restore of documents stored on Solr cores.
+/// It let you filter docs by using a expression, limit quantity, define order and desired
+/// columns to export. The data is stored as json inside local zip files. It is agnostic
+/// to data format, content and storage place. Because of this data is restored exactly
+/// as extracted and your responsible for extracting, storing and updating the correct data
+/// from and into correct cores.
+#[allow(clippy::large_enum_variant)]
+pub enum Arguments {
+    /// Dumps documents from a Apache Solr core into local backup files
+    Backup(Backup),
+    /// Restore documents from local backup files into a Apache Solr core
+    Restore(Restore),
+    /// Perform a commit in the Solr core index for persisting documents in disk/memory
+    Commit(Command),
+    /// Removes documents from the Solr core definitively
+    Delete(Delete),
+}
 
 #[derive(StructOpt, Debug)]
 pub struct Backup {
@@ -81,32 +99,38 @@ pub struct Restore {
 }
 
 #[derive(StructOpt, Debug)]
-pub struct Command {
+pub struct Delete {
+    /// Solr Query for filtering which documents are removed in the core
+    /// Use '*:*' for excluding all documents in the core
+    /// There are no way of recovering excluded docs in the core
+    #[structopt(short, long, value_name = "f1:val1 AND f2:val2")]
+    pub query: String,
+
+    /// Wether to perform a commits of transaction log after removing the documents
+    #[structopt(short, long, default_value = "soft", parse(try_from_str = parse_commit_mode), value_name = "mode", possible_values = COMMIT_AFTER_VALUES)]
+    pub flush: CommitMode,
+
     #[structopt(flatten)]
     pub options: CommonArgs,
 }
 
 #[derive(StructOpt, Debug)]
-/// Command line tool for backup and restore of documents stored in cores of Apache Solr.
-///
-/// Solrcopy is a command for doing backup and restore of documents stored on Solr cores.
-/// It let you filter docs by using a expression, limit quantity, define order and desired
-/// columns to export. The data is stored as json inside local zip files. It is agnostic
-/// to data format, content and storage place. Because of this data is restored exactly
-/// as extracted and your responsible for extracting, storing and updating the correct data
-/// from and into correct cores.
-#[allow(clippy::large_enum_variant)]
-pub enum Arguments {
-    /// Dumps documents from a Apache Solr core into local backup files
-    Backup(Backup),
-    /// Restore documents from local backup files into a Apache Solr core
-    Restore(Restore),
-    /// Perform a commit in the Solr core index for persisting documents in disk/memory
-    Commit(Command),
+pub struct Command {
+    #[structopt(flatten)]
+    pub options: CommonArgs,
 }
+
+// endregion
+
+// region Cli common
+
+const COMMIT_AFTER_VALUES: &[&str] = &["none", "soft", "hard"];
 
 const LOG_LEVEL_VALUES: &[&str] = &["off", "error", "warn", "info", "debug", "trace"];
 const LOG_TERM_VALUES: &[&str] = &["stdout", "stderr", "mixed"];
+
+const SOLR_COPY_DIR: &str = "SOLR_COPY_DIR";
+const SOLR_COPY_URL: &str = "SOLR_COPY_URL";
 
 #[derive(StructOpt, PartialEq, Debug)]
 /// Tells Solrt to performs a commit of the updated documents while updating the core
