@@ -51,6 +51,37 @@ pub struct Backup {
     #[structopt(short, long, display_order = 44, value_name = "field1> <field2")]
     pub select: Vec<String>,
 
+    /// Slice the queries by using the variables {begin} and {end} for iterating in `--query`
+    /// Used in bigger solr cores with huge number of docs because querying the end of docs is expensive and fails frequently
+    // #[structopt(short, long, display_order = 50, default_value = "day", parse(try_from_str = parse_iterate_mode), possible_values = ITERATE_VALUES, value_name = "mode", requires = "between")]
+    #[structopt(short, long, display_order = 50, default_value = "day", parse(try_from_str = parse_iterate_mode), possible_values = ITERATE_VALUES, value_name = "mode")]
+    pub iterate_by: IterateMode,
+
+    /// The range of dates/numbers for iterating the queries throught slices.
+    /// Requires that the query parameter contains the variables {begin} and {end} for creating the slices.
+    /// Use numbers or dates in ISO 8601 format (yyyy-mm-ddTHH:MM:SS)
+    #[structopt(
+        short = "b",
+        long = "between",
+        display_order = 51,
+        value_name = "begin> <end",
+        requires = "query",
+        number_of_values = 2
+    )]
+    pub iterate_between: Vec<String>,
+
+    /// Number of documents to retrieve from solr in each reader step
+    #[structopt(
+        short = "t",
+        long = "step",
+        display_order = 52,
+        default_value = "1",
+        min_values = 1,
+        max_values = 366,
+        value_name = "num"
+    )]
+    pub iterate_step: usize,
+
     /// Number of documents to retrieve from solr in each reader step
     #[structopt(short, long, display_order = 70, default_value = "4k", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
     pub num_docs: usize,
@@ -216,6 +247,20 @@ pub enum CommitMode {
     Within { millis: usize },
 }
 
+#[derive(StructOpt, PartialEq, Debug)]
+/// Used in bigger solr cores with huge number of docs because querying the end of docs is expensive and fails frequently
+pub enum IterateMode {
+    None,
+    /// Break the query in slices by a first ordered date field repeating between {begin} and {end} in the query parameters
+    Minute,
+    Hour,
+    Day,
+    /// Break the query in slices by a first ordered integer field repeating between {begin} and {end} in the query parameters
+    Range,
+}
+
+const ITERATE_VALUES: &[&str] = &["minute", "hour", "day", "range"];
+
 const COMMIT_AFTER_VALUES: &[&str] = &["none", "soft", "hard"];
 
 const LOG_LEVEL_VALUES: &[&str] = &["off", "error", "warn", "info", "debug", "trace"];
@@ -354,8 +399,19 @@ fn parse_commit_mode(s: &str) -> Result<CommitMode, String> {
         "hard" => Ok(CommitMode::Hard),
         _ => match parse_millis(&s) {
             Ok(value) => Ok(CommitMode::Within { millis: value }),
-            Err(_) => Err(format!("'{}'. [alowed: none, soft, hard, <secs>]", s)),
+            Err(_) => Err(format!("'{}'. [alowed: none soft hard <secs>]", s)),
         },
+    }
+}
+
+fn parse_iterate_mode(s: &str) -> Result<IterateMode, String> {
+    let lower = s.to_ascii_lowercase();
+    match lower.as_str() {
+        "minute" => Ok(IterateMode::Minute),
+        "hour" => Ok(IterateMode::Hour),
+        "day" => Ok(IterateMode::Day),
+        "range" => Ok(IterateMode::Range),
+        _ => Err(format!("'{}'. [alowed: none minute hour day week month year range]", s)),
     }
 }
 
