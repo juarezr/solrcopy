@@ -1,13 +1,25 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, NaiveDate, NaiveDateTime, Utc};
 
-use crate::{args::Backup, helpers::*};
+use crate::{
+    args::{Backup, IterateMode},
+    fails::*,
+    helpers::*,
+};
 
 // region Struct
 
 #[derive(Debug)]
-pub struct Step {
-    pub curr: usize,
-    pub url: String,
+pub struct Slices<T> {
+    pub curr: T,
+    pub end: T,
+    pub increment: usize,
+    pub mode: IterateMode,
+}
+
+#[derive(Debug)]
+pub struct Range {
+    pub begin: String,
+    pub end: String,
 }
 
 #[derive(Debug)]
@@ -15,6 +27,12 @@ pub struct Requests {
     pub curr: usize,
     pub limit: usize,
     pub num_docs: usize,
+    pub url: String,
+}
+
+#[derive(Debug)]
+pub struct Step {
+    pub curr: usize,
     pub url: String,
 }
 
@@ -33,6 +51,115 @@ pub struct SolrCore {
 // endregion
 
 // region Iterators
+
+impl<T> Slices<T> {
+    pub fn from_steps(num_steps: usize, increment_size: usize) -> BoxedResult<Slices<usize>> {
+        Ok(Slices::<usize> {
+            curr: 0,
+            mode: IterateMode::None,
+            increment: increment_size,
+            end: num_steps,
+        })
+    }
+
+    pub fn from_range(begin: &str, end: &str, step_size: usize) -> BoxedResult<Slices<usize>> {
+        let v1 = Self::parse_between_number(begin)?;
+        let v2 = Self::parse_between_number(end)?;
+        Ok(Slices::<usize> { curr: v1, end: v2, increment: step_size, mode: IterateMode::Range })
+    }
+
+    pub fn from_dates(
+        date_mode: IterateMode, begin: &str, end: &str, step_size: usize,
+    ) -> BoxedResult<Slices<NaiveDateTime>> {
+        let v1 = Self::parse_between_date(begin)?;
+        let v2 = Self::parse_between_date(end)?;
+        Ok(Slices::<NaiveDateTime> { curr: v1, end: v2, increment: step_size, mode: date_mode })
+    }
+
+    fn parse_between_number(value: &str) -> BoxedResult<usize> {
+        let parsed = value.parse::<usize>();
+        match parsed {
+            Err(_) => throw(format!("Wrong value for number: '{}'", value)),
+            Ok(quantity) => Ok(quantity),
+        }
+    }
+
+    fn parse_between_date(value: &str) -> BoxedResult<NaiveDateTime> {
+        if value.contains('T') {
+            let time = value.parse::<NaiveDateTime>();
+            match time {
+                Err(_) => throw(format!("Wrong value for date: '{}'", value)),
+                Ok(quantity) => Ok(quantity),
+            }
+        } else {
+            let date = value.parse::<NaiveDate>();
+            match date {
+                Err(_) => throw(format!("Wrong value for date: '{}'", value)),
+                Ok(quantity) => Ok(quantity.and_hms(0, 0, 0)),
+            }
+        }
+    }
+
+    fn get_interval(&self, less: i64) -> Duration {
+        let plus = self.increment.to_i64();
+        let dur = match self.mode {
+            IterateMode::Minute => Duration::minutes(plus),
+            IterateMode::Hour => Duration::hours(plus),
+            IterateMode::Day => Duration::days(plus),
+            _ => Duration::days(365),
+        };
+        dur - Duration::seconds(less)
+    }
+}
+
+impl Iterator for Slices<usize> {
+    type Item = Range;
+
+    fn next(&mut self) -> Option<Range> {
+        if self.end > self.curr {
+            let next = self.curr + self.increment;
+            let last = next - 1;
+            let res = Range { begin: self.curr.to_string(), end: last.to_string() };
+            self.curr = next;
+            Some(res)
+        } else {
+            None
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let num_steps = self.end - self.curr + 1;
+        if num_steps == 0 {
+            (0, None)
+        } else {
+            (0, Some(num_steps))
+        }
+    }
+}
+
+impl Iterator for Slices<NaiveDateTime> {
+    type Item = Range;
+
+    fn next(&mut self) -> Option<Range> {
+        if self.end > self.curr {
+            let last = self.curr + self.get_interval(1);
+            let last2 = if last < self.end { last } else { self.end };
+            let res = Range { begin: self.curr.to_string() + "Z", end: last2.to_string() + "Z" };
+            let next = self.get_interval(0);
+            self.curr += next;
+            Some(res)
+        } else {
+            None
+        }
+    }
+}
+
+impl Range {
+    pub fn fill_range(&self, url: &str) -> String {
+        let start = url.replace("{begin}", self.begin.as_str());
+        start.replace("{end}", self.end.as_str())
+    }
+}
 
 impl Requests {
     pub fn len(&self) -> usize {
@@ -150,13 +277,15 @@ impl Backup {
 
 #[cfg(test)]
 mod tests {
+    use chrono::NaiveDateTime;
+
     // region mockup
 
     use crate::{
         args::{tests::*, *},
         fails::*,
         helpers::*,
-        steps::SolrCore,
+        steps::{Slices, SolrCore},
     };
 
     impl Arguments {
@@ -176,6 +305,8 @@ mod tests {
 
     // endregion
 
+    // region iterators
+
     #[test]
     fn check_iterator_for_params_get() {
         let parsed = Arguments::mockup_args_backup();
@@ -192,4 +323,37 @@ mod tests {
         }
         assert_eq!(i, 8);
     }
+
+    #[test]
+    fn check_iterator_for_slices_usize() {
+        let slices = Slices::<usize>::from_steps(16, 2);
+        assert!(slices.is_ok(), true);
+
+        if let Ok(seq) = slices {
+            for step in seq {
+                // print!("# {} -> {}", step.begin, step.end);
+                assert_eq!(step.begin < step.end, true)
+            }
+        }
+    }
+
+    #[test]
+    fn check_iterator_for_slices_datetime() {
+        let slices = Slices::<NaiveDateTime>::from_dates(
+            IterateMode::Day,
+            "2020-04-01",
+            "2020-04-03T11:12:13",
+            1,
+        );
+        assert!(slices.is_ok(), true);
+
+        if let Ok(seq) = slices {
+            for step in seq {
+                // print!("# {} -> {}", step.begin, step.end);
+                assert_eq!(step.begin < step.end, true)
+            }
+        }
+    }
+
+    // endregion
 }
