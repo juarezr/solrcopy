@@ -30,12 +30,13 @@ pub enum Arguments {
 
 #[derive(StructOpt, Debug)]
 pub struct Backup {
-    /// Solr Query for filtering which documents are retrieved
-    #[structopt(short, long, display_order = 40, value_name = "f1:val1 AND f2:val2")]
+    /// Solr Query param 'q' for filtering which documents are retrieved
+    /// See: https://lucene.apache.org/solr/guide/6_6/the-standard-query-parser.html
+    #[structopt(short, long, display_order = 40, value_name = "'f1:vl1 AND f2:vl2'")]
     pub query: Option<String>,
 
     /// Solr core fields names for sorting documents for retrieval
-    #[structopt(short, long, display_order = 41, value_name = "f1:asc f2:desc")]
+    #[structopt(short, long, display_order = 41, value_name = "f1:asc> <f2:desc")]
     pub order: Vec<SortField>,
 
     /// Skip this quantity of documents in the Solr Query
@@ -47,26 +48,20 @@ pub struct Backup {
     pub limit: Option<usize>,
 
     /// Names of core fields retrieved in each document [default: all but _*]
-    #[structopt(short, long, display_order = 44, value_name = "field1 field2")]
+    #[structopt(short, long, display_order = 44, value_name = "field1> <field2")]
     pub select: Vec<String>,
 
-    /// Optional prefix for naming the zip backup files when storing documents
-    #[structopt(short, long, display_order = 60, parse(try_from_str = parse_file_prefix), value_name = "name")]
-    pub zip_prefix: Option<String>,
-
-    #[structopt(flatten)]
-    pub options: CommonArgs,
-
-    #[structopt(flatten)]
-    pub transfer: ParallelArgs,
-
     /// Number of documents to retrieve from solr in each reader step
-    #[structopt(short, long, display_order = 60, default_value = "4k", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
+    #[structopt(short, long, display_order = 70, default_value = "4k", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
     pub num_docs: usize,
 
     /// Max number of files of documents stored in each zip file
-    #[structopt(short, long, display_order = 61, default_value = "40", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
+    #[structopt(short, long, display_order = 71, default_value = "40", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
     pub archive_files: usize,
+
+    /// Optional prefix for naming the zip backup files when storing documents
+    #[structopt(short, long, display_order = 72, parse(try_from_str = parse_file_prefix), value_name = "name")]
+    pub zip_prefix: Option<String>,
 
     /// Use only when your Solr Cloud returns a distinct count of docs for some queries in a row.
     /// This may be caused by replication problems between cluster nodes of shard replicas of a core.
@@ -74,13 +69,20 @@ pub struct Backup {
     /// Use with `--params shards=shard_name` for retrieving all docs for each shard of the core
     #[structopt(
         long,
-        display_order = 70,
+        display_order = 73,
         default_value = "0",
         min_values = 0,
         max_values = 99,
-        value_name = "count"
+        value_name = "count",
+        hide_default_value = true
     )]
     pub workaround_shards: usize,
+
+    #[structopt(flatten)]
+    pub options: CommonArgs,
+
+    #[structopt(flatten)]
+    pub transfer: ParallelArgs,
 }
 
 #[derive(StructOpt, Debug)]
@@ -132,28 +134,6 @@ pub struct Command {
 
 // region Cli common
 
-const COMMIT_AFTER_VALUES: &[&str] = &["none", "soft", "hard"];
-
-const LOG_LEVEL_VALUES: &[&str] = &["off", "error", "warn", "info", "debug", "trace"];
-const LOG_TERM_VALUES: &[&str] = &["stdout", "stderr", "mixed"];
-
-const SOLR_COPY_DIR: &str = "SOLR_COPY_DIR";
-const SOLR_COPY_URL: &str = "SOLR_COPY_URL";
-
-#[derive(StructOpt, PartialEq, Debug)]
-/// Tells Solrt to performs a commit of the updated documents while updating the core
-pub enum CommitMode {
-    /// Do not perform commit
-    None,
-    /// Perform a hard commit by each step for flushing all uncommitted documents in a transaction log to disk
-    /// This is the safest and the slowest method
-    Hard,
-    /// Perform a soft commit of the transaction log for invalidating top-level caches and making documents searchable
-    Soft,
-    /// Force a hard commit of the transaction log in the defined milliseconds period
-    Within { millis: usize },
-}
-
 #[derive(StructOpt, Debug)]
 pub struct CommonArgs {
     /// Url pointing to the Solr cluster
@@ -173,17 +153,11 @@ pub struct CommonArgs {
     pub log_mode: String,
 
     /// Write messages to a local file
-    #[structopt(
-        short = "F",
-        long,
-        display_order = 92,
-        value_name = "path/to/file",
-        parse(from_os_str)
-    )]
+    #[structopt(short = "F", long, display_order = 92, value_name = "path", parse(from_os_str))]
     pub log_file_path: Option<PathBuf>,
 
     /// What level of detail should write messages to the file
-    #[structopt(short = "G", long, display_order = 93, value_name = "level", default_value = "debug", possible_values = LOG_LEVEL_VALUES)]
+    #[structopt(short = "G", long, display_order = 93, value_name = "level", default_value = "debug", possible_values = LOG_LEVEL_VALUES, hide_possible_values = true)]
     pub log_file_level: String,
 }
 
@@ -193,6 +167,15 @@ pub struct ParallelArgs {
     /// Existing folder where the zip backup files containing the extracted documents are stored
     #[structopt(short, display_order = 30, long, parse(from_os_str), env = SOLR_COPY_DIR, value_name = "/path/to/output")]
     pub dir: PathBuf,
+
+    /// Extra parameter for Solr Update Handler.
+    /// See: https://lucene.apache.org/solr/guide/transforming-and-indexing-custom-json.html
+    #[structopt(short, long, display_order = 60, value_name = "useParams=mypars")]
+    pub params: Option<String>,
+
+    /// How many times should continue on source document errors
+    #[structopt(short, long, display_order = 61, default_value = "0", min_values = 0, value_name = "count", parse(try_from_str = parse_quantity_max))]
+    pub max_errors: usize,
 
     /// Number parallel threads exchanging documents with the solr core
     #[structopt(
@@ -217,16 +200,29 @@ pub struct ParallelArgs {
         value_name = "count"
     )]
     pub writers: usize,
-
-    /// Extra parameter for Solr Update Handler.
-    /// See: https://lucene.apache.org/solr/guide/transforming-and-indexing-custom-json.html
-    #[structopt(short, long, display_order = 50, value_name = "useParams=my_params")]
-    pub params: Option<String>,
-
-    /// How many times should continue on source document errors
-    #[structopt(short, long, display_order = 51, default_value = "0", min_values = 0, value_name = "count", parse(try_from_str = parse_quantity_max))]
-    pub max_errors: usize,
 }
+
+#[derive(StructOpt, PartialEq, Debug)]
+/// Tells Solrt to performs a commit of the updated documents while updating the core
+pub enum CommitMode {
+    /// Do not perform commit
+    None,
+    /// Perform a hard commit by each step for flushing all uncommitted documents in a transaction log to disk
+    /// This is the safest and the slowest method
+    Hard,
+    /// Perform a soft commit of the transaction log for invalidating top-level caches and making documents searchable
+    Soft,
+    /// Force a hard commit of the transaction log in the defined milliseconds period
+    Within { millis: usize },
+}
+
+const COMMIT_AFTER_VALUES: &[&str] = &["none", "soft", "hard"];
+
+const LOG_LEVEL_VALUES: &[&str] = &["off", "error", "warn", "info", "debug", "trace"];
+const LOG_TERM_VALUES: &[&str] = &["stdout", "stderr", "mixed"];
+
+const SOLR_COPY_DIR: &str = "SOLR_COPY_DIR";
+const SOLR_COPY_URL: &str = "SOLR_COPY_URL";
 
 // endregion
 
@@ -377,6 +373,14 @@ impl CommonArgs {
     }
 }
 
+impl ParallelArgs {
+    pub fn get_param(&self, separator: &str) -> String {
+        self.params.as_ref().unwrap_or(&EMPTY_STRING).with_prefix(separator)
+    }
+}
+
+// region CommitMode
+
 impl Default for CommitMode {
     fn default() -> Self {
         CommitMode::Within { millis: 40_000 }
@@ -388,12 +392,6 @@ impl FromStr for CommitMode {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         parse_commit_mode(s)
-    }
-}
-
-impl ParallelArgs {
-    pub fn get_param(&self, separator: &str) -> String {
-        self.params.as_ref().unwrap_or(&EMPTY_STRING).with_prefix(separator)
     }
 }
 
@@ -483,6 +481,8 @@ impl FromStr for SortField {
         }
     }
 }
+
+// endregion
 
 // endregion
 
