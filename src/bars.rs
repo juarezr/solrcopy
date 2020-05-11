@@ -12,7 +12,7 @@ fn new_style(style_template: &str) -> ProgressStyle {
 }
 
 pub fn new_wide_style() -> ProgressStyle {
-    new_style("[{elapsed_precise} | {eta_precise} | {pos}/{len} | {percent}%] [{wide_bar}]")
+    new_style(" [{elapsed_precise} | {eta_precise} | {pos}/{len} | {percent}%] [{wide_bar}] ")
 }
 
 pub fn new_bar(len: u64) -> ProgressBar {

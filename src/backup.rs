@@ -28,7 +28,7 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
     let mut retrieved = 0;
 
     info!(
-        "Starting retrieving between {} and {} from {} documents of solr core {}.",
+        "retrieving between {} and {} from {} documents of solr core {}.",
         params.skip + 1,
         end_limit,
         num_found,
