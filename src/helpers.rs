@@ -355,12 +355,19 @@ impl CapturesHelpers for Captures<'_> {
 pub trait IntegerHelpers {
     fn to_u64(self) -> u64;
 
+    fn to_i64(self) -> i64;
+
     fn to_usize(self) -> usize;
 }
 
 impl IntegerHelpers for isize {
     #[inline]
     fn to_u64(self) -> u64 {
+        self.try_into().unwrap()
+    }
+
+    #[inline]
+    fn to_i64(self) -> i64 {
         self.try_into().unwrap()
     }
 
@@ -377,6 +384,11 @@ impl IntegerHelpers for usize {
     }
 
     #[inline]
+    fn to_i64(self) -> i64 {
+        self.try_into().unwrap()
+    }
+
+    #[inline]
     fn to_usize(self) -> usize {
         self
     }
@@ -386,6 +398,11 @@ impl IntegerHelpers for u64 {
     #[inline]
     fn to_u64(self) -> u64 {
         self
+    }
+
+    #[inline]
+    fn to_i64(self) -> i64 {
+        self.try_into().unwrap()
     }
 
     #[inline]
