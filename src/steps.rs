@@ -52,54 +52,31 @@ pub struct SolrCore {
 
 // region Iterators
 
-impl<T> Slices<T> {
-    pub fn from_steps(num_steps: usize, increment_size: usize) -> BoxedResult<Slices<usize>> {
-        Ok(Slices::<usize> {
-            curr: 0,
-            mode: IterateMode::None,
-            increment: increment_size,
-            end: num_steps,
-        })
+fn parse_between_number(value: &str) -> BoxedResult<usize> {
+    let parsed = value.parse::<usize>();
+    match parsed {
+        Err(_) => throw(format!("Wrong value for number: '{}'", value)),
+        Ok(quantity) => Ok(quantity),
     }
+}
 
-    pub fn from_range(begin: &str, end: &str, step_size: usize) -> BoxedResult<Slices<usize>> {
-        let v1 = Self::parse_between_number(begin)?;
-        let v2 = Self::parse_between_number(end)?;
-        Ok(Slices::<usize> { curr: v1, end: v2, increment: step_size, mode: IterateMode::Range })
-    }
-
-    pub fn from_dates(
-        date_mode: IterateMode, begin: &str, end: &str, step_size: usize,
-    ) -> BoxedResult<Slices<NaiveDateTime>> {
-        let v1 = Self::parse_between_date(begin)?;
-        let v2 = Self::parse_between_date(end)?;
-        Ok(Slices::<NaiveDateTime> { curr: v1, end: v2, increment: step_size, mode: date_mode })
-    }
-
-    fn parse_between_number(value: &str) -> BoxedResult<usize> {
-        let parsed = value.parse::<usize>();
-        match parsed {
-            Err(_) => throw(format!("Wrong value for number: '{}'", value)),
+fn parse_between_date(value: &str) -> BoxedResult<NaiveDateTime> {
+    if value.contains('T') {
+        let time = value.parse::<NaiveDateTime>();
+        match time {
+            Err(_) => throw(format!("Wrong value for date: '{}'", value)),
             Ok(quantity) => Ok(quantity),
         }
-    }
-
-    fn parse_between_date(value: &str) -> BoxedResult<NaiveDateTime> {
-        if value.contains('T') {
-            let time = value.parse::<NaiveDateTime>();
-            match time {
-                Err(_) => throw(format!("Wrong value for date: '{}'", value)),
-                Ok(quantity) => Ok(quantity),
-            }
-        } else {
-            let date = value.parse::<NaiveDate>();
-            match date {
-                Err(_) => throw(format!("Wrong value for date: '{}'", value)),
-                Ok(quantity) => Ok(quantity.and_hms(0, 0, 0)),
-            }
+    } else {
+        let date = value.parse::<NaiveDate>();
+        match date {
+            Err(_) => throw(format!("Wrong value for date: '{}'", value)),
+            Ok(quantity) => Ok(quantity.and_hms(0, 0, 0)),
         }
     }
+}
 
+impl<T> Slices<T> {
     fn get_interval(&self, less: i64) -> Duration {
         let plus = self.increment.to_i64();
         let dur = match self.mode {
@@ -220,6 +197,28 @@ impl Backup {
         core_info.num_found.min(self.limit.unwrap_or(std::usize::MAX))
     }
 
+    pub fn get_slices(&self) -> BoxedResult<impl Iterator<Item = Range>> {
+        let (begin, end) = if self.iterate_between.is_empty() {
+            (EMPTY_STR, EMPTY_STR)
+        } else {
+            (self.iterate_between[0].as_str(), self.iterate_between[1].as_str())
+        };
+
+        let iter: Box<dyn Iterator<Item = Range>> = match self.iterate_by {
+            IterateMode::None => Box::new(Self::get_slice_from_steps(1, 1)),
+            IterateMode::Range => {
+                Box::new(Self::get_slice_from_range(begin, end, self.iterate_step)?)
+            }
+            _ => Box::new(Self::get_slice_from_dates(
+                self.iterate_by,
+                begin,
+                end,
+                self.iterate_step,
+            )?),
+        };
+        Ok(iter)
+    }
+
     pub fn get_steps(&self, core_info: &SolrCore) -> Requests {
         let core_fields: &[String] = &core_info.fields;
         let fl = self.get_query_fields(core_fields);
@@ -271,6 +270,31 @@ impl Backup {
         ];
         parts.concat()
     }
+
+    fn get_slice_from_steps(num_steps: usize, increment_size: usize) -> Slices<usize> {
+        Slices::<usize> {
+            curr: 0,
+            mode: IterateMode::None,
+            increment: increment_size,
+            end: num_steps,
+        }
+    }
+
+    fn get_slice_from_range(
+        begin: &str, end: &str, step_size: usize,
+    ) -> BoxedResult<Slices<usize>> {
+        let v1 = parse_between_number(begin)?;
+        let v2 = parse_between_number(end)?;
+        Ok(Slices::<usize> { curr: v1, end: v2, increment: step_size, mode: IterateMode::Range })
+    }
+
+    fn get_slice_from_dates(
+        md: IterateMode, begin: &str, end: &str, step_size: usize,
+    ) -> BoxedResult<Slices<NaiveDateTime>> {
+        let v1 = parse_between_date(begin)?;
+        let v2 = parse_between_date(end)?;
+        Ok(Slices::<NaiveDateTime> { curr: v1, end: v2, increment: step_size, mode: md })
+    }
 }
 
 // endregion
@@ -285,7 +309,7 @@ mod tests {
         args::{tests::*, *},
         fails::*,
         helpers::*,
-        steps::{Slices, SolrCore},
+        steps::*,
     };
 
     impl Arguments {
@@ -326,25 +350,18 @@ mod tests {
 
     #[test]
     fn check_iterator_for_slices_usize() {
-        let slices = Slices::<usize>::from_steps(16, 2);
-        assert!(slices.is_ok(), true);
+        let slices = Backup::get_slice_from_steps(16, 2);
 
-        if let Ok(seq) = slices {
-            for step in seq {
-                // print!("# {} -> {}", step.begin, step.end);
-                assert_eq!(step.begin < step.end, true)
-            }
+        for step in slices {
+            // print!("# {} -> {}", step.begin, step.end);
+            assert_eq!(step.begin < step.end, true)
         }
     }
 
     #[test]
     fn check_iterator_for_slices_datetime() {
-        let slices = Slices::<NaiveDateTime>::from_dates(
-            IterateMode::Day,
-            "2020-04-01",
-            "2020-04-03T11:12:13",
-            1,
-        );
+        let slices =
+            Backup::get_slice_from_dates(IterateMode::Day, "2020-04-01", "2020-04-03T11:12:13", 1);
         assert!(slices.is_ok(), true);
 
         if let Ok(seq) = slices {

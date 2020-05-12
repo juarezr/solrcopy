@@ -247,7 +247,7 @@ pub enum CommitMode {
     Within { millis: usize },
 }
 
-#[derive(StructOpt, PartialEq, Debug)]
+#[derive(StructOpt, Clone, Copy, PartialEq, Debug)]
 /// Used in bigger solr cores with huge number of docs because querying the end of docs is expensive and fails frequently
 pub enum IterateMode {
     None,
@@ -419,6 +419,25 @@ fn parse_iterate_mode(s: &str) -> Result<IterateMode, String> {
 
 // region Cli impl
 
+impl Arguments {
+    pub fn validate(&self) -> Result<(), String> {
+        match self {
+            Self::Backup(get) => get.validate(),
+            Self::Restore(put) => put.validate(),
+            Self::Commit(_) | Self::Delete(_) => Ok(()),
+        }
+    }
+
+    pub fn get_options(&self) -> &CommonArgs {
+        match &self {
+            Self::Backup(get) => &get.options,
+            Self::Restore(put) => &put.options,
+            Self::Commit(com) => &com.options,
+            Self::Delete(del) => &del.options,
+        }
+    }
+}
+
 impl CommonArgs {
     pub fn is_quiet(&self) -> bool {
         self.log_level.to_ascii_lowercase() == "off"
@@ -471,6 +490,32 @@ impl CommitMode {
     //         _ => EMPTY_STRING,
     //     }
     // }
+}
+
+pub trait Validation {
+    fn validate(&self) -> Result<(), String> {
+        Ok(())
+    }
+}
+
+impl Validation for Backup {
+    fn validate(&self) -> Result<(), String> {
+        assert_dir_exists(&self.transfer.dir)
+    }
+}
+
+impl Validation for Restore {
+    fn validate(&self) -> Result<(), String> {
+        assert_dir_exists(&self.transfer.dir)
+    }
+}
+
+fn assert_dir_exists(dir: &PathBuf) -> Result<(), String> {
+    if !dir.exists() {
+        Err(format!("Missing folder of zip backup files: {:?}", dir))
+    } else {
+        Ok(())
+    }
 }
 
 // endregion
