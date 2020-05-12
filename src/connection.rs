@@ -131,7 +131,7 @@ impl SolrClient {
                     None => {
                         self.retry_count += 1;
                         // wait a little for the server recovering before retrying
-                        wait(5 * self.retry_count.to_u64());
+                        wait(5 * self.retry_count);
                         None
                     }
                     Some(failed) => Some(Err(failed)),

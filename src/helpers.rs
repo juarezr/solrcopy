@@ -39,9 +39,13 @@ pub fn replace_solr_date(query: &str, pattern: &str, value: &str) -> String {
     query.replace(pattern, &value2)
 }
 
-pub fn wait(secs: u64) {
+pub fn wait(secs: usize) {
     let millis = secs * 1000;
-    std::thread::sleep(std::time::Duration::from_millis(millis));
+    std::thread::sleep(std::time::Duration::from_millis(millis.to_u64()));
+}
+
+pub fn wait_by(millis: usize) {
+    std::thread::sleep(std::time::Duration::from_millis(millis.to_u64()));
 }
 
 pub fn env_var(var_name: &str, replacement: &str) -> String {
