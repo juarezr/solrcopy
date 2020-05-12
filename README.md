@@ -33,17 +33,18 @@ Extracting and updating documents in huge cores can be challenging. It can take 
 Bellow some tricks for dealing with such cores:
 
 1. For reducing time, you can use the switches `--readers`  and `--writers` for executing operations in parallel.
-2. When the number of docs to extract is huge, `bakcup` tend to slow as times goes and eventualy fails. This is because Solr is suffers to get docs batches with hight skip/start parameters. For dealing with this:
+2. When the number of docs to extract is huge, `backup` subcommand tend to slow as times goes and eventualy fails. This is because Solr is suffers to get docs batches with hight skip/start parameters. For dealing with this:
    1. Use the parameters `--iterate-by`n `between` and `--step`for iterating through parameter `--query` with variables `{begin}` and `{end}`.
    2. This way it will iterate and restrict by hour, day, range the docs being downloaded.
-   3. Use the parameter `--param shards=shard1` for copying by each shard by name.
-3. Use the parameter `--delay` for avoiding to overload the Solr server.
+   3. For example: `--query 'date:[{begin} TO {end}]' --iterate-by day --between '2020-04-01' '2020-04-30T23:59:59'`
+3. Use the parameter `--param shards=shard1` for copying by each shard by name in `backkup`subcommand.
+4. Use the parameter `--delay` for avoiding to overload the Solr server.
 
 ## Invocation
 
 ``` text
 $ solrcopy --help
-solrcopy 0.5.3
+solrcopy 0.5.4
 Command line tool for backup and restore of documents stored in cores of Apache Solr.
 
 Solrcopy is a command for doing backup and restore of documents stored on Solr cores. It let you filter docs by using a
@@ -215,9 +216,10 @@ $ solrcopy commit --url http://localhost:8983/solr --core target
 
 ## Known Issues
 
-- Error extracting documents from a Solr cloud cluster with unbalanced shards:
-  - Cause: In this case Cause: Solr reports diferent document count according to the instance is answering the query.
+- Error extracting documents from a Solr cloud cluster with corrupted shards or unreplicated replicas:
+  - Cause: In this case Cause: Solr reports diferent document count each time is answering the query.
   - Fix: extract data pointing directly to the shard instance address, not for the cloud address.
+  - Also can use custom params to solr as `--params timeAllowed=15000&segmentTerminatedEarly=false&cache=false&shards=shard1`
 
 ## Related Projects
 
