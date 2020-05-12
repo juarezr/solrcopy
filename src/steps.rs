@@ -65,6 +65,20 @@ impl Slices<String> {
         res
     }
 
+    pub fn estimate_steps(&self) -> BoxedResult<usize> {
+        let num: usize = match self.mode {
+            IterateMode::None => 1,
+            IterateMode::Range => self.get_range_slices()?.len(),
+            _ => self.get_period_slices()?.len(),
+        };
+        let rem = num % self.increment;
+        if rem > 0 {
+            Ok(num + 1)
+        } else {
+            Ok(num)
+        }
+    }
+
     fn get_slice_of(num: usize, incr: usize) -> Slices<usize> {
         Slices::<usize> { curr: 0, end: num, mode: IterateMode::Range, increment: incr }
     }
@@ -116,7 +130,7 @@ impl Slices<String> {
     }
 }
 
-impl<T> Slices<T> {
+impl Slices<NaiveDateTime> {
     fn get_interval(&self, less: i64) -> Duration {
         let plus = self.increment.to_i64();
         let dur = match self.mode {
@@ -126,6 +140,29 @@ impl<T> Slices<T> {
             _ => Duration::days(365),
         };
         dur - Duration::seconds(less)
+    }
+
+    fn len(&self) -> usize {
+        let dur = self.end - self.curr;
+        let (diff, prev, div) = match self.mode {
+            IterateMode::Minute => (dur.num_minutes(), dur.num_seconds(), 60i64),
+            IterateMode::Hour => (dur.num_hours(), dur.num_minutes(), 60i64),
+            IterateMode::Day => (dur.num_days(), dur.num_hours(), 24i64),
+            _ => (1i64, 1i64, 1i64),
+        };
+        if diff < 0 {
+            0
+        } else {
+            let rem = prev % div;
+            let res = if rem == 0 { diff } else { diff + 1 };
+            res.to_usize()
+        }
+    }
+}
+
+impl Slices<usize> {
+    fn len(&self) -> usize {
+        self.end - self.curr + 1
     }
 }
 
@@ -145,7 +182,7 @@ impl Iterator for Slices<usize> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let num_steps = self.end - self.curr + 1;
+        let num_steps = self.len();
         if num_steps == 0 {
             (0, None)
         } else {
@@ -160,14 +197,22 @@ impl Iterator for Slices<NaiveDateTime> {
     fn next(&mut self) -> Option<Self::Item> {
         if self.end > self.curr {
             let last = self.curr + self.get_interval(1);
-            let last2 = if last < self.end { last } else { self.end };
-            let res =
-                SliceItem { begin: self.curr.to_string() + "Z", end: last2.to_string() + "Z" };
+            let part = if last < self.end { last } else { self.end };
+            let res = SliceItem { begin: format_solr_time(self.curr), end: format_solr_time(part) };
             let next = self.get_interval(0);
             self.curr += next;
             Some(res)
         } else {
             None
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let num_steps = self.len();
+        if num_steps == 0 {
+            (0, None)
+        } else {
+            (0, Some(num_steps))
         }
     }
 }
@@ -177,13 +222,10 @@ impl SliceItem {
         if self.begin.is_empty() {
             step
         } else {
-            Step { url: self.fill_range(step.url.as_str()), curr: step.curr }
+            let query =
+                replace_solr_vars(step.url.as_str(), self.begin.as_str(), self.end.as_str());
+            Step { url: query, curr: step.curr }
         }
-    }
-
-    fn fill_range(&self, url: &str) -> String {
-        let start = url.replace("{begin}", self.begin.as_str());
-        start.replace("{end}", self.end.as_str())
     }
 }
 
@@ -225,6 +267,15 @@ impl Iterator for Requests {
     }
 }
 
+fn replace_solr_vars(query: &str, begin: &str, end: &str) -> String {
+    let query2 = replace_solr_date(query, "{begin}", begin);
+    replace_solr_date(&query2, "{end}", end)
+}
+
+fn format_solr_time(date_time: NaiveDateTime) -> String {
+    date_time.format("%Y-%m-%dT%H:%M:%SZ").to_string()
+}
+
 // endregion
 
 // region Solr requests
@@ -242,15 +293,25 @@ impl Backup {
         format!("{}_docs_{}_seq_{}.zip", prefix, num_found, BRACKETS)
     }
 
-    pub fn get_docs_to_retrieve(&self, core_info: &SolrCore) -> usize {
-        core_info.num_found.min(self.limit.unwrap_or(std::usize::MAX))
+    pub fn estimate_docs_quantity(
+        &self, schema: &SolrCore, slices: &Slices<String>,
+    ) -> BoxedResult<usize> {
+        let end_limit = self.get_docs_to_retrieve(schema);
+        let num_retrieving = end_limit - self.skip;
+
+        let slice_count = slices.estimate_steps()?;
+        Ok(num_retrieving * slice_count)
     }
 
-    pub fn get_steps(&self, core_info: &SolrCore) -> Requests {
-        let core_fields: &[String] = &core_info.fields;
+    pub fn get_docs_to_retrieve(&self, schema: &SolrCore) -> usize {
+        schema.num_found.min(self.limit.unwrap_or(std::usize::MAX))
+    }
+
+    pub fn get_steps(&self, schema: &SolrCore) -> Requests {
+        let core_fields: &[String] = &schema.fields;
         let fl = self.get_query_fields(core_fields);
-        let query = self.get_query_url(&fl);
-        let end_limit = self.get_docs_to_retrieve(core_info);
+        let query = self.get_query_url(&fl, true);
+        let end_limit = self.get_docs_to_retrieve(schema);
         Requests { curr: self.skip, limit: end_limit, num_docs: self.num_docs, url: query }
     }
 
@@ -265,19 +326,23 @@ impl Backup {
     }
 
     pub fn get_query_for_diagnostics(&self) -> String {
-        let url = self.get_query_url(EMPTY_STR);
+        let url = self.get_query_url(EMPTY_STR, false);
         format!("{}&start=0&rows=1", url)
     }
 
-    pub fn get_query_url(&self, selected: &str) -> String {
-        let filter = self
-            .query
-            .as_deref()
-            .unwrap_or("*:*")
-            .replace(" or ", " OR ")
-            .replace(" and ", " AND ")
-            .replace(" not ", " NOT ")
-            .replace(" ", "%20");
+    pub fn replace_vars(&self, query: &str, raw: bool) -> String {
+        if raw || self.iterate_between.is_empty() {
+            query.to_string()
+        } else {
+            let (begin, end) = self.get_between();
+            replace_solr_vars(query, begin, end)
+        }
+    }
+
+    pub fn get_query_url(&self, selected: &str, raw: bool) -> String {
+        let qparam = self.query.as_deref().unwrap_or("*:*");
+        let qfixed = self.replace_vars(qparam, raw);
+        let filter = solr_query(&qfixed);
 
         let sort: String = if self.order.is_empty() {
             EMPTY_STRING
@@ -298,19 +363,22 @@ impl Backup {
         parts.concat()
     }
 
-    pub fn get_slices(&self) -> BoxedResult<Slices<String>> {
-        let (begin, end) = if self.iterate_between.is_empty() {
-            (EMPTY_STR, EMPTY_STR)
-        } else {
-            (self.iterate_between[0].as_str(), self.iterate_between[1].as_str())
-        };
-
-        Ok(Slices::<String> {
+    pub fn get_slices(&self) -> Slices<String> {
+        let (begin, end) = self.get_between();
+        Slices::<String> {
             curr: begin.to_string(),
             end: end.to_string(),
             increment: self.iterate_step,
             mode: self.iterate_by,
-        })
+        }
+    }
+
+    fn get_between(&self) -> (&str, &str) {
+        if self.iterate_between.is_empty() {
+            (EMPTY_STR, EMPTY_STR)
+        } else {
+            (self.iterate_between[0].as_str(), self.iterate_between[1].as_str())
+        }
     }
 }
 
@@ -351,7 +419,7 @@ mod tests {
         let parsed = Arguments::mockup_args_backup();
         let gets = parsed.get().unwrap();
         let core_info = SolrCore::mockup();
-        let query = gets.get_query_url(EMPTY_STR);
+        let query = gets.get_query_url(EMPTY_STR, true);
 
         let mut i = 0;
         for step in gets.get_steps(&core_info) {

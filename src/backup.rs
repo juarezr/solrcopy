@@ -19,17 +19,18 @@ use crate::{
 pub(crate) fn backup_main(params: Backup) -> BoxedError {
     debug!("  {:?}", params);
 
-    let slices = params.get_slices()?;
+    let slices = params.get_slices();
     let schema = params.inspect_core()?;
 
-    let end_limit = params.get_docs_to_retrieve(&schema);
-    let num_retrieving = end_limit - params.skip;
+    let end_limit = params.estimate_docs_quantity(&schema, &slices)?;
+    let num_retrieving = params.estimate_docs_quantity(&schema, &slices)?;
     let num_found = schema.num_found.to_u64();
     let must_match = if params.workaround_shards > 0 { num_found } else { 0 };
     let mut retrieved = 0;
 
     info!(
-        "retrieving between {} and {} from {} documents of solr core {}.",
+        "retrieving {} documents in the range {} to {} from {} documents of solr core {}.",
+        num_retrieving,
         params.skip + 1,
         end_limit,
         num_found,
