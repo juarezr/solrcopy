@@ -20,6 +20,25 @@ pub const ZERO: char = '0';
 
 // region Utility helpers
 
+pub fn solr_query(query: &str) -> String {
+    query
+        .replace(" or ", " OR ")
+        .replace(" and ", " AND ")
+        .replace(" not ", " NOT ")
+        .replace(" ", "%20")
+}
+
+const ISO_DATE: &str = "2020-01-01T00:00:00Z";
+const ISO_SLEN: usize = 20;
+
+pub fn replace_solr_date(query: &str, pattern: &str, value: &str) -> String {
+    let vlen = value.len();
+    let suffix = &ISO_DATE[vlen..];
+
+    let value2 = value.append(suffix);
+    query.replace(pattern, &value2)
+}
+
 pub fn wait(secs: u64) {
     let millis = secs * 1000;
     std::thread::sleep(std::time::Duration::from_millis(millis));
@@ -239,7 +258,6 @@ impl StringHelpers for str {
         self.chars().filter(|c| !c.is_whitespace()).collect()
     }
 }
-
 pub trait RegexHelpers {
     fn get_group<'a>(&'a self, text_to_search: &'a str, group_number: usize) -> Option<&'a str>;
 
@@ -291,7 +309,6 @@ impl RegexHelpers for Regex {
         maps.collect::<Vec<_>>()
     }
 }
-
 pub trait CapturesHelpers {
     /// Returns the match associated with the capture group at index `i`. If
     /// `i` does not correspond to a capture group, or if the capture group
@@ -358,6 +375,8 @@ pub trait IntegerHelpers {
     fn to_i64(self) -> i64;
 
     fn to_usize(self) -> usize;
+
+    fn to_isize(self) -> isize;
 }
 
 impl IntegerHelpers for isize {
@@ -374,6 +393,11 @@ impl IntegerHelpers for isize {
     #[inline]
     fn to_usize(self) -> usize {
         self.try_into().unwrap()
+    }
+
+    #[inline]
+    fn to_isize(self) -> isize {
+        self
     }
 }
 
@@ -392,6 +416,11 @@ impl IntegerHelpers for usize {
     fn to_usize(self) -> usize {
         self
     }
+
+    #[inline]
+    fn to_isize(self) -> isize {
+        self.try_into().unwrap()
+    }
 }
 
 impl IntegerHelpers for u64 {
@@ -407,6 +436,33 @@ impl IntegerHelpers for u64 {
 
     #[inline]
     fn to_usize(self) -> usize {
+        self.try_into().unwrap()
+    }
+
+    #[inline]
+    fn to_isize(self) -> isize {
+        self.try_into().unwrap()
+    }
+}
+
+impl IntegerHelpers for i64 {
+    #[inline]
+    fn to_u64(self) -> u64 {
+        self.try_into().unwrap()
+    }
+
+    #[inline]
+    fn to_i64(self) -> i64 {
+        self
+    }
+
+    #[inline]
+    fn to_usize(self) -> usize {
+        self.try_into().unwrap()
+    }
+
+    #[inline]
+    fn to_isize(self) -> isize {
         self.try_into().unwrap()
     }
 }
