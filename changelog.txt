@@ -1,3 +1,11 @@
+debian (0.5.4) unstable; urgency=low
+
+  * feature: added --iterate-by and --between for backup
+  * feature: added --delay for backup and restore
+  * improved: increase wait time on --workaround-shards
+
+-- Juarez Rudsatz <juarezr@gmail.com>  Mar, 12 Ma 2020 00:05:04 -0300
+
 debian (0.5.3) unstable; urgency=low
 
   * feature: new subcommand delete
