@@ -13,17 +13,18 @@ use crate::{
     helpers::*,
     save::Archiver,
     state::*,
-    steps::{Documents, Requests, SolrCore, Step},
+    steps::{Documents, Requests, Slices, SolrCore, Step},
 };
 
 pub(crate) fn backup_main(params: Backup) -> BoxedError {
     debug!("  {:?}", params);
 
-    let core_info = params.inspect_core()?;
+    let slices = params.get_slices()?;
+    let schema = params.inspect_core()?;
 
-    let end_limit = params.get_docs_to_retrieve(&core_info);
+    let end_limit = params.get_docs_to_retrieve(&schema);
     let num_retrieving = end_limit - params.skip;
-    let num_found = core_info.num_found.to_u64();
+    let num_found = schema.num_found.to_u64();
     let must_match = if params.workaround_shards > 0 { num_found } else { 0 };
     let mut retrieved = 0;
 
@@ -39,7 +40,7 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
     let started = Instant::now();
 
     thread::scope(|pool| {
-        let requests = params.get_steps(&core_info);
+        let requests = params.get_steps(&schema);
         let transfer = &params.transfer;
 
         let readers_channel = transfer.readers * 4;
@@ -50,7 +51,7 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
         let (progress, reporter) = bounded::<u64>(transfer.writers);
 
         pool.spawn(|_| {
-            start_querying_core(requests, generator, &ctrl_c);
+            start_querying_core(requests, slices, generator, &ctrl_c);
             debug!("Finished generator thread");
         });
 
@@ -72,7 +73,7 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
         drop(sequence);
         drop(sender);
 
-        let output_pat = params.get_archive_pattern(core_info.num_found);
+        let output_pat = params.get_archive_pattern(schema.num_found);
 
         for iw in 0..transfer.writers {
             let consumer = receiver.clone();
@@ -115,11 +116,19 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
 
 // region Channels
 
-fn start_querying_core(requests: Requests, generator: Sender<Step>, ctrl_c: &Arc<AtomicBool>) {
-    for step in requests {
-        let status = generator.send(step);
-        if status.is_err() || ctrl_c.aborted() {
-            break;
+fn start_querying_core(
+    requests: Requests, slices: Slices<String>, generator: Sender<Step>, ctrl_c: &Arc<AtomicBool>,
+) {
+    let parts = slices.get_iterator();
+
+    'outer: for range in parts {
+        let docs = requests.clone();
+        for step in docs {
+            let filtered = range.filter(step);
+            let status = generator.send(filtered);
+            if status.is_err() || ctrl_c.aborted() {
+                break 'outer;
+            }
         }
     }
     drop(generator);

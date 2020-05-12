@@ -9,16 +9,14 @@
 #![deny(unused_import_braces)]
 #![deny(unused_qualifications)]
 
-// TODO: Cleanup
-//
-// #![deny(box_pointers)]
-// #![deny(unused_results)]
-
 // switches for develoment only
 
 // #![allow(unused_variables)]
 // #![allow(unused_imports)]
 // #![allow(dead_code)]
+
+// app depedencies
+
 #[macro_use]
 extern crate lazy_static;
 
@@ -42,8 +40,8 @@ use simplelog::{
 };
 use structopt::StructOpt;
 
-use crate::args::{Arguments, Backup, CommonArgs, Restore};
-use crate::fails::{throw, BoxedError, BoxedResult};
+use crate::args::Arguments;
+use crate::fails::{throw, BoxedResult};
 
 use std::fs::File;
 use std::str::FromStr;
@@ -65,25 +63,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 impl Arguments {
     pub fn parse_from_args() -> BoxedResult<Self> {
         let res = Self::from_args();
-        res.validate()?;
+        if let Err(msg) = res.validate() {
+            throw(msg)?;
+        }
         Ok(res)
-    }
-
-    pub fn validate(&self) -> BoxedError {
-        match self {
-            Self::Backup(get) => get.validate(),
-            Self::Restore(put) => put.validate(),
-            Self::Commit(_) | Self::Delete(_) => Ok(()),
-        }
-    }
-
-    pub fn get_options(&self) -> &CommonArgs {
-        match &self {
-            Self::Backup(get) => &get.options,
-            Self::Restore(put) => &put.options,
-            Self::Commit(com) => &com.options,
-            Self::Delete(del) => &del.options,
-        }
     }
 
     fn start_log(&self) -> Result<(), Box<dyn std::error::Error>> {
@@ -120,31 +103,6 @@ impl Arguments {
             _ => throw(format!("Unknown terminal mode: {}", mode_str)),
         }
     }
-}
-
-pub trait Validation {
-    fn validate(&self) -> BoxedError {
-        Ok(())
-    }
-}
-
-impl Validation for Backup {
-    fn validate(&self) -> BoxedError {
-        assert_dir_exists(&self.transfer.dir)
-    }
-}
-
-impl Validation for Restore {
-    fn validate(&self) -> BoxedError {
-        assert_dir_exists(&self.transfer.dir)
-    }
-}
-
-fn assert_dir_exists(dir: &std::path::PathBuf) -> BoxedError {
-    if !dir.exists() {
-        throw(format!("Missing folder of zip backup files: {:?}", dir))?;
-    }
-    Ok(())
 }
 
 // endregion
