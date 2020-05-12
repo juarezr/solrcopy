@@ -66,6 +66,9 @@ impl Slices<String> {
     }
 
     pub fn estimate_steps(&self) -> BoxedResult<usize> {
+        if self.curr.is_empty() {
+            return Ok(1);
+        }
         let num: usize = match self.mode {
             IterateMode::None => 1,
             IterateMode::Range => self.get_range_slices()?.len(),
