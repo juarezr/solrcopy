@@ -22,7 +22,7 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
     let slices = params.get_slices();
     let schema = params.inspect_core()?;
 
-    let end_limit = params.estimate_docs_quantity(&schema, &slices)?;
+    let end_limit = params.get_docs_to_retrieve(&schema);
     let num_retrieving = params.estimate_docs_quantity(&schema, &slices)?;
     let num_found = schema.num_found.to_u64();
     let must_match = if params.workaround_shards > 0 { num_found } else { 0 };
@@ -60,13 +60,14 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
             let producer = sender.clone();
             let iterator = sequence.clone();
             let reader = ir;
-            let max_errors = params.transfer.max_errors;
+            let merr = params.transfer.max_errors;
+            let delay = params.transfer.delay;
 
             let thread_name = format!("Reader_{}", reader);
             pool.builder()
                 .name(thread_name)
                 .spawn(move |_| {
-                    start_retrieving_docs(reader, iterator, producer, must_match, max_errors);
+                    start_retrieving_docs(reader, iterator, producer, must_match, merr, delay);
                     debug!("Finished reader #{}", reader);
                 })
                 .unwrap();
@@ -137,7 +138,7 @@ fn start_querying_core(
 
 fn start_retrieving_docs(
     reader: usize, iterator: Receiver<Step>, producer: Sender<Documents>, must_match: u64,
-    max_errors: usize,
+    max_errors: usize, delay: usize,
 ) {
     let ctrl_c = monitor_term_sinal();
     let mut error_count = 0;
@@ -161,6 +162,8 @@ fn start_retrieving_docs(
         }
         if ctrl_c.aborted() {
             break;
+        } else if delay > 0 {
+            wait_by(delay);
         }
     }
     drop(producer);

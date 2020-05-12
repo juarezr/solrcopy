@@ -9,7 +9,8 @@ use std::sync::{
 use std::{path::PathBuf, time::Instant};
 
 use crate::{
-    args::Restore, bars::foreach_progress, connection::SolrClient, fails::*, ingest::*, state::*,
+    args::Restore, bars::foreach_progress, connection::SolrClient, fails::*, helpers::wait_by,
+    ingest::*, state::*,
 };
 
 pub(crate) fn restore_main(params: Restore) -> BoxedError {
@@ -80,15 +81,16 @@ fn unzip_archives_and_send(params: Restore, found: &[PathBuf]) -> BoxedResult<us
             let updater = progress.clone();
 
             let url = update_hadler_url.clone();
-            let error_count = Arc::clone(&update_errors);
-            let max_errors = params.transfer.max_errors;
+            let arcerr = Arc::clone(&update_errors);
+            let merr = params.transfer.max_errors;
+            let delay = params.transfer.delay;
 
             let writer = iw;
             let thread_name = format!("Writer_{}", writer);
             pool.builder()
                 .name(thread_name)
                 .spawn(move |_| {
-                    start_indexing_docs(writer, &url, consumer, updater, error_count, max_errors);
+                    start_indexing_docs(writer, &url, consumer, updater, arcerr, merr, delay);
                     debug!("Finished writer #{}", writer);
                 })
                 .unwrap();
@@ -184,7 +186,7 @@ fn handle_reading_archive(
 
 fn start_indexing_docs(
     writer: usize, url: &str, consumer: Receiver<String>, progress: Sender<u64>,
-    error_count: Arc<AtomicUsize>, max_errors: usize,
+    error_count: Arc<AtomicUsize>, max_errors: usize, delay: usize,
 ) {
     let ctrl_c = monitor_term_sinal();
 
@@ -203,6 +205,8 @@ fn start_indexing_docs(
         };
         if failed || ctrl_c.aborted() {
             break;
+        } else if delay > 0 {
+            wait_by(delay);
         }
     }
     drop(consumer);

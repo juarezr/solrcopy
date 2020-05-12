@@ -128,7 +128,7 @@ pub struct Restore {
     pub no_final_commit: bool,
 
     /// Search pattern for matching names of the zip backup files
-    #[structopt(short, long, display_order = 60, value_name = "core*.zip")]
+    #[structopt(short, long, display_order = 70, value_name = "core*.zip")]
     pub search: Option<String>,
 
     #[structopt(flatten)]
@@ -184,7 +184,7 @@ pub struct CommonArgs {
     pub log_mode: String,
 
     /// Write messages to a local file
-    #[structopt(short = "F", long, display_order = 92, value_name = "path", parse(from_os_str))]
+    #[structopt(short = "P", long, display_order = 92, value_name = "path", parse(from_os_str))]
     pub log_file_path: Option<PathBuf>,
 
     /// What level of detail should write messages to the file
@@ -207,6 +207,10 @@ pub struct ParallelArgs {
     /// How many times should continue on source document errors
     #[structopt(short, long, display_order = 61, default_value = "0", min_values = 0, value_name = "count", parse(try_from_str = parse_quantity_max))]
     pub max_errors: usize,
+
+    /// Delay between http operations in solr server. Format as: 3s, 500ms, 1min
+    #[structopt(short = "y", long, display_order = 62, default_value = "0", min_values = 0, value_name = "time", parse(try_from_str = parse_millis), hide_default_value = true)]
+    pub delay: usize,
 
     /// Number parallel threads exchanging documents with the solr core
     #[structopt(
@@ -659,6 +663,8 @@ pub mod tests {
         "5",
         "--archive-files",
         "6",
+        "--delay",
+        "5s",
         "--readers",
         "7",
         "--writers",
@@ -686,6 +692,8 @@ pub mod tests {
         "*.zip",
         "--flush",
         "soft",
+        "--delay",
+        "500ms",
         "--log-level",
         "debug",
     ];
