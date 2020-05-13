@@ -120,7 +120,7 @@ pub struct Backup {
 pub struct Restore {
     /// Mode to perform commits of the documents transaction log while updating the core
     /// [possible values: none, soft, hard, <interval>]
-    #[structopt(short, long, display_order = 40, default_value = "60s", parse(try_from_str = parse_commit_mode), value_name = "mode")]
+    #[structopt(short, long, display_order = 40, default_value = "hard", parse(try_from_str = parse_commit_mode), value_name = "mode")]
     pub flush: CommitMode,
 
     /// Do not perform a final hard commit before finishing
