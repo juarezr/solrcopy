@@ -1,4 +1,4 @@
-use log::debug;
+use log::{debug, trace};
 use std::{error::Error, fmt};
 
 use crate::helpers::*;
@@ -7,21 +7,21 @@ use crate::helpers::*;
 
 #[derive(Debug)]
 pub struct SolrError {
-    pub status: String,
-    pub response: String,
+    pub details: String,
 }
 
 impl SolrError {
     pub fn new(message: String, body: String) -> Self {
-        SolrError { status: message, response: body }
+        let msg = if body.is_empty() {
+            format!("Solr Error: {}", message)
+        } else {
+            format!("Solr Error: {} -> Reponse: {}", message, body)
+        };
+        SolrError { details: msg }
     }
 
     fn say(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.response.is_empty() {
-            write!(f, "{}", self.status)
-        } else {
-            write!(f, "{}\n{}", self.status, self.response)
-        }
+        write!(f, "{}", self.details)
     }
 }
 
@@ -33,7 +33,7 @@ impl fmt::Display for SolrError {
 
 impl Error for SolrError {
     fn description(&self) -> &str {
-        &self.status
+        &self.details
     }
 }
 
@@ -172,7 +172,9 @@ impl SolrClient {
     fn handle_synthetic_error(can_retry: bool, response: ureq::Response) -> Option<SolrError> {
         let cause = response.synthetic_error().as_ref().unwrap();
         match cause {
-            ureq::Error::ConnectionFailed(_) => Self::convert_synthetic_error(can_retry, cause),
+            ureq::Error::ConnectionFailed(_) => {
+                Self::convert_synthetic_error(can_retry, cause, &response)
+            }
             ureq::Error::Io(failure) => {
                 let error_kind = failure.kind();
                 match error_kind {
@@ -182,48 +184,57 @@ impl SolrClient {
                     | std::io::ErrorKind::NotConnected
                     | std::io::ErrorKind::TimedOut
                     | std::io::ErrorKind::Interrupted => {
-                        Self::convert_synthetic_error(can_retry, cause)
+                        Self::convert_synthetic_error(can_retry, cause, &response)
                     }
-                    _ => Self::convert_synthetic_error(can_retry, cause),
+                    _ => Self::convert_synthetic_error(can_retry, cause, &response),
                 }
             }
-            _ => Self::convert_synthetic_error(false, cause),
+            _ => Self::convert_synthetic_error(false, cause, &response),
         }
     }
 
-    fn convert_synthetic_error(can_retry: bool, cause: &ureq::Error) -> Option<SolrError> {
+    fn convert_synthetic_error(
+        can_retry: bool, cause: &ureq::Error, response: &ureq::Response,
+    ) -> Option<SolrError> {
         if can_retry {
-            debug!("Synthetic Error: Retry: {}", cause.to_string());
+            debug!(
+                "Generic Error: Retry: {}, Status: {}",
+                cause.to_string(),
+                response.status_line()
+            );
             return None;
         }
-        let message = cause.status_text().to_string();
+        let message = format!("Generic Error: {}", cause.status_text());
         let body = cause.body_text();
-        debug!("Synthetic Error: Aborting: {} -> {}", message, body);
+        trace!("Continue: {} -> {}", message, body);
         Some(SolrError::new(message, body))
     }
 
     fn handle_solr_error(can_retry: bool, response: ureq::Response) -> Option<SolrError> {
-        let message = response.status_line().to_string();
+        let message = format!("Response Error: {}", response.status_line());
         // Retry on status 502 Bad Gateway
         // Retry on status 503 Service Temporarily Unavailable
         // Retry on status 504 Gateway Timeout
         if can_retry && response.server_error() {
-            debug!("Solr Error: Retry: {}", message);
+            debug!("Retry: {}", message);
             return None;
         }
-        let body = response.into_string().unwrap();
-        debug!("Solr Error: Aborting: {} -> {}", message, body);
+        let body = match response.into_string() {
+            Ok(content) => content,
+            Err(unread) => unread.to_string(),
+        };
+        trace!("Continue: {} -> {}", message, body);
         Some(SolrError::new(message, body))
     }
 
     fn handle_receive_error(can_retry: bool, error: std::io::Error) -> Option<SolrError> {
-        let message = error.to_string();
+        let message = format!("Receive Error: {}", error.to_string());
         let body = format!("{:?}", error);
         if can_retry {
-            debug!("Receive Error: Retry: {} -> {}", message, body);
+            debug!("Retry: {} -> {}", message, body);
             return None;
         }
-        debug!("Receive Error: Retry: {} -> {}", message, body);
+        trace!("Continue: {} -> {}", message, body);
         Some(SolrError::new(message, body))
     }
 
