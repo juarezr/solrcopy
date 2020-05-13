@@ -2,11 +2,23 @@ use log::error;
 use zip::ZipArchive;
 
 use glob::{glob, PatternError};
-use std::{fs::File, io::prelude::*, path::PathBuf};
+use std::{fmt, fs::File, io::prelude::*, path::PathBuf};
 
 use crate::{args::Restore, fails::*, helpers::*};
 
 type Decompressor = ZipArchive<File>;
+
+#[derive(Debug)]
+pub(crate) struct ArchiveReader {
+    pub archive: Decompressor,
+    pub entry_index: usize,
+}
+
+pub(crate) struct Docs {
+    pub json: String,
+    pub archive: String,
+    pub entry: String,
+}
 
 impl Restore {
     pub fn find_archives(&self) -> Result<Vec<PathBuf>, PatternError> {
@@ -46,12 +58,6 @@ impl Restore {
     }
 }
 
-#[derive(Debug)]
-pub(crate) struct ArchiveReader {
-    pub archive: Decompressor,
-    pub entry_index: usize,
-}
-
 impl ArchiveReader {
     pub(crate) fn open_archive(archive_path: &PathBuf) -> BoxedResult<Decompressor> {
         let zipfile = File::open(archive_path)?;
@@ -80,26 +86,56 @@ impl ArchiveReader {
 }
 
 impl Iterator for ArchiveReader {
-    type Item = String;
+    type Item = (String, String);
 
-    fn next(&mut self) -> Option<String> {
+    fn next(&mut self) -> Option<Self::Item> {
         let file_count = self.archive.len();
         if self.entry_index >= file_count {
             return None;
         }
         let mut compressed = self.archive.by_index(self.entry_index).unwrap();
-        let mut buffer = String::new();
-        let reading = compressed.read_to_string(&mut buffer);
+        let zip_name = compressed.name().to_string();
+        let mut zip_contents = String::new();
+        let reading = compressed.read_to_string(&mut zip_contents);
         match reading {
             Err(cause) => {
-                error!("error reading archive #{}: {}", self.entry_index + 1, cause);
+                error!("error reading archive #{} {}: {}", self.entry_index + 1, zip_name, cause);
                 None
             }
             Ok(_) => {
                 self.entry_index += 1;
-                Some(buffer)
+                Some((zip_name, zip_contents))
             }
         }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let num_steps = self.archive.len();
+        if num_steps == 0 {
+            (0, None)
+        } else {
+            let max: usize = num_steps.to_usize();
+            (0, Some(max))
+        }
+    }
+}
+
+impl Docs {
+    pub fn new(archive_name: String, entry_name: String, documents: String) -> Self {
+        Docs { archive: archive_name, entry: entry_name, json: documents }
+    }
+}
+
+impl fmt::Display for Docs {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "archive: {} file: {}", self.archive, self.entry)
+    }
+}
+
+impl fmt::Debug for Docs {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let txt = if self.json.len() > 400 { &self.json[0..400] } else { &self.json };
+        write!(f, "archive: {} file: {}\nJson: {}", self.archive, self.entry, txt)
     }
 }
 

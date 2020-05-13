@@ -1,6 +1,6 @@
 use crossbeam_channel::{bounded, Receiver, Sender};
 use crossbeam_utils::thread;
-use log::{debug, error, info};
+use log::{debug, error, info, trace};
 
 use std::sync::{
     atomic::{AtomicBool, AtomicUsize, Ordering},
@@ -9,8 +9,8 @@ use std::sync::{
 use std::{path::PathBuf, time::Instant};
 
 use crate::{
-    args::Restore, bars::foreach_progress, connection::SolrClient, fails::*, helpers::wait_by,
-    ingest::*, state::*,
+    args::Restore, bars::foreach_progress, connection::SolrClient, fails::*, helpers::*, ingest::*,
+    state::*,
 };
 
 pub(crate) fn restore_main(params: Restore) -> BoxedError {
@@ -27,7 +27,12 @@ pub(crate) fn restore_main(params: Restore) -> BoxedError {
     }
 
     let core = params.options.core.clone();
-    info!("Indexing documents in solr core {} from: {:?}", core, params.transfer.dir);
+    info!(
+        "Found {} zip archives in {:?} for updating into core {:?}",
+        found.len(),
+        params.transfer.dir,
+        core
+    );
 
     let started = Instant::now();
 
@@ -38,8 +43,11 @@ pub(crate) fn restore_main(params: Restore) -> BoxedError {
 }
 
 fn unzip_archives_and_send(params: Restore, found: &[PathBuf]) -> BoxedResult<usize> {
-    let doc_count = estimate_document_count(found)?;
+    let doc_count = estimate_batch_count(found)?;
     let mut updated = 0;
+
+    let core = params.options.core.clone();
+    info!("Estimated {} batches for indexing in solr core {}", doc_count, core);
 
     thread::scope(|pool| {
         let transfer = &params.transfer;
@@ -47,7 +55,7 @@ fn unzip_archives_and_send(params: Restore, found: &[PathBuf]) -> BoxedResult<us
         let writers_channel = transfer.writers * 2;
 
         let (generator, sequence) = bounded::<&PathBuf>(readers_channel);
-        let (sender, receiver) = bounded::<String>(writers_channel);
+        let (sender, receiver) = bounded::<Docs>(writers_channel);
         let (progress, reporter) = bounded::<u64>(transfer.writers);
 
         pool.spawn(move |_| {
@@ -90,7 +98,7 @@ fn unzip_archives_and_send(params: Restore, found: &[PathBuf]) -> BoxedResult<us
             pool.builder()
                 .name(thread_name)
                 .spawn(move |_| {
-                    start_indexing_docs(writer, &url, consumer, updater, arcerr, merr, delay);
+                    start_indexing_docs(writer, &url, consumer, updater, &arcerr, merr, delay);
                     debug!("Finished writer #{}", writer);
                 })
                 .unwrap();
@@ -119,7 +127,7 @@ fn finish_sending(params: Restore, updated: usize) -> BoxedResult<usize> {
     }
 }
 
-fn estimate_document_count(found: &[PathBuf]) -> BoxedResult<usize> {
+fn estimate_batch_count(found: &[PathBuf]) -> BoxedResult<usize> {
     // Estimate number of json files inside all zip files
     let zip_count = found.len();
 
@@ -147,15 +155,16 @@ fn start_listing_archives<'a>(found: &'a [PathBuf], generator: Sender<&'a PathBu
     drop(generator);
 }
 
-fn start_reading_archive(reader: usize, iterator: Receiver<&PathBuf>, producer: Sender<String>) {
+fn start_reading_archive(reader: usize, iterator: Receiver<&PathBuf>, producer: Sender<Docs>) {
     let ctrl_c = monitor_term_sinal();
 
     loop {
         let received = iterator.recv();
-        let failed = match received {
-            Ok(archive_path) => handle_reading_archive(reader, &producer, archive_path, &ctrl_c),
-            Err(_) => true,
-        };
+        if received.is_err() || ctrl_c.aborted() {
+            break;
+        }
+        let archive_path = received.unwrap();
+        let failed = handle_reading_archive(reader, &producer, archive_path, &ctrl_c);
         if failed || ctrl_c.aborted() {
             break;
         }
@@ -164,16 +173,17 @@ fn start_reading_archive(reader: usize, iterator: Receiver<&PathBuf>, producer: 
 }
 
 fn handle_reading_archive(
-    reader: usize, producer: &Sender<String>, archive_path: &PathBuf, ctrl_c: &Arc<AtomicBool>,
+    reader: usize, producer: &Sender<Docs>, archive_path: &PathBuf, ctrl_c: &Arc<AtomicBool>,
 ) -> bool {
+    let zip_name: String = get_filename(archive_path).unwrap();
+    trace!("Reading zip archive: {}", zip_name);
     let can_open = ArchiveReader::create_reader(&archive_path);
     match can_open {
-        Err(cause) => {
-            error!("Error in thread #{} while reading docs in zip: {}", reader, cause);
-            true
-        }
         Ok(archive_reader) => {
-            for docs in archive_reader {
+            for (entry_name, entry_contents) in archive_reader {
+                trace!("  Uncompressing json: '{}' from '{}'", entry_name, zip_name);
+
+                let docs = Docs::new(zip_name.clone(), entry_name, entry_contents);
                 let status = producer.send(docs);
                 if status.is_err() || ctrl_c.aborted() {
                     return true;
@@ -181,28 +191,28 @@ fn handle_reading_archive(
             }
             false
         }
+        Err(cause) => {
+            error!("Error in thread #{} while reading docs in zip: {}", reader, cause);
+            true
+        }
     }
 }
 
 fn start_indexing_docs(
-    writer: usize, url: &str, consumer: Receiver<String>, progress: Sender<u64>,
-    error_count: Arc<AtomicUsize>, max_errors: usize, delay: usize,
+    writer: usize, url: &str, consumer: Receiver<Docs>, progress: Sender<u64>,
+    error_count: &Arc<AtomicUsize>, max_errors: usize, delay: usize,
 ) {
     let ctrl_c = monitor_term_sinal();
 
     let mut client = SolrClient::new();
     loop {
         let received = consumer.recv();
-        if ctrl_c.aborted() {
+        if received.is_err() || ctrl_c.aborted() {
             break;
         }
-        let failed = match received {
-            Ok(docs) => handle_received_batch(docs, writer, url, &mut client, &progress),
-            Err(_) => {
-                let current = error_count.fetch_add(1, Ordering::SeqCst);
-                current > max_errors
-            }
-        };
+        let docs = received.unwrap();
+        let failed =
+            send_to_solr(docs, writer, url, &mut client, &progress, error_count, max_errors);
         if failed || ctrl_c.aborted() {
             break;
         } else if delay > 0 {
@@ -212,18 +222,18 @@ fn start_indexing_docs(
     drop(consumer);
 }
 
-fn handle_received_batch(
-    docs: String, writer: usize, url: &str, client: &mut SolrClient, progress: &Sender<u64>,
+fn send_to_solr(
+    docs: Docs, writer: usize, url: &str, client: &mut SolrClient, progress: &Sender<u64>,
+    error_count: &Arc<AtomicUsize>, max_errors: usize,
 ) -> bool {
-    let failed = client.post_as_json(&url, &docs);
+    let failed = client.post_as_json(&url, docs.json.as_str());
     if let Err(cause) = failed {
-        error!("Error in thread #{} while sending docs to solr core: {}", writer, cause);
-        if docs.len() < 400 {
-            error!("  JSON: {}", docs);
-        } else {
-            error!("  JSON: {}...", &docs[0..400]);
-        }
-        true
+        let current = error_count.fetch_add(1, Ordering::SeqCst);
+        error!(
+            "Error #{}/{} in thread #{} when indexing solr core:\n{}{:?}",
+            current, max_errors, writer, cause, docs
+        );
+        current > max_errors
     } else {
         let status = progress.send(0);
         status.is_err()
