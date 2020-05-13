@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use regex::{Captures, Regex};
-use std::{convert::TryInto, env, str::FromStr};
+use std::{convert::TryInto, env, path::PathBuf, str::FromStr};
 
 // region Constants
 
@@ -62,6 +62,10 @@ pub fn env_value(var_name: &str, replacement: isize) -> isize {
         }),
         Err(_) => replacement,
     }
+}
+
+pub fn get_filename(file_path: &PathBuf) -> Result<String, ()> {
+    file_path.as_path().file_name().ok_or(())?.to_os_string().into_string().or(Err(()))
 }
 
 // endregion
