@@ -53,7 +53,6 @@ pub struct Backup {
 
     /// Slice the queries by using the variables {begin} and {end} for iterating in `--query`
     /// Used in bigger solr cores with huge number of docs because querying the end of docs is expensive and fails frequently
-    // #[structopt(short, long, display_order = 50, default_value = "day", parse(try_from_str = parse_iterate_mode), possible_values = ITERATE_VALUES, value_name = "mode", requires = "between")]
     #[structopt(short, long, display_order = 50, default_value = "day", parse(try_from_str = parse_iterate_mode), possible_values = ITERATE_VALUES, value_name = "mode")]
     pub iterate_by: IterateMode,
 
@@ -130,6 +129,10 @@ pub struct Restore {
     /// Search pattern for matching names of the zip backup files
     #[structopt(short, long, display_order = 70, value_name = "core*.zip")]
     pub search: Option<String>,
+
+    /// Optional order for searching the zip archives
+    #[structopt(short, long, display_order = 71, default_value = "none", parse(try_from_str = parse_sort_order), possible_values = SORT_VALUES, hide_possible_values = true,hide_default_value = true, value_name = "asc | desc")]
+    pub order: SortOrder,
 
     #[structopt(flatten)]
     pub options: CommonArgs,
@@ -263,9 +266,16 @@ pub enum IterateMode {
     Range,
 }
 
-const ITERATE_VALUES: &[&str] = &["minute", "hour", "day", "range"];
+#[derive(StructOpt, Clone, Copy, PartialEq, Debug)]
+pub enum SortOrder {
+    None,
+    Asc,
+    Desc,
+}
 
+const ITERATE_VALUES: &[&str] = &["minute", "hour", "day", "range"];
 const COMMIT_AFTER_VALUES: &[&str] = &["none", "soft", "hard"];
+const SORT_VALUES: &[&str] = &["none", "asc", "desc"];
 
 const LOG_LEVEL_VALUES: &[&str] = &["off", "error", "warn", "info", "debug", "trace"];
 const LOG_TERM_VALUES: &[&str] = &["stdout", "stderr", "mixed"];
@@ -415,7 +425,17 @@ fn parse_iterate_mode(s: &str) -> Result<IterateMode, String> {
         "hour" => Ok(IterateMode::Hour),
         "day" => Ok(IterateMode::Day),
         "range" => Ok(IterateMode::Range),
-        _ => Err(format!("'{}'. [alowed: none minute hour day week month year range]", s)),
+        _ => Err(format!("'{}'. [alowed: none minute hour day range]", s)),
+    }
+}
+
+fn parse_sort_order(s: &str) -> Result<SortOrder, String> {
+    let lower = s.to_ascii_lowercase();
+    match lower.as_str() {
+        "none" => Ok(SortOrder::None),
+        "asc" => Ok(SortOrder::Asc),
+        "desc" => Ok(SortOrder::Desc),
+        _ => Err(format!("'{}'. [alowed: none asc desc]", s)),
     }
 }
 

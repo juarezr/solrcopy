@@ -4,7 +4,11 @@ use zip::ZipArchive;
 use glob::{glob, PatternError};
 use std::{fmt, fs::File, io::prelude::*, path::PathBuf};
 
-use crate::{args::Restore, fails::*, helpers::*};
+use crate::{
+    args::{Restore, SortOrder},
+    fails::*,
+    helpers::*,
+};
 
 type Decompressor = ZipArchive<File>;
 
@@ -24,7 +28,13 @@ impl Restore {
     pub fn find_archives(&self) -> Result<Vec<PathBuf>, PatternError> {
         let wilcard = self.get_pattern();
         let listed = glob(&wilcard)?;
-        let found = listed.filter_map(Result::ok).collect::<Vec<_>>();
+        let mut found = listed.filter_map(Result::ok).collect::<Vec<_>>();
+
+        match self.order {
+            SortOrder::Asc => found.sort_unstable(),
+            SortOrder::Desc => found.sort_unstable_by(|a, b| b.cmp(a)),
+            SortOrder::None => {}
+        };
         Ok(found)
     }
 
