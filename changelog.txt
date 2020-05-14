@@ -1,3 +1,12 @@
+debian (0.5.5) unstable; urgency=low
+
+  * feature: added --order switch for restore
+  * improved: print archive and file name on errors
+  * improved: more details in error message
+  * fixed: restore with --max-errors
+
+-- Juarez Rudsatz <juarezr@gmail.com>  Mar, 13 Ma 2020 00:05:05 -0300
+
 debian (0.5.4) unstable; urgency=low
 
   * feature: added --iterate-by and --between for backup

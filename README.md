@@ -69,7 +69,7 @@ SUBCOMMANDS:
 
 ``` text
 $ solrcopy help backup
-solrcopy-backup 0.5.4
+solrcopy-backup 0.5.5
 Dumps documents from a Apache Solr core into local backup files
 
 USAGE:
@@ -124,7 +124,7 @@ $ solrcopy backup --url http://localhost:8983/solr --core demo --query 'price:[1
 
 ``` text
 $ solrcopy help restore
-solrcopy-restore 0.5.4
+solrcopy-restore 0.5.5
 Restore documents from local backup files into a Apache Solr core
 
 USAGE:
@@ -141,12 +141,13 @@ OPTIONS:
     -d, --dir </path/to/output>        Existing folder where the zip backup files containing the extracted documents are
                                        stored [env: SOLR_COPY_DIR=]
     -f, --flush <mode>                 Mode to perform commits of the documents transaction log while updating the core
-                                       [possible values: none, soft, hard, <interval>] [default: 60s]
+                                       [possible values: none, soft, hard, <interval>] [default: hard]
     -p, --params <useParams=mypars>    Extra parameter for Solr Update Handler. See:
                                        https://lucene.apache.org/solr/guide/transforming-and-indexing-custom-json.html
     -m, --max-errors <count>           How many times should continue on source document errors [default: 0]
     -y, --delay <time>                 Delay between http operations in solr server. Format as: 3s, 500ms, 1min
     -s, --search <core*.zip>           Search pattern for matching names of the zip backup files
+    -o, --order <asc | desc>           Optional order for searching the zip archives
     -r, --readers <count>              Number parallel threads exchanging documents with the solr core [default: 1]
     -w, --writers <count>              Number parallel threads syncing documents with the zip archives [default: 1]
     -L, --log-level <level>            What level of detail should print messages [default: info]  [possible values:
@@ -161,7 +162,7 @@ $ solrcopy restore --url http://localhost:8983/solr  --dir ./tmp --core target
 
 ``` text
 $ solrcopy help delete
-solrcopy-delete 0.5.4
+solrcopy-delete 0.5.5
 Removes documents from the Solr core definitively
 
 USAGE:
@@ -191,7 +192,7 @@ $ solrcopy delete --url http://localhost:8983/solr --core target --query '*:*'
 
 ``` text
 $ solrcopy help commit
-solrcopy-commit 0.5.4
+solrcopy-commit 0.5.5
 Perform a commit in the Solr core index for persisting documents in disk/memory
 
 USAGE:
