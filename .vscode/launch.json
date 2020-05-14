@@ -49,7 +49,6 @@
                     "--package=solrcopy"
                 ]
             },
-            "preLaunchTask":  "createTempFolder",
             "program": "${cargo:program}",
             "args": [
                 "restore", 
@@ -58,7 +57,7 @@
                 "--search", "demo", 
                 "--core", "target",
                 "--flush", "soft",
-                "--log-level",  "debug",
+                "--log-level",  "off",
             ],
             "env": { 
                 "RUST_BACKTRACE": "full"
