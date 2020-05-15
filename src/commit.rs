@@ -1,29 +1,17 @@
 use log::{debug, info};
 
-use super::{args::Command, connection::SolrClient, helpers::*};
+use super::{args::Command, connection::SolrClient};
 
 pub(crate) fn commit_main(params: Command) -> Result<(), Box<dyn std::error::Error>> {
-    debug!("  {:?}", params);
+    debug!("# COMMIT {:?}", params);
 
-    let url = params.get_update_url();
+    let url = params.options.get_update_url();
 
     let content = "{ \"commit\": {} } ";
 
     SolrClient::send_post_as_json(&url, content)?;
 
-    info!("Commited ocuments in {}.", url);
+    info!("Commited documents in {}.", url);
 
     Ok(())
-}
-
-impl Command {
-    fn get_update_url(&self) -> String {
-        #[rustfmt::skip]
-        let parts: Vec<String> = vec![
-            self.options.url.with_suffix("/"),
-            self.options.core.clone(),
-            "/update".to_string(),
-        ];
-        parts.concat()
-    }
 }

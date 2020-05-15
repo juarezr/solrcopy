@@ -58,9 +58,7 @@ impl Restore {
     pub fn get_update_url(&self) -> String {
         // E.g: http://localhost:8983/solr/mycore/update?wt=json&overwrite=true&commitWithin=1000&useParams=my_params
         let parts: Vec<String> = vec![
-            self.options.url.with_suffix("/"),
-            self.options.core.clone(),
-            "/update/json/docs?overwrite=true".to_string(),
+            self.options.get_core_handler_url("/update/json/docs?overwrite=true"),
             self.flush.as_param("&"),
             self.transfer.get_param("&"),
         ];

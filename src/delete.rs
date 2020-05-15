@@ -1,11 +1,11 @@
 use log::{debug, info};
 
-use super::{args::Delete, connection::SolrClient, fails::BoxedResult, helpers::*};
+use super::{args::Delete, connection::SolrClient, fails::BoxedResult};
 
 pub(crate) fn delete_main(params: Delete) -> BoxedResult<()> {
-    debug!("  {:?}", params);
+    debug!("# DELETE  {:?}", params);
 
-    let url = params.get_update_url();
+    let url = params.options.get_update_url_with(params.flush.as_param("?").as_str());
 
     let content = format!("<delete><query>{}</query></delete>", params.query);
 
@@ -14,17 +14,4 @@ pub(crate) fn delete_main(params: Delete) -> BoxedResult<()> {
     info!("Deleted documents in {}.", url);
 
     Ok(())
-}
-
-impl Delete {
-    fn get_update_url(&self) -> String {
-        #[rustfmt::skip]
-        let parts: Vec<String> = vec![
-            self.options.url.with_suffix("/"),
-            self.options.core.clone(),
-            "/update".to_string(),
-            self.flush.as_param("?"),
-        ];
-        parts.concat()
-    }
 }

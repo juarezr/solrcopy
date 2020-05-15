@@ -470,6 +470,26 @@ impl CommonArgs {
     pub fn into_command(self) -> Command {
         Command { options: self }
     }
+
+    pub fn get_core_handler_url(&self, handler_url_path: &str) -> String {
+        #[rustfmt::skip]
+        let parts: Vec<String> = vec![
+            self.url.with_suffix("/"),
+            self.core.clone(),
+            handler_url_path.with_prefix("/"),
+        ];
+        parts.concat()
+    }
+
+    pub fn get_update_url_with(&self, query_string_params: &str) -> String {
+        let parts: Vec<String> =
+            vec![self.get_core_handler_url("/update"), query_string_params.with_prefix("?")];
+        parts.concat()
+    }
+
+    pub fn get_update_url(&self) -> String {
+        self.get_update_url_with(EMPTY_STR)
+    }
 }
 
 impl ParallelArgs {

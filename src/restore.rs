@@ -14,7 +14,7 @@ use crate::{
 };
 
 pub(crate) fn restore_main(params: Restore) -> BoxedError {
-    debug!("  {:?}", params);
+    debug!("# RESTORE {:?}", params);
 
     let found = params.find_archives()?;
 

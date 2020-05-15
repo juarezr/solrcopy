@@ -17,7 +17,7 @@ use crate::{
 };
 
 pub(crate) fn backup_main(params: Backup) -> BoxedError {
-    debug!("  {:?}", params);
+    debug!("# BACKUP {:?}", params);
 
     let slices = params.get_slices();
     let schema = params.inspect_core()?;
