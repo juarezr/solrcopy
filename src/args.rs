@@ -215,9 +215,17 @@ pub struct ParallelArgs {
     #[structopt(short, long, display_order = 61, default_value = "0", min_values = 0, value_name = "count", parse(try_from_str = parse_quantity_max))]
     pub max_errors: usize,
 
-    /// Delay between http operations in solr server. Format as: 3s, 500ms, 1min
-    #[structopt(short = "y", long, display_order = 62, default_value = "0", min_values = 0, value_name = "time", parse(try_from_str = parse_millis), hide_default_value = true)]
-    pub delay: usize,
+    /// Delay before any processing in solr server. Format as: 30s, 15min, 1h
+    #[structopt(short = "x", long, display_order = 62, default_value = "0", min_values = 0, value_name = "time", parse(try_from_str = parse_millis), hide_default_value = true)]
+    pub delay_before: usize,
+
+    /// Delay between each http operations in solr server. Format as: 3s, 500ms, 1min
+    #[structopt(short = "y", long, display_order = 63, default_value = "0", min_values = 0, value_name = "time", parse(try_from_str = parse_millis), hide_default_value = true)]
+    pub delay_per_request: usize,
+
+    /// Delay after all processing. Usefull for letting Solr breath.
+    #[structopt(short = "g", long, display_order = 64, default_value = "0", min_values = 0, value_name = "time", parse(try_from_str = parse_millis), hide_default_value = true)]
+    pub delay_after: usize,
 
     /// Number parallel threads exchanging documents with the solr core
     #[structopt(
@@ -707,7 +715,7 @@ pub mod tests {
         "5",
         "--archive-files",
         "6",
-        "--delay",
+        "--delay-after",
         "5s",
         "--readers",
         "7",
@@ -736,7 +744,7 @@ pub mod tests {
         "*.zip",
         "--flush",
         "soft",
-        "--delay",
+        "--delay-per-request",
         "500ms",
         "--log-level",
         "debug",

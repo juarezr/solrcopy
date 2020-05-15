@@ -9,8 +9,7 @@ use std::sync::{
 use std::{path::PathBuf, time::Instant};
 
 use crate::{
-    args::Restore, bars::foreach_progress, connection::SolrClient, fails::*, helpers::*, ingest::*,
-    state::*,
+    args::Restore, bars::*, connection::SolrClient, fails::*, helpers::*, ingest::*, state::*,
 };
 
 pub(crate) fn restore_main(params: Restore) -> BoxedError {
@@ -34,6 +33,11 @@ pub(crate) fn restore_main(params: Restore) -> BoxedError {
         core
     );
 
+    wait_with_progress(
+        params.transfer.delay_before,
+        &format!("Waiting before processing {}...", core),
+    );
+
     pre_post_processing(&params, false)?;
 
     let started = Instant::now();
@@ -44,6 +48,9 @@ pub(crate) fn restore_main(params: Restore) -> BoxedError {
 
     pre_post_processing(&params, true)?;
 
+    if updated > 0 {
+        wait_with_progress(params.transfer.delay_after, "Waiting after all processing...");
+    }
     Ok(())
 }
 
@@ -98,7 +105,7 @@ fn unzip_archives_and_send(params: &Restore, found: &[PathBuf]) -> BoxedResult<u
             let url = update_hadler_url.clone();
             let arcerr = Arc::clone(&update_errors);
             let merr = params.transfer.max_errors;
-            let delay = params.transfer.delay;
+            let delay = params.transfer.delay_per_request;
 
             let writer = iw;
             let thread_name = format!("Writer_{}", writer);

@@ -7,7 +7,7 @@ use std::{path::PathBuf, time::Instant};
 
 use crate::{
     args::Backup,
-    bars::foreach_progress,
+    bars::*,
     connection::SolrClient,
     fails::*,
     helpers::*,
@@ -18,6 +18,8 @@ use crate::{
 
 pub(crate) fn backup_main(params: Backup) -> BoxedError {
     debug!("# BACKUP {:?}", params);
+
+    wait_with_progress(params.transfer.delay_before, "Waiting before processing...");
 
     let slices = params.get_slices();
     let schema = params.inspect_core()?;
@@ -61,7 +63,7 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
             let iterator = sequence.clone();
             let reader = ir;
             let merr = params.transfer.max_errors;
-            let delay = params.transfer.delay;
+            let delay = params.transfer.delay_per_request;
 
             let thread_name = format!("Reader_{}", reader);
             pool.builder()
@@ -112,6 +114,9 @@ pub(crate) fn backup_main(params: Backup) -> BoxedError {
             num_retrieving,
             started.elapsed()
         );
+        if retrieved > 0 {
+            wait_with_progress(params.transfer.delay_after, "Waiting after all processing...");
+        }
         Ok(())
     }
 }
