@@ -69,9 +69,8 @@ pub struct Backup {
     )]
     pub iterate_between: Vec<String>,
 
-    /// Number of documents to retrieve from solr in each reader step
+    /// Number to increment each step in iterative mode
     #[structopt(
-        short = "t",
         long = "step",
         display_order = 52,
         default_value = "1",
@@ -82,15 +81,15 @@ pub struct Backup {
     pub iterate_step: usize,
 
     /// Number of documents to retrieve from solr in each reader step
-    #[structopt(short, long, display_order = 70, default_value = "4k", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
+    #[structopt(long, display_order = 70, default_value = "4k", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
     pub num_docs: usize,
 
     /// Max number of files of documents stored in each zip file
-    #[structopt(short, long, display_order = 71, default_value = "40", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
+    #[structopt(long, display_order = 71, default_value = "40", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
     pub archive_files: usize,
 
     /// Optional prefix for naming the zip backup files when storing documents
-    #[structopt(short, long, display_order = 72, parse(try_from_str = parse_file_prefix), value_name = "name")]
+    #[structopt(long, display_order = 72, parse(try_from_str = parse_file_prefix), value_name = "name")]
     pub zip_prefix: Option<String>,
 
     /// Use only when your Solr Cloud returns a distinct count of docs for some queries in a row.
@@ -123,11 +122,11 @@ pub struct Restore {
     pub flush: CommitMode,
 
     /// Do not perform a final hard commit before finishing
-    #[structopt(short, long, display_order = 41)]
+    #[structopt(long, display_order = 41)]
     pub no_final_commit: bool,
 
     /// Disable core replication at start and enable again at end
-    #[structopt(short = "e", long, display_order = 42)]
+    #[structopt(long, display_order = 42)]
     pub disable_replication: bool,
 
     /// Search pattern for matching names of the zip backup files
@@ -135,7 +134,7 @@ pub struct Restore {
     pub search: Option<String>,
 
     /// Optional order for searching the zip archives
-    #[structopt(short, long, display_order = 71, default_value = "none", parse(try_from_str = parse_sort_order), possible_values = SORT_VALUES, hide_possible_values = true,hide_default_value = true, value_name = "asc | desc")]
+    #[structopt(long, display_order = 71, default_value = "none", parse(try_from_str = parse_sort_order), possible_values = SORT_VALUES, hide_possible_values = true,hide_default_value = true, value_name = "asc | desc")]
     pub order: SortOrder,
 
     #[structopt(flatten)]
@@ -183,19 +182,19 @@ pub struct CommonArgs {
     pub core: String,
 
     /// What level of detail should print messages
-    #[structopt(short = "L", long, display_order = 90, value_name = "level", default_value = "info", possible_values = LOG_LEVEL_VALUES)]
+    #[structopt(long, display_order = 90, value_name = "level", default_value = "info", possible_values = LOG_LEVEL_VALUES)]
     pub log_level: String,
 
     /// Terminal output to print messages
-    #[structopt(short = "T", long, display_order = 91, value_name = "mode", default_value = "mixed", possible_values = LOG_TERM_VALUES)]
+    #[structopt(long, display_order = 91, value_name = "mode", default_value = "mixed", possible_values = LOG_TERM_VALUES)]
     pub log_mode: String,
 
     /// Write messages to a local file
-    #[structopt(short = "P", long, display_order = 92, value_name = "path", parse(from_os_str))]
+    #[structopt(long, display_order = 92, value_name = "path", parse(from_os_str))]
     pub log_file_path: Option<PathBuf>,
 
     /// What level of detail should write messages to the file
-    #[structopt(short = "G", long, display_order = 93, value_name = "level", default_value = "debug", possible_values = LOG_LEVEL_VALUES, hide_possible_values = true)]
+    #[structopt(long, display_order = 93, value_name = "level", default_value = "debug", possible_values = LOG_LEVEL_VALUES, hide_possible_values = true)]
     pub log_file_level: String,
 }
 
@@ -216,15 +215,15 @@ pub struct ParallelArgs {
     pub max_errors: usize,
 
     /// Delay before any processing in solr server. Format as: 30s, 15min, 1h
-    #[structopt(short = "x", long, display_order = 62, default_value = "0", min_values = 0, value_name = "time", parse(try_from_str = parse_millis), hide_default_value = true)]
+    #[structopt(long, display_order = 62, default_value = "0", min_values = 0, value_name = "time", parse(try_from_str = parse_millis), hide_default_value = true)]
     pub delay_before: usize,
 
     /// Delay between each http operations in solr server. Format as: 3s, 500ms, 1min
-    #[structopt(short = "y", long, display_order = 63, default_value = "0", min_values = 0, value_name = "time", parse(try_from_str = parse_millis), hide_default_value = true)]
+    #[structopt(long, display_order = 63, default_value = "0", min_values = 0, value_name = "time", parse(try_from_str = parse_millis), hide_default_value = true)]
     pub delay_per_request: usize,
 
     /// Delay after all processing. Usefull for letting Solr breath.
-    #[structopt(short = "g", long, display_order = 64, default_value = "0", min_values = 0, value_name = "time", parse(try_from_str = parse_millis), hide_default_value = true)]
+    #[structopt(long, display_order = 64, default_value = "0", min_values = 0, value_name = "time", parse(try_from_str = parse_millis), hide_default_value = true)]
     pub delay_after: usize,
 
     /// Number parallel threads exchanging documents with the solr core
