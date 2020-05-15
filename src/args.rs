@@ -126,6 +126,10 @@ pub struct Restore {
     #[structopt(short, long, display_order = 41)]
     pub no_final_commit: bool,
 
+    /// Disable core replication at start and enable again at end
+    #[structopt(short = "e", long, display_order = 42)]
+    pub disable_replication: bool,
+
     /// Search pattern for matching names of the zip backup files
     #[structopt(short, long, display_order = 70, value_name = "core*.zip")]
     pub search: Option<String>,
@@ -168,7 +172,7 @@ pub struct Command {
 
 // region Cli common
 
-#[derive(StructOpt, Debug)]
+#[derive(StructOpt, Clone, Debug)]
 pub struct CommonArgs {
     /// Url pointing to the Solr cluster
     #[structopt(short, long, display_order = 10, env = SOLR_COPY_URL, parse(try_from_str = parse_solr_url), value_name = "localhost:8983/solr")]
@@ -467,8 +471,8 @@ impl CommonArgs {
         self.log_level.to_ascii_lowercase() == "off"
     }
 
-    pub fn into_command(self) -> Command {
-        Command { options: self }
+    pub fn into_command(&self) -> Command {
+        Command { options: self.clone() }
     }
 
     pub fn get_core_handler_url(&self, handler_url_path: &str) -> String {

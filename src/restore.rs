@@ -34,15 +34,22 @@ pub(crate) fn restore_main(params: Restore) -> BoxedError {
         core
     );
 
+    pre_post_processing(&params, false)?;
+
     let started = Instant::now();
 
-    let updated = unzip_archives_and_send(params, &found)?;
+    let updated = unzip_archives_and_send(&params, &found)?;
 
     info!("Updated {} batches in solr core {} in {:?}.", updated, core, started.elapsed());
+
+    pre_post_processing(&params, true)?;
+
     Ok(())
 }
 
-fn unzip_archives_and_send(params: Restore, found: &[PathBuf]) -> BoxedResult<usize> {
+// region Processing
+
+fn unzip_archives_and_send(params: &Restore, found: &[PathBuf]) -> BoxedResult<usize> {
     let doc_count = estimate_batch_count(found)?;
     let mut updated = 0;
 
@@ -113,7 +120,7 @@ fn unzip_archives_and_send(params: Restore, found: &[PathBuf]) -> BoxedResult<us
     finish_sending(params, updated)
 }
 
-fn finish_sending(params: Restore, updated: usize) -> BoxedResult<usize> {
+fn finish_sending(params: &Restore, updated: usize) -> BoxedResult<usize> {
     let ctrl_c = monitor_term_sinal();
 
     if ctrl_c.aborted() {
@@ -141,6 +148,25 @@ fn estimate_batch_count(found: &[PathBuf]) -> BoxedResult<usize> {
         }
     }
 }
+
+fn pre_post_processing(params: &Restore, enable: bool) -> BoxedResult<()> {
+    let core = params.options.core.as_str();
+
+    if params.disable_replication {
+        let (verb, handler_path) = if enable {
+            ("enabling", "replication?command=enablereplication")
+        } else {
+            ("disabling", "replication?command=disablereplication")
+        };
+        info!("Now {} replication in {}.", verb, core);
+
+        let url = params.options.get_core_handler_url(handler_path);
+        SolrClient::query_get_as_text(&url)?;
+    }
+    Ok(())
+}
+
+// endregion
 
 // region Channels
 
