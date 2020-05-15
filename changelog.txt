@@ -1,3 +1,11 @@
+debian (0.5.6) unstable; urgency=low
+
+  * feature: added fancy --delay-before and --delay-after
+  * feature: added --disable-replication for restore
+  * improved: let short cli switches for frequent options
+
+-- Juarez Rudsatz <juarezr@gmail.com>  May, 15 Mai 2020 00:05:06 -0300
+
 debian (0.5.5) unstable; urgency=low
 
   * feature: added --order switch for restore
@@ -5,7 +13,7 @@ debian (0.5.5) unstable; urgency=low
   * improved: more details in error message
   * fixed: restore with --max-errors
 
--- Juarez Rudsatz <juarezr@gmail.com>  Mar, 13 Ma 2020 00:05:05 -0300
+-- Juarez Rudsatz <juarezr@gmail.com>  May, 13 Ma 2020 00:05:05 -0300
 
 debian (0.5.4) unstable; urgency=low
 
@@ -13,7 +21,7 @@ debian (0.5.4) unstable; urgency=low
   * feature: added --delay for backup and restore
   * improved: increase wait time on --workaround-shards
 
--- Juarez Rudsatz <juarezr@gmail.com>  Mar, 12 Ma 2020 00:05:04 -0300
+-- Juarez Rudsatz <juarezr@gmail.com>  May, 12 Ma 2020 00:05:04 -0300
 
 debian (0.5.3) unstable; urgency=low
 
@@ -21,7 +29,7 @@ debian (0.5.3) unstable; urgency=low
   * improved: refactored most of cmd line switches
   * fixed: hardened --workaround-shards
 
--- Juarez Rudsatz <juarezr@gmail.com>  Mar, 8 Ma 2020 00:05:03 -0300
+-- Juarez Rudsatz <juarezr@gmail.com>  May, 8 Ma 2020 00:05:03 -0300
 
 debian (0.5.1) unstable; urgency=low
 
@@ -29,7 +37,7 @@ debian (0.5.1) unstable; urgency=low
   * improved: changed progress bar style
   * fix progress with --log-level off
 
--- Juarez Rudsatz <juarezr@gmail.com>  Mar, 7 Ma 2020 00:05:01 -0300
+-- Juarez Rudsatz <juarezr@gmail.com>  May, 7 Ma 2020 00:05:01 -0300
 
 debian (0.5.0) unstable; urgency=low
 
@@ -38,7 +46,7 @@ debian (0.5.0) unstable; urgency=low
   * improved: retry on server load or connection break
   * fixed: backup progress
 
--- Juarez Rudsatz <juarezr@gmail.com>  Mar, 6 Ma 2020 00:05:00 -0300
+-- Juarez Rudsatz <juarezr@gmail.com>  May, 6 Ma 2020 00:05:00 -0300
 
 debian (0.4.4) unstable; urgency=low
 
@@ -46,7 +54,7 @@ debian (0.4.4) unstable; urgency=low
   * improved: show better error messages with restore command
   * improved: abort signal handling on ctrl+c
 
--- Juarez Rudsatz <juarezr@gmail.com>  Mar, 1 Ma 2020 00:04:04 -0300
+-- Juarez Rudsatz <juarezr@gmail.com>  May, 1 Ma 2020 00:04:04 -0300
 
 debian (0.4.3) unstable; urgency=low
 
@@ -55,19 +63,19 @@ debian (0.4.3) unstable; urgency=low
   * improved: replace crate reqwest by ureq
   * fixed: fixed url to solr update handler
 
--- Juarez Rudsatz <juarezr@gmail.com>  Mar, 1 Ma 2020 00:04:03 -0300
+-- Juarez Rudsatz <juarezr@gmail.com>  May, 1 Ma 2020 00:04:03 -0300
 
 debian (0.4.2) unstable; urgency=low
 
   * feature: continuos integration, cross compiling (Closes: #2)
 
--- Juarez Rudsatz <juarezr@gmail.com>  Mar, 23 Mar 2020 00:04:02 -0300
+-- Juarez Rudsatz <juarezr@gmail.com>  Apr, 23 Mar 2020 00:04:02 -0300
 
 debian (0.4.1) unstable; urgency=low
 
   * feature: handle app interrupt on Crl+C or Ctrl+Break (Closes: #5)
 
--- Juarez Rudsatz <juarezr@gmail.com>  Mar, 23 Mar 2020 00:04:01 -0300
+-- Juarez Rudsatz <juarezr@gmail.com>  Apr, 23 Mar 2020 00:04:01 -0300
 
 debian (0.4.0) unstable; urgency=low
 

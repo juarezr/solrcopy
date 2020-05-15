@@ -44,7 +44,7 @@ Bellow some tricks for dealing with such cores:
 
 ``` text
 $ solrcopy --help
-solrcopy 0.5.4
+solrcopy 0.5.6
 Command line tool for backup and restore of documents stored in cores of Apache Solr.
 
 Solrcopy is a command for doing backup and restore of documents stored on Solr cores. It let you filter docs by using a
@@ -69,7 +69,7 @@ SUBCOMMANDS:
 
 ``` text
 $ solrcopy help backup
-solrcopy-backup 0.5.5
+solrcopy-backup 0.5.6
 Dumps documents from a Apache Solr core into local backup files
 
 USAGE:
@@ -97,14 +97,16 @@ OPTIONS:
     -b, --between <begin> <end>...       The range of dates/numbers for iterating the queries throught slices. Requires
                                          that the query parameter contains the variables {begin} and {end} for creating
                                          the slices. Use numbers or dates in ISO 8601 format (yyyy-mm-ddTHH:MM:SS)
-    -t, --step <num>                     Number of documents to retrieve from solr in each reader step [default: 1]
+        --step <num>                     Number to increment each step in iterative mode [default: 1]
     -p, --params <useParams=mypars>      Extra parameter for Solr Update Handler. See:
                                          https://lucene.apache.org/solr/guide/transforming-and-indexing-custom-json.html
     -m, --max-errors <count>             How many times should continue on source document errors [default: 0]
-    -y, --delay <time>                   Delay between http operations in solr server. Format as: 3s, 500ms, 1min
-    -n, --num-docs <quantity>            Number of documents to retrieve from solr in each reader step [default: 4k]
-    -a, --archive-files <quantity>       Max number of files of documents stored in each zip file [default: 40]
-    -z, --zip-prefix <name>              Optional prefix for naming the zip backup files when storing documents
+        --delay-before <time>            Delay before any processing in solr server. Format as: 30s, 15min, 1h
+        --delay-per-request <time>       Delay between each http operations in solr server. Format as: 3s, 500ms, 1min
+        --delay-after <time>             Delay after all processing. Usefull for letting Solr breath
+        --num-docs <quantity>            Number of documents to retrieve from solr in each reader step [default: 4k]
+        --archive-files <quantity>       Max number of files of documents stored in each zip file [default: 40]
+        --zip-prefix <name>              Optional prefix for naming the zip backup files when storing documents
         --workaround-shards <count>      Use only when your Solr Cloud returns a distinct count of docs for some queries
                                          in a row. This may be caused by replication problems between cluster nodes of
                                          shard replicas of a core. Response with 'num_found' bellow the greatest value
@@ -112,28 +114,29 @@ OPTIONS:
                                          shards=shard_name` for retrieving all docs for each shard of the core
     -r, --readers <count>                Number parallel threads exchanging documents with the solr core [default: 1]
     -w, --writers <count>                Number parallel threads syncing documents with the zip archives [default: 1]
-    -L, --log-level <level>              What level of detail should print messages [default: info]  [possible values:
+        --log-level <level>              What level of detail should print messages [default: info]  [possible values:
                                          off, error, warn, info, debug, trace]
-    -T, --log-mode <mode>                Terminal output to print messages [default: mixed]  [possible values: stdout,
+        --log-mode <mode>                Terminal output to print messages [default: mixed]  [possible values: stdout,
                                          stderr, mixed]
-    -P, --log-file-path <path>           Write messages to a local file
-    -G, --log-file-level <level>         What level of detail should write messages to the file [default: debug]
+        --log-file-path <path>           Write messages to a local file
+        --log-file-level <level>         What level of detail should write messages to the file [default: debug]
 
 $ solrcopy backup --url http://localhost:8983/solr --core demo --query 'price:[1 TO 400] AND NOT popularity:10' --order price:desc weight:asc --limit 10000 --select id date name price weight popularity manu cat store features --dir ./tmp
 ```
 
 ``` text
 $ solrcopy help restore
-solrcopy-restore 0.5.5
+solrcopy-restore 0.5.6
 Restore documents from local backup files into a Apache Solr core
 
 USAGE:
     solrcopy restore [FLAGS] [OPTIONS] --core <core> --dir </path/to/output> --url <localhost:8983/solr>
 
 FLAGS:
-    -n, --no-final-commit    Do not perform a final hard commit before finishing
-    -h, --help               Prints help information
-    -V, --version            Prints version information
+        --no-final-commit        Do not perform a final hard commit before finishing
+        --disable-replication    Disable core replication at start and enable again at end
+    -h, --help                   Prints help information
+    -V, --version                Prints version information
 
 OPTIONS:
     -u, --url <localhost:8983/solr>    Url pointing to the Solr cluster [env: SOLR_COPY_URL=]
@@ -145,24 +148,26 @@ OPTIONS:
     -p, --params <useParams=mypars>    Extra parameter for Solr Update Handler. See:
                                        https://lucene.apache.org/solr/guide/transforming-and-indexing-custom-json.html
     -m, --max-errors <count>           How many times should continue on source document errors [default: 0]
-    -y, --delay <time>                 Delay between http operations in solr server. Format as: 3s, 500ms, 1min
+        --delay-before <time>          Delay before any processing in solr server. Format as: 30s, 15min, 1h
+        --delay-per-request <time>     Delay between each http operations in solr server. Format as: 3s, 500ms, 1min
+        --delay-after <time>           Delay after all processing. Usefull for letting Solr breath
     -s, --search <core*.zip>           Search pattern for matching names of the zip backup files
-    -o, --order <asc | desc>           Optional order for searching the zip archives
+        --order <asc | desc>           Optional order for searching the zip archives
     -r, --readers <count>              Number parallel threads exchanging documents with the solr core [default: 1]
     -w, --writers <count>              Number parallel threads syncing documents with the zip archives [default: 1]
-    -L, --log-level <level>            What level of detail should print messages [default: info]  [possible values:
+        --log-level <level>            What level of detail should print messages [default: info]  [possible values:
                                        off, error, warn, info, debug, trace]
-    -T, --log-mode <mode>              Terminal output to print messages [default: mixed]  [possible values: stdout,
+        --log-mode <mode>              Terminal output to print messages [default: mixed]  [possible values: stdout,
                                        stderr, mixed]
-    -P, --log-file-path <path>         Write messages to a local file
-    -G, --log-file-level <level>       What level of detail should write messages to the file [default: debug]
+        --log-file-path <path>         Write messages to a local file
+        --log-file-level <level>       What level of detail should write messages to the file [default: debug]
 
 $ solrcopy restore --url http://localhost:8983/solr  --dir ./tmp --core target
 ```
 
 ``` text
 $ solrcopy help delete
-solrcopy-delete 0.5.5
+solrcopy-delete 0.5.6
 Removes documents from the Solr core definitively
 
 USAGE:
@@ -180,19 +185,19 @@ OPTIONS:
                                          docs. Use with caution and check twice
     -f, --flush <mode>                   Wether to perform a commits of transaction log after removing the documents
                                          [default: soft]  [possible values: none, soft, hard]
-    -L, --log-level <level>              What level of detail should print messages [default: info]  [possible values:
+        --log-level <level>              What level of detail should print messages [default: info]  [possible values:
                                          off, error, warn, info, debug, trace]
-    -T, --log-mode <mode>                Terminal output to print messages [default: mixed]  [possible values: stdout,
+        --log-mode <mode>                Terminal output to print messages [default: mixed]  [possible values: stdout,
                                          stderr, mixed]
-    -P, --log-file-path <path>           Write messages to a local file
-    -G, --log-file-level <level>         What level of detail should write messages to the file [default: debug]
+        --log-file-path <path>           Write messages to a local file
+        --log-file-level <level>         What level of detail should write messages to the file [default: debug]
 
 $ solrcopy delete --url http://localhost:8983/solr --core target --query '*:*'
 ```
 
 ``` text
 $ solrcopy help commit
-solrcopy-commit 0.5.5
+solrcopy-commit 0.5.6
 Perform a commit in the Solr core index for persisting documents in disk/memory
 
 USAGE:
@@ -205,12 +210,12 @@ FLAGS:
 OPTIONS:
     -u, --url <localhost:8983/solr>    Url pointing to the Solr cluster [env: SOLR_COPY_URL=]
     -c, --core <core>                  Case sensitive name of the core in the Solr server
-    -L, --log-level <level>            What level of detail should print messages [default: info]  [possible values:
+        --log-level <level>            What level of detail should print messages [default: info]  [possible values:
                                        off, error, warn, info, debug, trace]
-    -T, --log-mode <mode>              Terminal output to print messages [default: mixed]  [possible values: stdout,
+        --log-mode <mode>              Terminal output to print messages [default: mixed]  [possible values: stdout,
                                        stderr, mixed]
-    -P, --log-file-path <path>         Write messages to a local file
-    -G, --log-file-level <level>       What level of detail should write messages to the file [default: debug]
+        --log-file-path <path>         Write messages to a local file
+        --log-file-level <level>       What level of detail should write messages to the file [default: debug]
 
 $ solrcopy commit --url http://localhost:8983/solr --core target
 ```
@@ -222,10 +227,11 @@ $ solrcopy commit --url http://localhost:8983/solr --core target
   - Fix: extract data pointing directly to the shard instance address, not for the cloud address.
   - Also can use custom params to solr as `--params timeAllowed=15000&segmentTerminatedEarly=false&cache=false&shards=shard1`
 
-## Related Projects
+## Related
 
 1. [solrbulk](https://github.com/miku/solrbulk)
 2. [solrdump](https://github.com/ubleipzig/solrdump)
+3. [Solr documentaion of backup/restore](https://lucene.apache.org/solr/guide/6_6/making-and-restoring-backups.html)
 
 ---
 
