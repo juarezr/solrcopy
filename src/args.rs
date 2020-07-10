@@ -478,7 +478,7 @@ impl CommonArgs {
         self.log_level.to_ascii_lowercase() == "off"
     }
 
-    pub fn into_command(&self) -> Command {
+    pub fn to_command(&self) -> Command {
         Command { options: self.clone() }
     }
 
