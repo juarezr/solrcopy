@@ -52,4 +52,17 @@ jobs:
           command: fmt
           args: --all -- --check
 
+      - name: Run cargo-tarpaulin
+        uses: actions-rs/tarpaulin@v0.1
+        with:
+          version: 'latest'
+          run-types: 'Tests'
+          args: '-v --out Lcov'
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: './lcov.info'
+
 # end of file

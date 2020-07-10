@@ -6,6 +6,8 @@ Command line tool for backup and restore of documents stored in cores of [Apache
 
 ![build-test-and-lint](https://github.com/juarezr/solrcopy/workflows/build-test-and-lint/badge.svg)
 
+[![Coverage Status](https://coveralls.io/repos/github/juarezr/solrcopy/badge.svg?branch=master)](https://coveralls.io/github/juarezr/solrcopy?branch=master)
+
 - solrcopy backup/restore
   - Should work well in most common cases.
   - Works for me... :)
