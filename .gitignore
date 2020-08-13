@@ -11,6 +11,7 @@ Cargo.lock
 
 # will have temporary output when running executable on testing or development
 /tmp/
+lcov.info
 
 # User excluded files
 scratchpad.*
