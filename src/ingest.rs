@@ -29,12 +29,12 @@ impl Restore {
         let wilcard = self.get_pattern();
         let listed = glob(&wilcard)?;
         let mut found = listed.filter_map(Result::ok).collect::<Vec<_>>();
-
-        match self.order {
-            SortOrder::Asc => found.sort_unstable(),
-            SortOrder::Desc => found.sort_unstable_by(|a, b| b.cmp(a)),
-            SortOrder::None => {}
-        };
+        if self.order != SortOrder::None {
+            found.sort_unstable();
+        }
+        if self.order == SortOrder::Desc {
+            found.reverse();
+        }
         Ok(found)
     }
 
