@@ -102,7 +102,7 @@ jobs:
         if: matrix.os == 'linux'
         with:
           command: rpm
-          args: build --verbose
+          args: build --verbose -o target/${{ matrix.target }}/release/solrcopy-${{ env.RELEASE_VERSION }}-1.x86_64.rpm
       # rpmbuild -v -D _topdir target/${{ matrix.target }}/rpmbuild -D _tmppath target/${{ matrix.target }}/rpmbuild/tmp -ba SPECS/solrcopy.spec
 
       - name: Upload Debian Package
@@ -123,7 +123,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: target/${{ matrix.target }}/release/rpmbuild/RPMS/x86_64/solrcopy-${{ env.RELEASE_VERSION }}-1.x86_64.rpm
+          asset_path: target/${{ matrix.target }}/release/solrcopy-${{ env.RELEASE_VERSION }}-1.x86_64.rpm
           asset_name: solrcopy-${{ env.RELEASE_VERSION }}-1.x86_64.rpm
           asset_content_type: application/x-rpm
 
