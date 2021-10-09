@@ -20,13 +20,13 @@ Command line tool for backup and restore of documents stored in cores of [Apache
 
 1. Use the command `solrcopy backup` for dumping documents from a Solr core into local zip files.
    1. Use the switch `--query` for filtering the documents extracted by using a [Solr](https://lucene.apache.org/solr/guide/8_4/the-standard-query-parser.html) [Query](https://lucene.apache.org/solr/guide/8_4/the-standard-query-parser.html)
-   2. Use the switch `--order` for specifing the sorting of documents extracted.
+   2. Use the switch `--order` for specifying the sorting of documents extracted.
    3. Use the switches `--limit` and `--skip` for restricting the number of documents extracted.
    4. Use the switch `--select` for restricting the columns extracted.
 2. Use the command `solrcopy restore` for uploading the extracted documents from local zip files into the same Solr core or another with same field names as extracted.
    1. The documents are updated in the target core in the same format that they were extracted.
    2. The documents are inserted/updated based on their `uniqueKey` field defined in core.
-   3. If you want to change the documents/columns use the swithes in `solrcopy backup` for extracting more than one slice of documents to be updated.
+   3. If you want to change the documents/columns use the switches in `solrcopy backup` for extracting more than one slice of documents to be updated.
 
 ### Huge cores
 
@@ -35,7 +35,7 @@ Extracting and updating documents in huge cores can be challenging. It can take 
 Bellow some tricks for dealing with such cores:
 
 1. For reducing time, you can use the switches `--readers`  and `--writers` for executing operations in parallel.
-2. When the number of docs to extract is huge, `backup` subcommand tend to slow as times goes and eventualy fails. This is because Solr is suffers to get docs batches with hight skip/start parameters. For dealing with this:
+2. When the number of docs to extract is huge, `backup` subcommand tend to slow as times goes and eventually fails. This is because Solr is suffers to get docs batches with hight skip/start parameters. For dealing with this:
    1. Use the parameters `--iterate-by`n `between` and `--step`for iterating through parameter `--query` with variables `{begin}` and `{end}`.
    2. This way it will iterate and restrict by hour, day, range the docs being downloaded.
    3. For example: `--query 'date:[{begin} TO {end}]' --iterate-by day --between '2020-04-01' '2020-04-30T23:59:59'`
@@ -185,7 +185,7 @@ OPTIONS:
     -q, --query <f1:val1 AND f2:val2>    Solr Query for filtering which documents are removed in the core. Use '*:*' for
                                          excluding all documents in the core. There are no way of recovering excluded
                                          docs. Use with caution and check twice
-    -f, --flush <mode>                   Wether to perform a commits of transaction log after removing the documents
+    -f, --flush <mode>                   Whether to perform a commits of transaction log after removing the documents
                                          [default: soft]  [possible values: none, soft, hard]
         --log-level <level>              What level of detail should print messages [default: info]  [possible values:
                                          off, error, warn, info, debug, trace]
@@ -233,7 +233,7 @@ $ solrcopy commit --url http://localhost:8983/solr --core target
 
 1. [solrbulk](https://github.com/miku/solrbulk)
 2. [solrdump](https://github.com/ubleipzig/solrdump)
-3. [Solr documentaion of backup/restore](https://lucene.apache.org/solr/guide/6_6/making-and-restoring-backups.html)
+3. [Solr documentation of backup/restore](https://lucene.apache.org/solr/guide/6_6/making-and-restoring-backups.html)
 
 ---
 
@@ -324,7 +324,7 @@ $ docker exec -it test-container solr create_core -c target
       - `--batch`
       - `--skip`
       - `--limit`
-   2. Check the [Solr Query](https://lucene.apache.org/solr/guide/8_4/the-standard-query-parser.html) docs for understading this parameters.
-4. Test the parameters in Solr admin UI at your core in **solr address** (somenthing like: [http://localhost:8983/solr/#/corename](http://localhost:8983/solr/#/corename))
+   2. Check the [Solr Query](https://lucene.apache.org/solr/guide/8_4/the-standard-query-parser.html) docs for understanding this parameters.
+4. Test the parameters in Solr admin UI at your core in **solr address** (something like: [http://localhost:8983/solr/#/corename](http://localhost:8983/solr/#/corename))
 
 ---
