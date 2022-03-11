@@ -18,7 +18,7 @@ structopt = "0.3.26"
 regex = "1.5.5"
 url = "2.2.2"
 lazy_static = "1.4.0"
-ureq = { version = "2.4.0", features = ["tls", "gzip", "brotli"] }
+ureq = { version = "1.5.2", features = ["tls"] }
 zip = { version = "0.5.13",  features = ["deflate", "time"] }
 indicatif = "0.16.2"
 chrono = "0.4.19"
