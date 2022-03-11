@@ -37,6 +37,7 @@ mod steps;
 
 use simplelog::{
     CombinedLogger, Config, LevelFilter, SharedLogger, TermLogger, TerminalMode, WriteLogger,
+    ColorChoice,
 };
 use structopt::StructOpt;
 
@@ -76,7 +77,7 @@ impl Arguments {
         if !options.is_quiet() {
             let level = Self::parse_level_filter(options.log_level.as_str())?;
             let mode = Self::parse_term_mode(options.log_mode.as_str())?;
-            enabled.push(TermLogger::new(level, Config::default(), mode));
+            enabled.push(TermLogger::new(level, Config::default(), mode, ColorChoice::Auto));
         }
         if let Some(filepath) = &options.log_file_path {
             let level2 = Self::parse_level_filter(options.log_file_level.as_str())?;
