@@ -62,7 +62,7 @@ pub fn wait_with_progress(millis: usize, message: &str) {
         let time_bar = new_time_bar(millis.to_u64());
         if !message.is_empty() {
             // time_bar.println(message);
-            time_bar.set_message(message);
+            time_bar.set_message(message.to_owned());
         }
         loop {
             let now = Instant::now();
