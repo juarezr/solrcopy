@@ -36,7 +36,6 @@ jobs:
         run: echo Resuming CI. Continuing next jobs...
 
   ci:
-    name: ci-check
     needs: run-guard
     strategy:
       fail-fast: true
@@ -75,21 +74,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --all-features
 
-      - name: Print dependency tree
-        uses: actions-rs/cargo@v1
-        with:
-          command: tree
-          args: --verbose --color never
-
-      - name: Find unused dependencies in Cargo.toml
-        if: matrix.os == 'ubuntu-latest'
-        uses: aig787/cargo-udeps-action@v1
-        continue-on-error: true   # show all errors
-        with:
-          version: latest
-          args: --all-targets
-
-      - name: Checks for warnings in all dependencies that may become hard errors in the future
+      - name: Check future proof warnings in all dependencies
         uses: actions-rs/cargo@v1
         continue-on-error: true   # show all errors
         with:
@@ -124,5 +109,30 @@ jobs:
         uses: actions-rs/audit-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+
+  deps:
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+
+      - name: Print dependency tree
+        uses: actions-rs/cargo@v1
+        with:
+          command: tree
+          args: --verbose --color never
+
+      - name: Run cargo-udeps
+        uses: aig787/cargo-udeps-action@v1
+        with:
+          version: 'latest'
+          args: '--all-targets'
 
 # end of file
