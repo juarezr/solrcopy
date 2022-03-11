@@ -5,24 +5,52 @@
 #   - https://github.com/actions-rs/toolchain   -> https://github.com/marketplace/actions/rust-toolchain
 #   - https://github.com/actions-rs/cargo       -> https://github.com/marketplace/actions/rust-cargo
 #
-# for simplicity we are checking compilation and testing everything on the Ubuntu environment only.
+# for simplicity we are checking compilation but testing everything on the Ubuntu environment only.
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+    - main
+    - release/*
+  pull_request:
+    branches:
+    - main
+  workflow_dispatch:
 
 name: build-test-and-lint
 
 jobs:
+  run-guard:
+    # it succeeds if any of the following conditions are met:
+    #   - when the PR is not a draft and is not labeled 'prevent-ci'
+    #   - when the PR is labeled 'force-ci'
+    runs-on: ubuntu-latest
+    if: |
+      (  (!github.event.pull_request.draft) &&
+         (github.event.action != 'labeled') &&
+         (!contains( github.event.pull_request.labels.*.name, 'prevent-ci')) )
+      || ((github.event.action != 'labeled') && contains( github.event.pull_request.labels.*.name, 'force-ci'))
+      || (github.event.label.name == 'force-ci')
+    steps:
+      - name: Checking if CI shoud run for this push/PR...
+        run: echo Resuming CI. Continuing next jobs...
+
   ci:
     name: ci-check
-    runs-on: ubuntu-latest
+    needs: run-guard
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ "ubuntu-latest", "windows-latest", "macos-latest" ]
+    runs-on: "${{ matrix.os }}"
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
 
-      - name: Install stable toolchain
+      - name: Install minimal stable with clippy and rustfmt
         uses: actions-rs/toolchain@v1
         with:
-          profile: default
+          profile: minimal
           toolchain: stable
           default: true
           override: true
@@ -40,19 +68,43 @@ jobs:
           command: test 
 
       - name: Run cargo clippy
+        if: matrix.os == 'ubuntu-latest'
         uses: actions-rs/clippy-check@v1
         continue-on-error: true   # show all errors
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --all-features
 
+      - name: Print dependency tree
+        uses: actions-rs/cargo@v1
+        with:
+          command: tree
+          args: --verbose --color never
+
+      - name: Find unused dependencies in Cargo.toml
+        if: matrix.os == 'ubuntu-latest'
+        uses: aig787/cargo-udeps-action@v1
+        continue-on-error: true   # show all errors
+        with:
+          version: latest
+          args: --all-targets
+
+      - name: Checks for warnings in all dependencies that may become hard errors in the future
+        uses: actions-rs/cargo@v1
+        continue-on-error: true   # show all errors
+        with:
+          command: report 
+          args: future-incompat
+          
       - name: Run cargo fmt
+        if: matrix.os == 'ubuntu-latest'
         uses: actions-rs/cargo@v1
         with:
           command: fmt
           args: --all -- --check
 
       - name: Run cargo-tarpaulin
+        if: matrix.os == 'ubuntu-latest'
         uses: actions-rs/tarpaulin@v0.1
         with:
           version: 'latest'
@@ -61,12 +113,14 @@ jobs:
           args: '-v --line --count --branch --no-fail-fast'
 
       - name: Coveralls
+        if: matrix.os == 'ubuntu-latest'
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: './lcov.info'
 
       - name: Run security audit
+        if: matrix.os == 'ubuntu-latest'
         uses: actions-rs/audit-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
