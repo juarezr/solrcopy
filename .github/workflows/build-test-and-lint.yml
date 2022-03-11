@@ -10,11 +10,11 @@
 on:
   push:
     branches:
-    - main
+    - master
     - release/*
   pull_request:
     branches:
-    - main
+    - master
   workflow_dispatch:
 
 name: build-test-and-lint
