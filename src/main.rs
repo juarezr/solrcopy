@@ -36,8 +36,8 @@ mod state;
 mod steps;
 
 use simplelog::{
-    CombinedLogger, Config, LevelFilter, SharedLogger, TermLogger, TerminalMode, WriteLogger,
-    ColorChoice,
+    ColorChoice, CombinedLogger, Config, LevelFilter, SharedLogger, TermLogger, TerminalMode,
+    WriteLogger,
 };
 use structopt::StructOpt;
 
