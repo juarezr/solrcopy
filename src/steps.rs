@@ -438,7 +438,7 @@ mod tests {
     fn check_iterator_for_slices_usize() {
         let slices = Slices::<String>::get_slice_of(16, 2);
         for step in slices {
-            assert!(step.begin < step.end, "# {} -> {}", step.begin, step.en)
+            assert!(step.begin < step.end, "# {} -> {}", step.begin, step.end)
         }
     }
 
