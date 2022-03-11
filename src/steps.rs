@@ -438,8 +438,7 @@ mod tests {
     fn check_iterator_for_slices_usize() {
         let slices = Slices::<String>::get_slice_of(16, 2);
         for step in slices {
-            // print!("# {} -> {}", step.begin, step.end);
-            assert_eq!(step.begin < step.end, true)
+            assert!(step.begin < step.end, "# {} -> {}", step.begin, step.en)
         }
     }
 
@@ -453,12 +452,11 @@ mod tests {
         };
 
         let slices = src.get_period_slices();
-        assert!(slices.is_ok(), true);
+        assert!(slices.is_ok());
 
         if let Ok(seq) = slices {
             for step in seq {
-                // print!("# {} -> {}", step.begin, step.end);
-                assert_eq!(step.begin < step.end, true)
+                assert!(step.begin < step.end, "# {} -> {}", step.begin, step.end)
             }
         }
     }
