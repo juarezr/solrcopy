@@ -13,26 +13,26 @@ categories = ["command-line-utilities"]
 keywords = ["solr", "dataimport", "dih", "fulltext-search", "apache-solr"]
 
 [dependencies]
-clap = "2.33.4"
-structopt = "0.3.26"
-regex = "1.5.5"
+clap = "2.34.0"
+structopt = "0.3.21"
+regex = "1.5.4"
 url = "2.2.2"
 lazy_static = "1.4.0"
-ureq = { version = "1.5.2", features = ["tls"] }
-zip = { version = "0.5.13",  features = ["deflate", "time"] }
+ureq = { version = "1.5.5", features = ["tls"] }
+zip = { version = "0.6.0",  features = ["deflate", "time"] }
 indicatif = "0.16.2"
 chrono = "0.4.19"
 glob = "0.3.0"
 log = "0.4.14"
 simplelog = "0.11.2"
-crossbeam-channel = "0.5.2"
-crossbeam-utils = "0.8.7"
-ctrlc = { version = "3.2.1", features = ["termination"] }
+crossbeam-channel = "0.5.1"
+crossbeam-utils = "0.8.5"
+ctrlc = { version = "3.1.9", features = ["termination"] }
 
 [build-dependencies]
-clap = "2.33.4"
-structopt = "0.3.26"
-regex = "1.5.5"
+clap = "2.34.0"
+structopt = "0.3.21"
+regex = "1.5.4"
 url = "2.2.2"
 lazy_static = "1.4.0"
 
