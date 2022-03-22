@@ -12,7 +12,7 @@ use crate::{
     args::Restore, bars::*, connection::SolrClient, fails::*, helpers::*, ingest::*, state::*,
 };
 
-pub(crate) fn restore_main(params: Restore) -> BoxedError {
+pub(crate) fn restore_main(params: &Restore) -> BoxedError {
     debug!("# RESTORE {:?}", params);
 
     let found = params.find_archives()?;
@@ -135,7 +135,7 @@ fn finish_sending(params: &Restore, updated: usize) -> BoxedResult<usize> {
     } else {
         if updated > 0 && !params.no_final_commit {
             // let params2 = Command { options: params.options };
-            crate::commit::commit_main(params.options.to_command())?;
+            crate::commit::commit_main(&params.options.to_command())?;
         }
         Ok(updated)
     }
@@ -290,7 +290,7 @@ mod tests {
 
     #[test]
     fn check_restore_pattern() {
-        let parsed = Arguments::mockup_args_restore();
+        let parsed = Cli::mockup_args_restore();
         let puts = parsed.put().unwrap();
         let wilcard = puts.get_pattern();
         assert_eq!(wilcard.ends_with(".zip"), true);
@@ -298,7 +298,7 @@ mod tests {
 
     #[test]
     fn check_restore_iterator() {
-        let parsed = Arguments::mockup_args_restore();
+        let parsed = Cli::mockup_args_restore();
         let puts = parsed.put().unwrap();
 
         for zip in puts.find_archives().unwrap() {

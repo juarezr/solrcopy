@@ -35,23 +35,24 @@ mod save;
 mod state;
 mod steps;
 
+use clap::Parser;
+
 use simplelog::{
     ColorChoice, CombinedLogger, Config, LevelFilter, SharedLogger, TermLogger, TerminalMode,
     WriteLogger,
 };
-use structopt::StructOpt;
 
-use crate::args::Arguments;
+pub use crate::args::{Arguments, Cli};
 use crate::fails::{throw, BoxedResult};
 
 use std::fs::File;
 use std::str::FromStr;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let parsed = Arguments::parse_from_args()?;
-    parsed.start_log()?;
+    let parsed = Cli::parse_from_args()?;
 
-    match parsed {
+    let args = &parsed.arguments;
+    match args {
         Arguments::Backup(get) => backup::backup_main(get),
         Arguments::Restore(put) => restore::restore_main(put),
         Arguments::Commit(cmd) => commit::commit_main(cmd),
@@ -61,17 +62,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 // region Cli impl
 
-impl Arguments {
+impl Cli {
     pub fn parse_from_args() -> BoxedResult<Self> {
-        let res = Self::from_args();
-        if let Err(msg) = res.validate() {
+        let res = Self::parse();
+        if let Err(msg) = res.arguments.validate() {
             throw(msg)?;
         }
+        res.start_log()?;
         Ok(res)
     }
 
     fn start_log(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let options = self.get_options();
+        let options = self.arguments.get_options();
 
         let mut enabled: Vec<Box<dyn SharedLogger>> = Vec::new();
         if !options.is_quiet() {

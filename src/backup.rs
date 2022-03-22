@@ -16,7 +16,7 @@ use crate::{
     steps::{Documents, Requests, Slices, SolrCore, Step},
 };
 
-pub(crate) fn backup_main(params: Backup) -> BoxedError {
+pub(crate) fn backup_main(params: &Backup) -> BoxedError {
     debug!("# BACKUP {:?}", params);
 
     wait_with_progress(params.transfer.delay_before, "Waiting before processing...");
