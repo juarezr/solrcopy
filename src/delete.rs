@@ -2,7 +2,7 @@ use log::{debug, info};
 
 use super::{args::Delete, connection::SolrClient, fails::BoxedResult};
 
-pub(crate) fn delete_main(params: Delete) -> BoxedResult<()> {
+pub(crate) fn delete_main(params: &Delete) -> BoxedResult<()> {
     debug!("# DELETE  {:?}", params);
 
     let url = params.options.get_update_url_with(params.flush.as_param("?").as_str());

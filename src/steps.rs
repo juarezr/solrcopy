@@ -392,8 +392,8 @@ mod tests {
     // region mockup
 
     use crate::{
-        args::{tests::*, *},
-        fails::*,
+        args::{tests::*, IterateMode, Cli, Arguments, Backup},
+        fails::{BoxedResult, raise},
         helpers::*,
         steps::*,
     };
@@ -419,7 +419,7 @@ mod tests {
 
     #[test]
     fn check_iterator_for_params_get() {
-        let parsed = Arguments::mockup_args_backup();
+        let parsed = Cli::mockup_args_backup();
         let gets = parsed.get().unwrap();
         let core_info = SolrCore::mockup();
         let query = gets.get_query_url(EMPTY_STR, true);

@@ -1,8 +1,8 @@
 use log::{debug, info};
 
-use super::{args::Command, connection::SolrClient};
+use super::{args::Execute, connection::SolrClient};
 
-pub(crate) fn commit_main(params: Command) -> Result<(), Box<dyn std::error::Error>> {
+pub(crate) fn commit_main(params: &Execute) -> Result<(), Box<dyn std::error::Error>> {
     debug!("# COMMIT {:?}", params);
 
     let url = params.options.get_update_url();
