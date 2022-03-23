@@ -1,6 +1,6 @@
 use log::{debug, trace};
-use std::{error::Error, fmt};
 use std::time::Duration;
+use std::{error::Error, fmt};
 
 use crate::helpers::*;
 
@@ -101,7 +101,7 @@ impl SolrClient {
         loop {
             let req = self.http.post(url);
             let request = req.set("Content-Type", content_type);
-                let answer = request.send_string(content);
+            let answer = request.send_string(content);
             let result = self.handle_response(answer);
             match result {
                 None => continue,
@@ -110,7 +110,9 @@ impl SolrClient {
         }
     }
 
-    fn handle_response(&mut self, answer: Result<ureq::Response, ureq::Error>) -> Option<Result<String, SolrError>> {
+    fn handle_response(
+        &mut self, answer: Result<ureq::Response, ureq::Error>
+    ) -> Option<Result<String, SolrError>> {
         let result = self.decode_response(answer);
         match result {
             Ok(content) => {
@@ -122,7 +124,10 @@ impl SolrClient {
             Err((fatal, failure)) => {
                 if !fatal && self.retry_count < self.max_retries {
                     self.retry_count += 1;
-                    debug!("Retry {}/{}: Response Error: {}", self.retry_count, self.max_retries, failure);
+                    debug!(
+                        "Retry {}/{}: Response Error: {}", 
+                        self.retry_count, self.max_retries, failure
+                    );
                     // wait a little for the server recovering before retrying
                     wait(5 * self.retry_count);
                     None
@@ -133,15 +138,15 @@ impl SolrClient {
         }
     }
 
-    fn decode_response(&mut self, answer: Result<ureq::Response, ureq::Error>) -> Result<String, (bool, SolrError)> {
+    fn decode_response(
+        &mut self, answer: Result<ureq::Response, ureq::Error>,
+    ) -> Result<String, (bool, SolrError)> {
         match answer {
             Ok(content) => {
                 let body = content.into_string();
                 match body {
                     Ok(content) =>Ok(content),
-                    Err(failed) => {
-                        Err((false, SolrError::from(failed.to_string())))
-                    }
+                    Err(failed) => Err((false, SolrError::from(failed.to_string()))),
                 }
             }
             Err(failure) => {
