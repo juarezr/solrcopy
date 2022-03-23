@@ -6,7 +6,7 @@ use std::sync::{
     atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc,
 };
-use std::{path::PathBuf, time::Instant};
+use std::{path::Path, path::PathBuf, time::Instant};
 
 use crate::{
     args::Restore, bars::*, connection::SolrClient, fails::*, helpers::*, ingest::*, state::*,
@@ -38,15 +38,15 @@ pub(crate) fn restore_main(params: &Restore) -> BoxedError {
         &format!("Waiting before processing {}...", core),
     );
 
-    pre_post_processing(&params, false)?;
+    pre_post_processing(params, false)?;
 
     let started = Instant::now();
 
-    let updated = unzip_archives_and_send(&params, &found)?;
+    let updated = unzip_archives_and_send(params, &found)?;
 
     info!("Updated {} batches in solr core {} in {:?}.", updated, core, started.elapsed());
 
-    pre_post_processing(&params, true)?;
+    pre_post_processing(params, true)?;
 
     if updated > 0 {
         wait_with_progress(params.transfer.delay_after, "Waiting after all processing...");
@@ -68,7 +68,7 @@ fn unzip_archives_and_send(params: &Restore, found: &[PathBuf]) -> BoxedResult<u
         let readers_channel = transfer.readers * 2;
         let writers_channel = transfer.writers * 2;
 
-        let (generator, sequence) = bounded::<&PathBuf>(readers_channel);
+        let (generator, sequence) = bounded::<&Path>(readers_channel);
         let (sender, receiver) = bounded::<Docs>(writers_channel);
         let (progress, reporter) = bounded::<u64>(transfer.writers);
 
@@ -177,10 +177,10 @@ fn pre_post_processing(params: &Restore, enable: bool) -> BoxedResult<()> {
 
 // region Channels
 
-fn start_listing_archives<'a>(found: &'a [PathBuf], generator: Sender<&'a PathBuf>) {
+fn start_listing_archives<'a>(found: &'a [PathBuf], generator: Sender<&'a Path>) {
     let archives = found.iter();
     for archive in archives {
-        let status = generator.send(&archive);
+        let status = generator.send(archive);
         if status.is_err() {
             break;
         }
@@ -188,7 +188,7 @@ fn start_listing_archives<'a>(found: &'a [PathBuf], generator: Sender<&'a PathBu
     drop(generator);
 }
 
-fn start_reading_archive(reader: usize, iterator: Receiver<&PathBuf>, producer: Sender<Docs>) {
+fn start_reading_archive(reader: usize, iterator: Receiver<&Path>, producer: Sender<Docs>) {
     let ctrl_c = monitor_term_sinal();
 
     loop {
@@ -206,11 +206,11 @@ fn start_reading_archive(reader: usize, iterator: Receiver<&PathBuf>, producer: 
 }
 
 fn handle_reading_archive(
-    reader: usize, producer: &Sender<Docs>, archive_path: &PathBuf, ctrl_c: &Arc<AtomicBool>,
+    reader: usize, producer: &Sender<Docs>, archive_path: &Path, ctrl_c: &Arc<AtomicBool>,
 ) -> bool {
     let zip_name: String = get_filename(archive_path).unwrap();
     trace!("Reading zip archive: {}", zip_name);
-    let can_open = ArchiveReader::create_reader(&archive_path);
+    let can_open = ArchiveReader::create_reader(archive_path);
     match can_open {
         Ok(archive_reader) => {
             for (entry_name, entry_contents) in archive_reader {
@@ -259,7 +259,7 @@ fn send_to_solr(
     docs: Docs, writer: usize, url: &str, client: &mut SolrClient, progress: &Sender<u64>,
     error_count: &Arc<AtomicUsize>, max_errors: usize,
 ) -> bool {
-    let failed = client.post_as_json(&url, docs.json.as_str());
+    let failed = client.post_as_json(url, docs.json.as_str());
     if let Err(cause) = failed {
         let current = error_count.fetch_add(1, Ordering::SeqCst);
         error!(

@@ -24,7 +24,7 @@ pub struct Archiver {
 }
 
 impl Archiver {
-    pub fn write_on(output_dir: &PathBuf, output_pattern: &str, max: usize) -> Self {
+    pub fn write_on(output_dir: &Path, output_pattern: &str, max: usize) -> Self {
         Archiver {
             writer: None,
             folder: output_dir.to_owned(),
@@ -86,7 +86,7 @@ impl Archiver {
             let suffix = format!("{:09}", step.curr + 1);
             self.create_archive(&suffix)?;
         }
-        self.write_file(&filename, &json)
+        self.write_file(&filename, json)
     }
 }
 

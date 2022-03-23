@@ -43,7 +43,7 @@ impl SolrCore {
         if total_docs < 1 {
             throw(format!("Solr Core '{}'is empty!", core_name))?
         };
-        let parsed_fields = Self::parse_field_names(&json);
+        let parsed_fields = Self::parse_field_names(json);
 
         let core_fields = if gets.select.is_empty() {
             match parsed_fields {

@@ -2,7 +2,7 @@ use log::error;
 use zip::ZipArchive;
 
 use glob::{glob, PatternError};
-use std::{fmt, fs::File, io::prelude::*, path::PathBuf};
+use std::{fmt, fs::File, io::prelude::*, path::Path, path::PathBuf};
 
 use crate::{
     args::{Restore, SortOrder},
@@ -67,13 +67,13 @@ impl Restore {
 }
 
 impl ArchiveReader {
-    pub(crate) fn open_archive(archive_path: &PathBuf) -> BoxedResult<Decompressor> {
+    pub(crate) fn open_archive(archive_path: &Path) -> BoxedResult<Decompressor> {
         let zipfile = File::open(archive_path)?;
         let res = ZipArchive::new(zipfile)?;
         Ok(res)
     }
 
-    pub(crate) fn create_reader(archive_path: &PathBuf) -> BoxedResult<ArchiveReader> {
+    pub(crate) fn create_reader(archive_path: &Path) -> BoxedResult<ArchiveReader> {
         let success = Self::open_archive(archive_path);
         match success {
             Err(cause) => Err(cause),
@@ -81,7 +81,7 @@ impl ArchiveReader {
         }
     }
 
-    pub(crate) fn get_archive_file_count(archive_path: &PathBuf) -> Option<usize> {
+    pub(crate) fn get_archive_file_count(archive_path: &Path) -> Option<usize> {
         let success = Self::open_archive(archive_path);
         match success {
             Err(_) => None,

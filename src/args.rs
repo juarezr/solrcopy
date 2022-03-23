@@ -1,5 +1,5 @@
 use regex::Regex;
-use std::{fmt, path::PathBuf, str::FromStr};
+use std::{fmt, path::Path, path::PathBuf, str::FromStr};
 use clap::{Parser, Args, Subcommand, ArgEnum};
 use url::Url;
 
@@ -340,7 +340,7 @@ fn parse_quantity_max(s: &str) -> Result<usize, String> {
     let lower = s.to_ascii_lowercase();
     match lower.as_str() {
         "max" => Ok(std::usize::MAX),
-        _ => match parse_quantity(&s) {
+        _ => match parse_quantity(s) {
             Ok(value) => Ok(value),
             Err(_) => Err(format!("'{}'. [alowed: all, <quantity>]", s)),
         },
@@ -401,8 +401,8 @@ fn parse_solr_url(src: &str) -> Result<String, String> {
             "Solr url path must be 'solr' as in: http:://server.domain:8983/solr".to_string()
         );
     } else {
-        let paths: Vec<&str> = parsed.path_segments().unwrap().collect();
-        if paths.len() > 1 {
+        let paths = parsed.path_segments();
+        if paths.iter().count() != 1 {
             return Err("Solr url path must not include core name as in: \
                         http:://server.domain:8983/solr"
                 .to_string());
@@ -429,7 +429,7 @@ fn parse_commit_mode(s: &str) -> Result<CommitMode, String> {
         "none" => Ok(CommitMode::None),
         "soft" => Ok(CommitMode::Soft),
         "hard" => Ok(CommitMode::Hard),
-        _ => match parse_millis(&s) {
+        _ => match parse_millis(s) {
             Ok(value) => Ok(CommitMode::Within { millis: value }),
             Err(_) => Err(format!("'{}'. [alowed: none soft hard <secs>]", s)),
         },
@@ -572,7 +572,7 @@ impl Validation for Restore {
     }
 }
 
-fn assert_dir_exists(dir: &PathBuf) -> Result<(), String> {
+fn assert_dir_exists(dir: &Path) -> Result<(), String> {
     if !dir.exists() {
         Err(format!("Missing folder of zip backup files: {:?}", dir))
     } else {

@@ -52,7 +52,7 @@ where
 }
 
 pub fn raise<T>(message: &str) -> BoxedResult<T> {
-    Err(Box::new(Failed::new(&message)))
+    Err(Box::new(Failed::new(message)))
 }
 
 // endregion
