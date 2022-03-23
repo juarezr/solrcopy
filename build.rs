@@ -19,21 +19,17 @@ fn main() -> Result<(), Error> {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=src/args.rs");
 
-    // helpers::print_env_vars();
+    helpers::print_env_vars();
 
     build_artifacts()
 }
 
 pub(crate) fn build_artifacts() -> Result<(), Error> {
-    let pkg_dir = std::env::var("CARGO_MANIFEST_DIR").expect("# Missing $CARGO_MANIFEST_DIR!");
-    let target = std::env::var("TARGET").expect("# Missing $TARGET!");
-
-    let out_dir = if cfg!(debug_assertions) {
-        format!("{}/target/debug", pkg_dir)
-    } else {
-        format!("{}/target/{}/release", pkg_dir, target)
+    let out_dir = match std::env::var_os("OUT_DIR") {
+        None => return Ok(()),
+        Some(outdir) => outdir,
     };
-    eprintln!("# out_dir: {}", out_dir);
+    eprintln!("# out_dir: {:?}", out_dir);
 
     let pkg_name = std::env::var("CARGO_PKG_NAME").expect("# Missing $CARGO_PKG_NAME!");
 
