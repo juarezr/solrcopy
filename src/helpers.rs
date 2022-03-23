@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use regex::{Captures, Regex};
-use std::{convert::TryInto, env, path::PathBuf, str::FromStr};
+use std::{convert::TryInto, env, path::Path, str::FromStr};
 
 // region Constants
 
@@ -25,7 +25,7 @@ pub fn solr_query(query: &str) -> String {
         .replace(" or ", " OR ")
         .replace(" and ", " AND ")
         .replace(" not ", " NOT ")
-        .replace(" ", "%20")
+        .replace(' ', "%20")
 }
 
 const ISO_DATE: &str = "2020-01-01T00:00:00Z";
@@ -64,8 +64,8 @@ pub fn env_value(var_name: &str, replacement: isize) -> isize {
     }
 }
 
-pub fn get_filename(file_path: &PathBuf) -> Result<String, ()> {
-    file_path.as_path().file_name().ok_or(())?.to_os_string().into_string().or(Err(()))
+pub fn get_filename(file_path: &Path) -> Result<String, ()> {
+    file_path.file_name().ok_or(())?.to_os_string().into_string().or(Err(()))
 }
 
 // endregion
@@ -186,7 +186,7 @@ impl StringHelpers for str {
     #[inline]
     fn append_all(&self, suffixes: &[&str]) -> String {
         let mut all: Vec<&str> = Vec::with_capacity(suffixes.len() + 1);
-        all.push(&self);
+        all.push(self);
         all.extend(suffixes.iter());
         all.concat()
     }
@@ -197,7 +197,7 @@ impl StringHelpers for str {
             return self.to_string();
         }
         let mut res = prefix.to_owned();
-        res.push_str(&self);
+        res.push_str(self);
         res
     }
 

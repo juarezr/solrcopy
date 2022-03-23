@@ -120,7 +120,7 @@ impl SolrClient {
                 Some(Ok(content))
             }
             Err((fatal, failure)) => {
-                if fatal == false && self.retry_count < self.max_retries {
+                if !fatal && self.retry_count < self.max_retries {
                     self.retry_count += 1;
                     debug!("Retry {}/{}: Response Error: {}", self.retry_count, self.max_retries, failure);
                     // wait a little for the server recovering before retrying
