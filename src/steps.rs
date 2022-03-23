@@ -392,8 +392,8 @@ mod tests {
     // region mockup
 
     use crate::{
-        args::{tests::*, IterateMode, Cli, Arguments, Backup},
-        fails::{BoxedResult, raise},
+        args::{tests::*, Arguments, Backup, Cli, IterateMode},
+        fails::{raise, BoxedResult},
         helpers::*,
         steps::*,
     };

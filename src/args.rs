@@ -1,6 +1,6 @@
+use clap::{Parser, Args, Subcommand, ArgEnum};
 use regex::Regex;
 use std::{fmt, path::Path, path::PathBuf, str::FromStr};
-use clap::{Parser, Args, Subcommand, ArgEnum};
 use url::Url;
 
 use crate::helpers::*;
@@ -43,7 +43,13 @@ pub struct Backup {
     pub query: Option<String>,
 
     /// Solr core fields names for sorting documents for retrieval
-    #[clap(short, long, display_order = 41, multiple_values = true, value_name = "f1:asc> <f2:desc")]
+    #[clap(
+        short, 
+        long, 
+        display_order = 41, 
+        multiple_values = true, 
+        value_name = "f1:asc> <f2:desc"
+    )]
     pub order: Vec<SortField>,
 
     /// Skip this quantity of documents in the Solr Query
@@ -654,8 +660,8 @@ pub mod tests {
 
     // region Mockup
 
-    use clap::Parser;
     use crate::args::{parse_millis, parse_quantity, Cli,  Arguments, CommitMode};
+    use clap::Parser;
 
     // use clap::StructOpt;
 
