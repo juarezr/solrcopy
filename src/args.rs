@@ -1,4 +1,4 @@
-use clap::{Parser, Args, Subcommand, ArgEnum};
+use clap::{ArgEnum, Args, Parser, Subcommand};
 use regex::Regex;
 use std::{fmt, path::Path, path::PathBuf, str::FromStr};
 use url::Url;
