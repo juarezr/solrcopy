@@ -159,7 +159,7 @@ impl SolrClient {
                     let cause = transport.message().unwrap_or("Network failure.");
                     Err((false, SolrError::from(cause.to_string())))
                 }
-            }
+            },
         }
     }
 
