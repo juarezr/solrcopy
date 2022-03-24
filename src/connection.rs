@@ -111,7 +111,7 @@ impl SolrClient {
     }
 
     fn handle_response(
-        &mut self, answer: Result<ureq::Response, ureq::Error>
+        &mut self, answer: Result<ureq::Response, ureq::Error>,
     ) -> Option<Result<String, SolrError>> {
         let result = self.decode_response(answer);
         match result {
@@ -125,7 +125,7 @@ impl SolrClient {
                 if !fatal && self.retry_count < self.max_retries {
                     self.retry_count += 1;
                     debug!(
-                        "Retry {}/{}: Response Error: {}", 
+                        "Retry {}/{}: Response Error: {}",
                         self.retry_count, self.max_retries, failure
                     );
                     // wait a little for the server recovering before retrying
@@ -145,21 +145,19 @@ impl SolrClient {
             Ok(content) => {
                 let body = content.into_string();
                 match body {
-                    Ok(content) =>Ok(content),
+                    Ok(content) => Ok(content),
                     Err(failed) => Err((false, SolrError::from(failed.to_string()))),
                 }
             }
-            Err(failure) => {
-                match failure {
-                    ureq::Error::Status(code, response) => {
-                        let fatal = code >= 500;
-                        let msg = response.status_text();
-                        Err((fatal, SolrError::from(msg.to_string())))
-                    }
-                    ureq::Error::Transport(transport) => {
-                        let cause = transport.message().unwrap_or("Network failure.");
-                        Err((false, SolrError::from(cause.to_string())))
-                    }
+            Err(failure) => match failure {
+                ureq::Error::Status(code, response) => {
+                    let fatal = code >= 500;
+                    let msg = response.status_text();
+                    Err((fatal, SolrError::from(msg.to_string())))
+                }
+                ureq::Error::Transport(transport) => {
+                    let cause = transport.message().unwrap_or("Network failure.");
+                    Err((false, SolrError::from(cause.to_string())))
                 }
             }
         }

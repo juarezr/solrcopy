@@ -44,10 +44,10 @@ pub struct Backup {
 
     /// Solr core fields names for sorting documents for retrieval
     #[clap(
-        short, 
-        long, 
-        display_order = 41, 
-        multiple_values = true, 
+        short,
+        long,
+        display_order = 41,
+        multiple_values = true,
         value_name = "f1:asc> <f2:desc"
     )]
     pub order: Vec<SortField>,
@@ -660,7 +660,7 @@ pub mod tests {
 
     // region Mockup
 
-    use crate::args::{parse_millis, parse_quantity, Cli,  Arguments, CommitMode};
+    use crate::args::{parse_millis, parse_quantity, Arguments, Cli, CommitMode};
     use clap::Parser;
 
     // use clap::StructOpt;
