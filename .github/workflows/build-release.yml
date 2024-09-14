@@ -25,12 +25,11 @@ jobs:
           cross: true
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_VERSION: ${{ github.event.release.tag_name }}
     steps:
       - name: Get release version
-        env:
-          RELEASED: ${{ github.event.release.tag_name }}
         run: |
-          echo ::set-env name=RELEASE_VERSION::${RELEASED:1}
+          echo ::set-env name=RELEASE_VERSION::${RELEASE_VERSION:1}
           echo "github.event.release.tag_name : ${{ github.event.release.tag_name }}"
           echo "github.event.release.upload_url : ${{ github.event.release.upload_url }}"
           echo "github.event_path : ${{ github.event_path }}"
