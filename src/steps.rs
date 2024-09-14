@@ -111,7 +111,7 @@ impl Slices<String> {
     fn parse_between_number(value: &str) -> BoxedResult<usize> {
         let parsed = value.parse::<usize>();
         match parsed {
-            Err(_) => throw(format!("Wrong value for number: '{}'", value)),
+            Err(_) => throws!("Wrong value for number: {}", value),
             Ok(quantity) => Ok(quantity),
         }
     }
@@ -120,14 +120,15 @@ impl Slices<String> {
         if value.contains('T') {
             let time = value.parse::<NaiveDateTime>();
             match time {
-                Err(_) => throw(format!("Wrong value for date: '{}'", value)),
+            Err(_) => throws!("Wrong value for datetime: {}", value),
                 Ok(quantity) => Ok(quantity),
             }
         } else {
             let date = value.parse::<NaiveDate>();
             match date {
                 Err(_) => throw(format!("Wrong value for date: '{}'", value)),
-                Ok(quantity) => Ok(quantity.and_hms(0, 0, 0)),
+                Ok(quantity) => quantity.and_hms_opt(0, 0, 0)
+                    .ok_or_else(should_fail!("Wrong value for date: '{}'", value)),
             }
         }
     }
