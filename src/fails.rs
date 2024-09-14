@@ -48,8 +48,7 @@ pub fn throw<T>(message: String) -> BoxedResult<T> {
     Err(Box::new(Failed::new(&message)))
 }
 
-pub fn failed(message: String) -> impl FnOnce() -> Box<dyn Error>
-{
+pub fn failed(message: String) -> impl FnOnce() -> Box<dyn Error> {
     let res: Box<dyn Error> = Box::new(Failed::new(&message));
     move || res
 }
