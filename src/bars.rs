@@ -10,7 +10,7 @@ use std::time::{Duration, Instant};
 use crate::helpers::*;
 
 fn new_style(style_template: &str) -> ProgressStyle {
-    ProgressStyle::default_bar().template(style_template)
+    ProgressStyle::default_bar().template(style_template).unwrap()
 }
 
 fn new_wide_style() -> ProgressStyle {
