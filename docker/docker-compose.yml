@@ -1,9 +1,8 @@
-#!/usr/bin/env -S bash -x -c 'docker compose up --no-recreate --detach solr'
+#!/usr/bin/env -S bash -x -c 'docker compose up -d'
 
-version: '3'
 services:
   solr:
-    container_name: solr
+    container_name: solr4test
     image: solr:slim
     ports:
      - "8983:8983"
