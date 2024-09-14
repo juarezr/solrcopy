@@ -11,7 +11,7 @@ newline_style = "Unix"
 
 ## Works on Stable and Nighly ##
 
-fn_args_layout = "Compressed"           # Default: "Wide"
+fn_params_layout = "Compressed"           # Default: "Wide"
 use_field_init_shorthand = true
 use_small_heuristics = "Max"          # Default: "Default"
 use_try_shorthand = true
