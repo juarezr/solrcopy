@@ -26,6 +26,7 @@ mod bars;
 mod commit;
 mod connection;
 mod delete;
+#[macro_use]
 mod fails;
 mod fetch;
 mod helpers;

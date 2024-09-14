@@ -15,6 +15,10 @@ impl Failed {
         Self { details: msg.to_string() }
     }
 
+    pub fn from(msg: String) -> Self {
+        Self { details: msg }
+    }
+
     fn say(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.details)
     }
@@ -44,6 +48,12 @@ pub fn throw<T>(message: String) -> BoxedResult<T> {
     Err(Box::new(Failed::new(&message)))
 }
 
+pub fn failed(message: String) -> impl FnOnce() -> Box<dyn Error>
+{
+    let res: Box<dyn Error> = Box::new(Failed::new(&message));
+    move || res
+}
+
 pub fn rethrow<T, E>(failure: E) -> BoxedResult<T>
 where
     E: Error + 'static,
@@ -53,6 +63,20 @@ where
 
 pub fn raise<T>(message: &str) -> BoxedResult<T> {
     Err(Box::new(Failed::new(message)))
+}
+
+macro_rules! throws {
+    ($($arg:tt)*) => {
+        Err(Box::new(Failed::from( format!($($arg)*) )))
+    };
+}
+
+macro_rules! should_fail {
+    ($($arg:tt)*) => {{
+        let message = format!($($arg)*);
+        let res: Box<dyn std::error::Error> = Box::new(Failed::new(&message));
+        move || res
+    }};
 }
 
 // endregion
