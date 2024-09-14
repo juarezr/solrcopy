@@ -279,7 +279,7 @@ fn send_to_solr(
 mod tests {
     use crate::{args::*, fails::*};
 
-    impl Arguments {
+    impl Commands {
         pub fn put(&self) -> BoxedResult<&Restore> {
             match &self {
                 Self::Restore(puts) => Ok(&puts),

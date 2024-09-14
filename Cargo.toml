@@ -13,7 +13,7 @@ categories = ["command-line-utilities"]
 keywords = ["solr", "dataimport", "dih", "fulltext-search", "apache-solr"]
 
 [dependencies]
-clap = { version = "3.2.*", features = ["derive", "env"] }
+clap = { version = "4.5.*", features = ["derive", "env"] }
 regex = "1.10.*"
 url = "2.5.*"
 lazy_static = "1.5.*"
@@ -29,11 +29,12 @@ crossbeam-utils = "0.8.*"
 ctrlc = { version = "3.4.*", features = ["termination"] }
 
 [build-dependencies]
-clap = { version = "3.2.*", features = ["derive", "env"] }
-clap_complete = "3.2.*"
+clap = { version = "4.5.*", features = ["derive", "env"] }
+clap_complete = "4.5.*"
 regex = "1.10.*"
 url = "2.5.*"
 lazy_static = "1.5.*"
+simplelog = "0.12.*"
 
 [badges]
 travis-ci = { repository = "juarezr/solrcopy", branch = "master" }

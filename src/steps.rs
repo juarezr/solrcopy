@@ -120,14 +120,15 @@ impl Slices<String> {
         if value.contains('T') {
             let time = value.parse::<NaiveDateTime>();
             match time {
-            Err(_) => throws!("Wrong value for datetime: {}", value),
+                Err(_) => throws!("Wrong value for datetime: {}", value),
                 Ok(quantity) => Ok(quantity),
             }
         } else {
             let date = value.parse::<NaiveDate>();
             match date {
                 Err(_) => throw(format!("Wrong value for date: '{}'", value)),
-                Ok(quantity) => quantity.and_hms_opt(0, 0, 0)
+                Ok(quantity) => quantity
+                    .and_hms_opt(0, 0, 0)
                     .ok_or_else(should_fail!("Wrong value for date: '{}'", value)),
             }
         }
@@ -393,13 +394,13 @@ mod tests {
     // region mockup
 
     use crate::{
-        args::{tests::*, Arguments, Backup, Cli, IterateMode},
+        args::{tests::*, Backup, Cli, Commands, IterateMode},
         fails::{raise, BoxedResult},
         helpers::*,
         steps::*,
     };
 
-    impl Arguments {
+    impl Commands {
         pub fn get(&self) -> BoxedResult<&Backup> {
             match &self {
                 Self::Backup(gets) => Ok(&gets),
