@@ -12,7 +12,7 @@ use crate::{
 pub struct Slices<T> {
     pub curr: T,
     pub end: T,
-    pub increment: usize,
+    pub increment: u64,
     pub mode: IterateMode,
 }
 
@@ -24,15 +24,15 @@ pub struct SliceItem {
 
 #[derive(Debug, Clone)]
 pub struct Requests {
-    pub curr: usize,
-    pub limit: usize,
-    pub num_docs: usize,
+    pub curr: u64,
+    pub limit: u64,
+    pub num_docs: u64,
     pub url: String,
 }
 
 #[derive(Debug)]
 pub struct Step {
-    pub curr: usize,
+    pub curr: u64,
     pub url: String,
 }
 
@@ -44,7 +44,7 @@ pub struct Documents {
 
 #[derive(Debug)]
 pub struct SolrCore {
-    pub num_found: usize,
+    pub num_found: u64,
     pub fields: Vec<String>,
 }
 
@@ -65,11 +65,11 @@ impl Slices<String> {
         res
     }
 
-    pub fn estimate_steps(&self) -> BoxedResult<usize> {
+    pub fn estimate_steps(&self) -> BoxedResult<u64> {
         if self.curr.is_empty() {
             return Ok(1);
         }
-        let num: usize = match self.mode {
+        let num: u64 = match self.mode {
             IterateMode::None => 1,
             IterateMode::Range => self.get_range_slices()?.len(),
             _ => self.get_period_slices()?.len(),
@@ -82,14 +82,14 @@ impl Slices<String> {
         }
     }
 
-    fn get_slice_of(num: usize, incr: usize) -> Slices<usize> {
-        Slices::<usize> { curr: 0, end: num, mode: IterateMode::Range, increment: incr }
+    fn get_slice_of(num: u64, incr: u64) -> Slices<u64> {
+        Slices::<u64> { curr: 0, end: num, mode: IterateMode::Range, increment: incr }
     }
 
-    fn get_range_slices(&self) -> BoxedResult<Slices<usize>> {
+    fn get_range_slices(&self) -> BoxedResult<Slices<u64>> {
         let v1 = Self::parse_between_number(self.curr.as_str())?;
         let v2 = Self::parse_between_number(self.end.as_str())?;
-        Ok(Slices::<usize> {
+        Ok(Slices::<u64> {
             curr: v1,
             end: v2,
             increment: self.increment,
@@ -108,8 +108,8 @@ impl Slices<String> {
         })
     }
 
-    fn parse_between_number(value: &str) -> BoxedResult<usize> {
-        let parsed = value.parse::<usize>();
+    fn parse_between_number(value: &str) -> BoxedResult<u64> {
+        let parsed = value.parse::<u64>();
         match parsed {
             Err(_) => throws!("Wrong value for number: {}", value),
             Ok(quantity) => Ok(quantity),
@@ -147,7 +147,7 @@ impl Slices<NaiveDateTime> {
         dur - Duration::seconds(less)
     }
 
-    fn len(&self) -> usize {
+    fn len(&self) -> u64 {
         let dur = self.end - self.curr;
         let (diff, prev, div) = match self.mode {
             IterateMode::Minute => (dur.num_minutes(), dur.num_seconds(), 60i64),
@@ -160,18 +160,18 @@ impl Slices<NaiveDateTime> {
         } else {
             let rem = prev % div;
             let res = if rem == 0 { diff } else { diff + 1 };
-            res.to_usize()
+            res.to_u64()
         }
     }
 }
 
-impl Slices<usize> {
-    fn len(&self) -> usize {
+impl Slices<u64> {
+    fn len(&self) -> u64 {
         self.end - self.curr + 1
     }
 }
 
-impl Iterator for Slices<usize> {
+impl Iterator for Slices<u64> {
     type Item = SliceItem;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -191,7 +191,7 @@ impl Iterator for Slices<usize> {
         if num_steps == 0 {
             (0, None)
         } else {
-            (0, Some(num_steps))
+            (0, Some(num_steps.to_usize()))
         }
     }
 }
@@ -217,7 +217,7 @@ impl Iterator for Slices<NaiveDateTime> {
         if num_steps == 0 {
             (0, None)
         } else {
-            (0, Some(num_steps))
+            (0, Some(num_steps.to_usize()))
         }
     }
 }
@@ -235,7 +235,7 @@ impl SliceItem {
 }
 
 impl Requests {
-    pub fn len(&self) -> usize {
+    pub fn len(&self) -> u64 {
         let res = self.limit / self.num_docs;
         if self.limit % self.num_docs == 0 {
             res
@@ -286,7 +286,7 @@ fn format_solr_time(date_time: NaiveDateTime) -> String {
 // region Solr requests
 
 impl Backup {
-    pub fn get_archive_pattern(&self, num_found: usize) -> String {
+    pub fn get_archive_pattern(&self, num_found: u64) -> String {
         let prefix = match &self.zip_prefix {
             Some(text) => text.to_string(),
             None => {
@@ -300,7 +300,7 @@ impl Backup {
 
     pub fn estimate_docs_quantity(
         &self, schema: &SolrCore, slices: &Slices<String>,
-    ) -> BoxedResult<usize> {
+    ) -> BoxedResult<u64> {
         let end_limit = self.get_docs_to_retrieve(schema);
         let num_retrieving = end_limit - self.skip;
 
@@ -308,8 +308,8 @@ impl Backup {
         Ok(num_retrieving * slice_count)
     }
 
-    pub fn get_docs_to_retrieve(&self, schema: &SolrCore) -> usize {
-        schema.num_found.min(self.limit.unwrap_or(std::usize::MAX))
+    pub fn get_docs_to_retrieve(&self, schema: &SolrCore) -> u64 {
+        schema.num_found.min(self.limit.unwrap_or(std::u64::MAX))
     }
 
     pub fn get_steps(&self, schema: &SolrCore) -> Requests {
@@ -437,7 +437,7 @@ mod tests {
     }
 
     #[test]
-    fn check_iterator_for_slices_usize() {
+    fn check_iterator_for_slices_u64() {
         let slices = Slices::<String>::get_slice_of(16, 2);
         for step in slices {
             assert!(step.begin < step.end, "# {} -> {}", step.begin, step.end)

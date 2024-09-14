@@ -3,7 +3,7 @@ use crossbeam_utils::thread;
 use log::{debug, error, info, trace};
 
 use std::sync::{
-    atomic::{AtomicBool, AtomicUsize, Ordering},
+    atomic::{AtomicBool, AtomicU64, Ordering},
     Arc,
 };
 use std::{path::Path, path::PathBuf, time::Instant};
@@ -56,7 +56,7 @@ pub(crate) fn restore_main(params: &Restore) -> BoxedError {
 
 // region Processing
 
-fn unzip_archives_and_send(params: &Restore, found: &[PathBuf]) -> BoxedResult<usize> {
+fn unzip_archives_and_send(params: &Restore, found: &[PathBuf]) -> BoxedResult<u64> {
     let doc_count = estimate_batch_count(found)?;
     let mut updated = 0;
 
@@ -68,9 +68,9 @@ fn unzip_archives_and_send(params: &Restore, found: &[PathBuf]) -> BoxedResult<u
         let readers_channel = transfer.readers * 2;
         let writers_channel = transfer.writers * 2;
 
-        let (generator, sequence) = bounded::<&Path>(readers_channel);
-        let (sender, receiver) = bounded::<Docs>(writers_channel);
-        let (progress, reporter) = bounded::<u64>(transfer.writers);
+        let (generator, sequence) = bounded::<&Path>(readers_channel.to_usize());
+        let (sender, receiver) = bounded::<Docs>(writers_channel.to_usize());
+        let (progress, reporter) = bounded::<u64>(transfer.writers.to_usize());
 
         pool.spawn(move |_| {
             start_listing_archives(found, generator);
@@ -94,7 +94,7 @@ fn unzip_archives_and_send(params: &Restore, found: &[PathBuf]) -> BoxedResult<u
         drop(sequence);
         drop(sender);
 
-        let update_errors = Arc::new(AtomicUsize::new(0));
+        let update_errors = Arc::new(AtomicU64::new(0));
         let update_hadler_url = params.get_update_url();
         debug!("Solr Update Handler: {}", update_hadler_url);
 
@@ -127,7 +127,7 @@ fn unzip_archives_and_send(params: &Restore, found: &[PathBuf]) -> BoxedResult<u
     finish_sending(params, updated)
 }
 
-fn finish_sending(params: &Restore, updated: usize) -> BoxedResult<usize> {
+fn finish_sending(params: &Restore, updated: u64) -> BoxedResult<u64> {
     let ctrl_c = monitor_term_sinal();
 
     if ctrl_c.aborted() {
@@ -141,7 +141,7 @@ fn finish_sending(params: &Restore, updated: usize) -> BoxedResult<usize> {
     }
 }
 
-fn estimate_batch_count(found: &[PathBuf]) -> BoxedResult<usize> {
+fn estimate_batch_count(found: &[PathBuf]) -> BoxedResult<u64> {
     // Estimate number of json files inside all zip files
     let zip_count = found.len();
 
@@ -151,7 +151,7 @@ fn estimate_batch_count(found: &[PathBuf]) -> BoxedResult<usize> {
         None => throw(format!("Error opening archive: {:?}", first))?,
         Some(doc_count) => {
             let doc_total = doc_count * zip_count;
-            Ok(doc_total)
+            Ok(doc_total.to_u64())
         }
     }
 }
@@ -188,7 +188,7 @@ fn start_listing_archives<'a>(found: &'a [PathBuf], generator: Sender<&'a Path>)
     drop(generator);
 }
 
-fn start_reading_archive(reader: usize, iterator: Receiver<&Path>, producer: Sender<Docs>) {
+fn start_reading_archive(reader: u64, iterator: Receiver<&Path>, producer: Sender<Docs>) {
     let ctrl_c = monitor_term_sinal();
 
     loop {
@@ -206,7 +206,7 @@ fn start_reading_archive(reader: usize, iterator: Receiver<&Path>, producer: Sen
 }
 
 fn handle_reading_archive(
-    reader: usize, producer: &Sender<Docs>, archive_path: &Path, ctrl_c: &Arc<AtomicBool>,
+    reader: u64, producer: &Sender<Docs>, archive_path: &Path, ctrl_c: &Arc<AtomicBool>,
 ) -> bool {
     let zip_name: String = get_filename(archive_path).unwrap();
     trace!("Reading zip archive: {}", zip_name);
@@ -232,8 +232,8 @@ fn handle_reading_archive(
 }
 
 fn start_indexing_docs(
-    writer: usize, url: &str, consumer: Receiver<Docs>, progress: Sender<u64>,
-    error_count: &Arc<AtomicUsize>, max_errors: usize, delay: usize,
+    writer: u64, url: &str, consumer: Receiver<Docs>, progress: Sender<u64>,
+    error_count: &Arc<AtomicU64>, max_errors: u64, delay: u64,
 ) {
     let ctrl_c = monitor_term_sinal();
 
@@ -249,15 +249,15 @@ fn start_indexing_docs(
         if failed || ctrl_c.aborted() {
             break;
         } else if delay > 0 {
-            wait_by(delay);
+            wait_by(delay.to_usize());
         }
     }
     drop(consumer);
 }
 
 fn send_to_solr(
-    docs: Docs, writer: usize, url: &str, client: &mut SolrClient, progress: &Sender<u64>,
-    error_count: &Arc<AtomicUsize>, max_errors: usize,
+    docs: Docs, writer: u64, url: &str, client: &mut SolrClient, progress: &Sender<u64>,
+    error_count: &Arc<AtomicU64>, max_errors: u64,
 ) -> bool {
     let failed = client.post_as_json(url, docs.json.as_str());
     if let Err(cause) = failed {
