@@ -59,11 +59,11 @@ pub struct Backup {
 
     /// Skip this quantity of documents in the Solr Query
     #[arg(short = 'k', long, display_order = 42, value_parser = parse_quantity, default_value = "0", value_name = "quantity")]
-    pub skip: usize,
+    pub skip: u64,
 
     /// Maximum quantity of documents for retrieving from the core (like 100M)
     #[arg(short, long, display_order = 43, value_parser = parse_quantity, value_name = "quantity")]
-    pub limit: Option<usize>,
+    pub limit: Option<u64>,
 
     /// Names of core fields retrieved in each document [default: all but _*]
     #[arg(short, long, display_order = 44, value_name = "field1,field2,...")]
@@ -93,17 +93,17 @@ pub struct Backup {
         display_order = 52,
         default_value_t = 1,
         value_name = "num",
-        // value_parser = clap::value_parser!(usize).range(0..366),
+        // value_parser = clap::value_parser!(u64).range(0..366),
     )]
-    pub iterate_step: usize,
+    pub iterate_step: u64,
 
     /// Number of documents to retrieve from solr in each reader step
     #[arg(long, display_order = 70, default_value = "4k", value_parser = parse_quantity, value_name = "quantity")]
-    pub num_docs: usize,
+    pub num_docs: u64,
 
     /// Max number of files of documents stored in each zip file
     #[arg(long, display_order = 71, default_value = "40", value_parser = parse_quantity, value_name = "quantity")]
-    pub archive_files: usize,
+    pub archive_files: u64,
 
     /// Optional prefix for naming the zip backup files when storing documents
     #[arg(long, display_order = 72, value_parser = parse_file_prefix, value_name = "name")]
@@ -118,10 +118,10 @@ pub struct Backup {
         display_order = 73,
         default_value = "0",
         value_name = "count",
-        // value_parser = clap::value_parser!(usize).range(0..99),
+        // value_parser = clap::value_parser!(u64).range(0..99),
         hide_default_value = true
     )]
-    pub workaround_shards: usize,
+    pub workaround_shards: u64,
 
     #[command(flatten)]
     pub options: CommonArgs,
@@ -242,19 +242,19 @@ pub struct ParallelArgs {
 
     /// How many times should continue on source document errors
     #[arg(short, long, display_order = 61, default_value = "0", value_name = "count", value_parser = parse_quantity_max)]
-    pub max_errors: usize,
+    pub max_errors: u64,
 
     /// Delay before any processing in solr server. Format as: 30s, 15min, 1h
     #[arg(long, display_order = 62, default_value = "0", value_name = "time", value_parser = parse_millis, hide_default_value = true)]
-    pub delay_before: usize,
+    pub delay_before: u64,
 
     /// Delay between each http operations in solr server. Format as: 3s, 500ms, 1min
     #[arg(long, display_order = 63, default_value = "0", value_name = "time", value_parser = parse_millis, hide_default_value = true)]
-    pub delay_per_request: usize,
+    pub delay_per_request: u64,
 
     /// Delay after all processing. Usefull for letting Solr breath.
     #[arg(long, display_order = 64, default_value = "0", value_name = "time", value_parser = parse_millis, hide_default_value = true)]
-    pub delay_after: usize,
+    pub delay_after: u64,
 
     /// Number parallel threads exchanging documents with the solr core
     #[arg(
@@ -263,9 +263,9 @@ pub struct ParallelArgs {
         display_order = 80,
         default_value = "1",
         value_name = "count",
-        // value_parser = clap::value_parser!(usize).range(1..128),
+        // value_parser = clap::value_parser!(u64).range(1..128),
     )]
-    pub readers: usize,
+    pub readers: u64,
 
     /// Number parallel threads syncing documents with the zip archives
     #[arg(
@@ -274,9 +274,9 @@ pub struct ParallelArgs {
         display_order = 80,
         default_value = "1",
         value_name = "count",
-        // value_parser = clap::value_parser!(usize).range(1..=128),
+        // value_parser = clap::value_parser!(u64).range(1..=128),
     )]
-    pub writers: usize,
+    pub writers: u64,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
@@ -290,7 +290,7 @@ pub enum CommitMode {
     /// Perform a soft commit of the transaction log for invalidating top-level caches and making documents searchable
     Soft,
     /// Force a hard commit of the transaction log in the defined milliseconds period
-    Within { millis: usize },
+    Within { millis: u64 },
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
@@ -319,7 +319,7 @@ const SOLR_COPY_URL: &str = "SOLR_COPY_URL";
 
 // #region param pasing
 
-fn parse_quantity(src: &str) -> Result<usize, String> {
+fn parse_quantity(src: &str) -> Result<u64, String> {
     lazy_static! {
         static ref REGKB: Regex =
             Regex::new("^([0-9]+)\\s*([k|m|g|t|K|M|G|T](?:[b|B])?)?$").unwrap();
@@ -331,7 +331,7 @@ fn parse_quantity(src: &str) -> Result<usize, String> {
         Some(parts) => {
             let number = parts.get_as_str(1);
             let multiplier = parts.get_as_str(2);
-            let parsed = number.parse::<usize>();
+            let parsed = number.parse::<u64>();
             match parsed {
                 Err(_) => Err(format!("Wrong value for number: '{}'", src)),
                 Ok(quantity) => match multiplier {
@@ -350,10 +350,10 @@ fn parse_quantity(src: &str) -> Result<usize, String> {
     }
 }
 
-fn parse_quantity_max(s: &str) -> Result<usize, String> {
+fn parse_quantity_max(s: &str) -> Result<u64, String> {
     let lower = s.to_ascii_lowercase();
     match lower.as_str() {
-        "max" => Ok(std::usize::MAX),
+        "max" => Ok(std::u64::MAX),
         _ => match parse_quantity(s) {
             Ok(value) => Ok(value),
             Err(_) => Err(format!("'{}'. [alowed: all, <quantity>]", s)),
@@ -361,7 +361,7 @@ fn parse_quantity_max(s: &str) -> Result<usize, String> {
     }
 }
 
-fn parse_millis(src: &str) -> Result<usize, String> {
+fn parse_millis(src: &str) -> Result<u64, String> {
     lazy_static! {
         static ref REGKB: Regex = Regex::new("^([0-9]+)\\s*([a-zA-Z]*)$").unwrap();
     }
@@ -372,7 +372,7 @@ fn parse_millis(src: &str) -> Result<usize, String> {
         Some(parts) => {
             let number = parts.get_as_str(1);
             let multiplier = parts.get_as_str(2);
-            let parsed = number.parse::<usize>();
+            let parsed = number.parse::<u64>();
             match parsed {
                 Err(_) => Err(format!("Wrong value for number: '{}'", src)),
                 Ok(quantity) => match multiplier {

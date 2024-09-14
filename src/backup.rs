@@ -49,9 +49,9 @@ pub(crate) fn backup_main(params: &Backup) -> BoxedError {
         let readers_channel = transfer.readers * 4;
         let writers_channel = transfer.writers * 3;
 
-        let (generator, sequence) = bounded::<Step>(readers_channel);
-        let (sender, receiver) = bounded::<Documents>(writers_channel);
-        let (progress, reporter) = bounded::<u64>(transfer.writers);
+        let (generator, sequence) = bounded::<Step>(readers_channel.to_usize());
+        let (sender, receiver) = bounded::<Documents>(writers_channel.to_usize());
+        let (progress, reporter) = bounded::<u64>(transfer.writers.to_usize());
 
         pool.spawn(|_| {
             start_querying_core(requests, slices, generator, &ctrl_c);
@@ -142,8 +142,8 @@ fn start_querying_core(
 }
 
 fn start_retrieving_docs(
-    reader: usize, iterator: Receiver<Step>, producer: Sender<Documents>, must_match: u64,
-    max_errors: usize, delay: usize,
+    reader: u64, iterator: Receiver<Step>, producer: Sender<Documents>, must_match: u64,
+    max_errors: u64, delay: u64,
 ) {
     let ctrl_c = monitor_term_sinal();
     let mut error_count = 0;
@@ -168,14 +168,14 @@ fn start_retrieving_docs(
         if ctrl_c.aborted() {
             break;
         } else if delay > 0 {
-            wait_by(delay);
+            wait_by(delay.to_usize());
         }
     }
     drop(producer);
 }
 
 fn retrieve_docs_from_solr(
-    reader: usize, producer: &Sender<Documents>, step: Step, client: &mut SolrClient,
+    reader: u64, producer: &Sender<Documents>, step: Step, client: &mut SolrClient,
     must_match: u64,
 ) -> bool {
     let query_url = step.url.as_str();
@@ -200,7 +200,7 @@ fn retrieve_docs_from_solr(
 }
 
 fn fetch_docs_from_solr(
-    reader: usize, client: &mut SolrClient, query_url: &str, must_match: u64,
+    reader: u64, client: &mut SolrClient, query_url: &str, must_match: u64,
 ) -> Result<String, ()> {
     let mut times = 0;
     loop {
@@ -234,10 +234,10 @@ fn fetch_docs_from_solr(
 }
 
 fn start_storing_docs(
-    writer: usize, dir: PathBuf, name: String, max: usize, consumer: Receiver<Documents>,
+    writer: u64, dir: PathBuf, name: String, max: u64, consumer: Receiver<Documents>,
     progress: Sender<u64>,
 ) {
-    let mut archiver = Archiver::write_on(&dir, &name, max);
+    let mut archiver = Archiver::write_on(&dir, &name, max.to_usize());
     loop {
         let received = consumer.recv();
         match received {
