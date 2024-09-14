@@ -7,7 +7,6 @@
 #![deny(trivial_numeric_casts)]
 #![deny(unused_extern_crates)]
 #![deny(unused_import_braces)]
-#![deny(unused_qualifications)]
 
 // switches for develoment only
 

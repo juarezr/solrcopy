@@ -1,4 +1,4 @@
-use clap::{ArgEnum, Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 use regex::Regex;
 use std::{fmt, path::Path, path::PathBuf, str::FromStr};
 use url::Url;
@@ -264,7 +264,7 @@ pub struct ParallelArgs {
     pub writers: usize,
 }
 
-#[derive(ArgEnum, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 /// Tells Solrt to performs a commit of the updated documents while updating the core
 pub enum CommitMode {
     /// Do not perform commit
@@ -278,7 +278,7 @@ pub enum CommitMode {
     Within { millis: usize },
 }
 
-#[derive(ArgEnum, Clone, Copy, PartialEq, Debug)]
+#[derive(ValueEnum, Clone, Copy, PartialEq, Debug)]
 /// Used in bigger solr cores with huge number of docs because querying the end of docs is expensive and fails frequently
 pub enum IterateMode {
     None,
@@ -290,7 +290,7 @@ pub enum IterateMode {
     Range,
 }
 
-#[derive(ArgEnum, Clone, Copy, PartialEq, Debug)]
+#[derive(ValueEnum, Clone, Copy, PartialEq, Debug)]
 pub enum SortOrder {
     None,
     Asc,
