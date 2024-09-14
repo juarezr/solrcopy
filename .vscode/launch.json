@@ -1,7 +1,4 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
@@ -15,30 +12,51 @@
                     "--package=solrcopy"
                 ]
             },
-            "preLaunchTask":  "createTempFolder",
             "program": "${cargo:program}",
             "args": [
-                "backup", 
-                "--url", "http://localhost:8983/solr", 
-                "--core", "demo", 
-                "--query", "price:[1 TO 400] AND NOT popularity:10", 
-                "--order", "price:asc", "weight:asc", "id:asc",
-                "--select", "id", "date", "name", "price", "weight", "popularity", "manu", "cat", "store", "features",
-                "--limit", "25", 
-                "--dir", "./tmp",
-                "--num-docs", "2", 
-                "--archive-files", "3", 
-                "--readers", "1", 
-                "--writers", "1", 
-                // "--log-level", "debug",
-                "--log-level", "off",
+                "backup",
+                "--url",
+                "${input:solr_url}",
+                "--core",
+                "demo",
+                "--query",
+                "${input:query}",
+                "--order",
+                "price:asc",
+                "weight:asc",
+                "id:asc",
+                "--select",
+                "id",
+                "date",
+                "name",
+                "price",
+                "weight",
+                "popularity",
+                "manu",
+                "cat",
+                "store",
+                "features",
+                "--limit",
+                "25",
+                "--dir",
+                "${workspaceFolder}",
+                "--num-docs",
+                "2",
+                "--archive-files",
+                "3",
+                "--readers",
+                "1",
+                "--writers",
+                "1",
+                "--log-level",
+                "off",
             ],
-            "env": { 
+            "env": {
                 "RUST_BACKTRACE": "full"
             },
             "cwd": "${workspaceFolder}",
-        }
-        , {
+        },
+        {
             "type": "lldb",
             "request": "launch",
             "name": "Launch-restore",
@@ -51,20 +69,26 @@
             },
             "program": "${cargo:program}",
             "args": [
-                "restore", 
-                "--url", "http://localhost:8983/solr", 
-                "--dir", "./tmp", 
-                "--search", "demo", 
-                "--core", "target",
-                "--flush", "soft",
-                "--log-level",  "off",
+                "restore",
+                "--url",
+                "${input:solr_url}",
+                "--dir",
+                "${workspaceFolder}",
+                "--search",
+                "demo",
+                "--core",
+                "target",
+                "--flush",
+                "soft",
+                "--log-level",
+                "off",
             ],
-            "env": { 
+            "env": {
                 "RUST_BACKTRACE": "full"
             },
             "cwd": "${workspaceFolder}",
-        }
-        , {
+        },
+        {
             "type": "lldb",
             "request": "launch",
             "name": "Launch-commit",
@@ -77,17 +101,18 @@
             },
             "program": "${cargo:program}",
             "args": [
-                "commit", 
-                "--url", "http://localhost:8983/solr", 
-                "--core", "target",
-                // "--log-level",  "debug",
+                "commit",
+                "--url",
+                "${input:solr_url}",
+                "--core",
+                "target",
             ],
-            "env": { 
+            "env": {
                 "RUST_BACKTRACE": "full"
             },
             "cwd": "${workspaceFolder}",
-        }
-        ,{
+        },
+        {
             "type": "lldb",
             "request": "launch",
             "name": "Unit-tests",
@@ -105,6 +130,66 @@
             },
             "args": [],
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Launch-help",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=solrcopy",
+                    "--package=solrcopy"
+                ]
+            },
+            "program": "${cargo:program}",
+            "args": [
+                "--help"
+            ],
+            "env": {
+                "RUST_BACKTRACE": "full"
+            },
+            "cwd": "${workspaceFolder}",
         }
+    ],
+    "inputs": [
+        {
+            "id": "arguments",
+            "type": "promptString",
+            "description": "Enter the arguments to be passed to program running:"
+        },
+        {
+            "id": "folder",
+            "type": "pickString",
+            "description": "What type of component do you want to create?",
+            "options": [
+                "${fileDirname}",
+                "${relativeFileDirname}",
+                "${fileWorkspaceFolder}",
+                "${workspaceFolder}",
+                "${selectedText}",
+                "${userHome}",
+                "${cwd}",
+                ""
+            ],
+            "default": "${fileDirname}"
+        },
+        {
+            "id": "path",
+            "type": "promptString",
+            "description": "Enter the path desired:"
+        },
+        {
+            "id": "solr_url",
+            "type": "promptString",
+            "description": "Enter the SOLR URL:",
+            "default": "http://localhost:8983/solr"
+        },
+        {
+            "id": "query",
+            "type": "promptString",
+            "description": "Enter the query to be executed on SOLR:",
+            "default": "price:[1 TO 400] AND NOT popularity:10"
+        },
     ]
 }

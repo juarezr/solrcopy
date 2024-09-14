@@ -1,14 +1,117 @@
 {
   "version": "2.0.0",
   "tasks": [
+    // #region Development
     {
-      "label": "createTempFolder",
-      "type": "shell",
-      "command": "test -d ./tmp && echo Found temp dir || mkdir -p ./tmp"
+      "label": "cargo check",
+      "icon": {
+        "id": "check-all"
+      },
+      "type": "cargo",
+      "command": "check",
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
     },
     {
+      "label": "cargo run",
+      "icon": {
+        "id": "run"
+      },
       "type": "cargo",
-      "subcommand": "test",
+      "command": "run",
+      "args": [
+        "${input:arguments}"
+      ],
+      "problemMatcher": [
+        "$rustc"
+      ],
+    },
+    // #endregion
+    // #region Testing
+    {
+      "label": "cargo test",
+      "icon": {
+        "id": "target"
+      },
+      "type": "cargo",
+      "command": "test",
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "group": {
+        "kind": "test",
+      }
+    },
+    {
+      "label": "cargo bench",
+      "icon": {
+        "id": "target"
+      },
+      "type": "cargo",
+      "command": "test",
+      "args": [
+        "--bench"
+      ],
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "group": {
+        "kind": "test",
+      }
+    },
+    {
+      "label": "start docker test servers",
+      "icon": {
+        "id": "server"
+      },
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "-f",
+        "docker-compose.yml",
+        "up",
+        "-d"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}${/}docker",
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
+    },
+    // #endregion
+    // #region Packaging
+    {
+      "label": "cargo doc",
+      "icon": {
+        "id": "target"
+      },
+      "type": "cargo",
+      "command": "doc",
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "group": {
+        "kind": "build",
+      }
+    },
+    {
+      "label": "cargo release",
+      "icon": {
+        "id": "combine"
+      },
+      "type": "cargo",
+      "command": "build",
+      "args": [
+        "--release"
+      ],
       "problemMatcher": [
         "$rustc"
       ],
@@ -18,15 +121,134 @@
       }
     },
     {
+      "label": "cargo deb",
+      "icon": {
+        "id": "package"
+      },
       "type": "cargo",
-      "subcommand": "check",
+      "command": "deb",
       "problemMatcher": [
         "$rustc"
       ],
       "group": {
         "kind": "build",
-        "isDefault": true
+      },
+      "dependsOn": [
+        "cargo release"
+      ]
+    },
+    {
+      "label": "cargo rpm",
+      "icon": {
+        "id": "package"
+      },
+      "type": "cargo",
+      "command": "generate-rpm",
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "group": {
+        "kind": "build",
+      },
+      "dependsOn": [
+        "cargo release"
+      ]
+    },
+    // #endregion
+    // #region Setup
+    {
+      "label": "setup folders",
+      "detail": "Create temp folder for running tests",
+      "icon": {
+        "id": "pencil"
+      },
+      "type": "shell",
+      "command": "mkdir -p tmp",
+      "options": {
+        "cwd": "${workspaceFolder}",
+      },
+      "presentation": {
+        "reveal": "never",
+        "revealProblems": "onProblem"
       }
-    }
+    },
+    {
+      "label": "setup",
+      "detail": "Setup pre-requisites for testing and packaging",
+      "icon": {
+        "id": "star"
+      },
+      "type": "shell",
+      "command": "mkdir -p tmp",
+      "options": {
+        "cwd": "${workspaceFolder}",
+      },
+      "presentation": {
+        "reveal": "never",
+        "revealProblems": "onProblem"
+      },
+      "dependsOn": [
+        "setup folders",
+        "install cargo-deb",
+        "install cargo-rpm"
+      ]
+    },
+    {
+      "label": "install cargo-rpm",
+      "icon": {
+        "id": "star-add"
+      },
+      "type": "cargo",
+      "command": "install",
+      "args": [
+        "cargo-generate-rpm"
+      ],
+      "problemMatcher": [
+        "$rustc"
+      ],
+    },
+    {
+      "label": "install cargo-deb",
+      "icon": {
+        "id": "star-add"
+      },
+      "type": "cargo",
+      "command": "install",
+      "args": [
+        "cargo-deb"
+      ],
+      "problemMatcher": [
+        "$rustc"
+      ],
+    },
+    // #endregion
+  ],
+  "inputs": [
+    {
+      "id": "arguments",
+      "type": "promptString",
+      "description": "Enter the arguments to be passed to program running:"
+    },
+    {
+      "id": "folder",
+      "type": "pickString",
+      "description": "What type of component do you want to create?",
+      "options": [
+        "${fileDirname}",
+        "${relativeFileDirname}",
+        "${fileWorkspaceFolder}",
+        "${workspaceFolder}",
+        "${selectedText}",
+        "${userHome}",
+        "${cwd}",
+        ""
+      ],
+      "default": "${fileDirname}"
+    },
+    {
+      "id": "path",
+      "type": "promptString",
+      "description": "Enter the path desired:"
+    },
   ]
 }
