@@ -278,22 +278,24 @@ For setting up a testing environment you will need:
 
 #### Using docker compose
 
-1. Install docker stable for your [platform](https://docs.docker.com/install/#supported-platforms)
-2. Install docker compose for your [platform](https://docs.docker.com/compose/install/#install-compose)
-3. Create the container and the cores for testing with the commands bellow.
-4. Check the cores created in the admin ui at `http://localhost:8983/solr`
+1. Install [docker stable](https://docs.docker.com/get-started/get-docker/) for your platform
+2. Create the container and the cores for testing with the commands bellow.
+3. Check the cores created in the admin ui at `http://localhost:8983/solr`
 
 ``` bash
-# Create the container with a solr server with two cores: 'demo' and 'target'
-$ docker-compose -f docker/docker-compose.yml up -d
+# This command creates the container with a solr server with two cores: 'demo' and 'target'
+$ docker compose -f docker/docker-compose.yml up -d
+# Run this command to test backup
+$ cargo run -- backup --url http://localhost:8983/solr --core demo --dir $PWD/core-demo.json
+# Run this command to test restoring the backukp data into a existing empty core
+$ cargo run -- restore --url http://localhost:8983/solr --search demo --core clone --dir $PWD
 ```
 
 #### Using only docker tools
 
-1. Install docker stable for your [platform](https://docs.docker.com/install/#supported-platforms)
-2. Pull the [latest](https://hub.docker.com/_/solr) [docker solr](https://github.com/docker-solr/docker-solr) image from Docker  Hub.
-3. Create 2 cores for testing with the commands bellow.
-4. Check the cores created in the admin ui at `http://localhost:8983/solr`
+Its possible to create the solr container using just docker instead of docker compoose.
+
+Follow these instructions if you'd rather prefer this way:
 
 ``` bash
 $ cd docker
@@ -303,20 +305,23 @@ $ docker pull solr:slim
 # 1. Create a container running solr and after
 # 2. Create the **source** core with the name 'demo'
 # 3. Import some docs into the 'demo' core
-$ docker run -d --name test-container -p 8983:8983 solr:slim solr-demo
+$ docker run -d --name solr4test -p 8983:8983 solr:slim solr-demo
 ...
 # Create a empty **target** core named 'target'
-$ docker exec -it test-container solr create_core -c target
+$ docker exec -it solr4test solr create_core -c target
 ```
 
-### Setting up Visual Studio Code
+### Developing in Visual Studio Code
 
-1. Edit the settings file `.vscode/launch.json`
-2. Change to your **solr address** in all the launch configurations:
-    1. point parameter `--url` replacing `http://localhost:8983/solr`
-    2. point parameter `--from` in `Launch-backup` configuration to your existing core name
-    3. point parameter `--into` in `Launch-backup` configuration to your cloned core name
-3. Change the others settings according to your existing core details:
+There are some pre-configured launch configurations in this repository for debugging
+solrcopy.
+
+1. Start the SOLR docker container with the procedures above.
+2. Run Solrcopy using one of the predefined lauch configuration.
+    1. You will be asked for the program argumentls like:
+        1. SolrURL
+        2. Query
+3. You can also edit the settings file `.vscode/launch.json` if you'd rather prefer:
    1. Set the following parameters for specifying a query to extract documents:
       - `--query`
       - `--order`
@@ -325,6 +330,6 @@ $ docker exec -it test-container solr create_core -c target
       - `--skip`
       - `--limit`
    2. Check the [Solr Query](https://lucene.apache.org/solr/guide/8_4/the-standard-query-parser.html) docs for understanding this parameters.
-4. Test the parameters in Solr admin UI at your core in **solr address** (something like: [http://localhost:8983/solr/#/corename](http://localhost:8983/solr/#/corename))
+4. You can also run any query in [Solr admin UI](http://localhost:8983/solr/#/demo)
 
 ---
