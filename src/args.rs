@@ -1,11 +1,12 @@
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use regex::Regex;
+use simplelog::{LevelFilter, TerminalMode};
 use std::{fmt, path::Path, path::PathBuf, str::FromStr};
 use url::Url;
 
 use crate::helpers::*;
 
-// region Cli structs
+// #region Cli structs
 
 /// Command line tool for backup and restore of documents stored in cores of Apache Solr.
 ///
@@ -15,23 +16,27 @@ use crate::helpers::*;
 /// to data format, content and storage place. Because of this data is restored exactly
 /// as extracted and your responsible for extracting, storing and updating the correct data
 /// from and into correct cores.
-#[derive(Parser)]
-#[clap(name = "solrcopy")]
+#[derive(Parser, Debug)]
+#[command(name = "solrcopy", arg_required_else_help = true)]
 pub struct Cli {
-    #[clap(subcommand)]
-    pub arguments: Arguments,
+    #[command(subcommand)]
+    pub arguments: Commands,
 }
 
 #[derive(Subcommand, Debug)]
 #[allow(clippy::large_enum_variant)]
-pub enum Arguments {
+pub enum Commands {
     /// Dumps documents from a Apache Solr core into local backup files
+    #[command(arg_required_else_help = true)]
     Backup(Backup),
     /// Restore documents from local backup files into a Apache Solr core
+    #[command(arg_required_else_help = true)]
     Restore(Restore),
     /// Perform a commit in the Solr core index for persisting documents in disk/memory
+    #[command(arg_required_else_help = true)]
     Commit(Execute),
     /// Removes documents from the Solr core definitively
+    #[command(arg_required_else_help = true)]
     Delete(Delete),
 }
 
@@ -43,36 +48,36 @@ pub struct Backup {
     pub query: Option<String>,
 
     /// Solr core fields names for sorting documents for retrieval
-    #[clap(
+    #[arg(
         short,
         long,
         display_order = 41,
-        multiple_values = true,
-        value_name = "f1:asc> <f2:desc"
+        value_name = "f1:asc,f2:desc,...",
+        value_delimiter = ','
     )]
     pub order: Vec<SortField>,
 
     /// Skip this quantity of documents in the Solr Query
-    #[clap(short = 'k', long, display_order = 42, parse(try_from_str = parse_quantity), default_value = "0", min_values = 0, value_name = "quantity")]
+    #[arg(short = 'k', long, display_order = 42, value_parser = parse_quantity, default_value = "0", value_name = "quantity")]
     pub skip: usize,
 
     /// Maximum quantity of documents for retrieving from the core (like 100M)
-    #[clap(short, long, display_order = 43, parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
+    #[arg(short, long, display_order = 43, value_parser = parse_quantity, value_name = "quantity")]
     pub limit: Option<usize>,
 
     /// Names of core fields retrieved in each document [default: all but _*]
-    #[clap(short, long, display_order = 44, value_name = "field1> <field2")]
+    #[arg(short, long, display_order = 44, value_name = "field1,field2,...")]
     pub select: Vec<String>,
 
     /// Slice the queries by using the variables {begin} and {end} for iterating in `--query`
     /// Used in bigger solr cores with huge number of docs because querying the end of docs is expensive and fails frequently
-    #[clap(short, long, display_order = 50, default_value = "day", parse(try_from_str = parse_iterate_mode), possible_values = ITERATE_VALUES, value_name = "mode")]
+    #[arg(short, long, display_order = 50, default_value_t = IterateMode::Day, value_name = "mode", value_enum)]
     pub iterate_by: IterateMode,
 
     /// The range of dates/numbers for iterating the queries throught slices.
     /// Requires that the query parameter contains the variables {begin} and {end} for creating the slices.
     /// Use numbers or dates in ISO 8601 format (yyyy-mm-ddTHH:MM:SS)
-    #[clap(
+    #[arg(
         short = 'b',
         long = "between",
         display_order = 51,
@@ -83,47 +88,45 @@ pub struct Backup {
     pub iterate_between: Vec<String>,
 
     /// Number to increment each step in iterative mode
-    #[clap(
+    #[arg(
         long = "step",
         display_order = 52,
-        default_value = "1",
-        min_values = 1,
-        max_values = 366,
-        value_name = "num"
+        default_value_t = 1,
+        value_name = "num",
+        // value_parser = clap::value_parser!(usize).range(0..366),
     )]
     pub iterate_step: usize,
 
     /// Number of documents to retrieve from solr in each reader step
-    #[clap(long, display_order = 70, default_value = "4k", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
+    #[arg(long, display_order = 70, default_value = "4k", value_parser = parse_quantity, value_name = "quantity")]
     pub num_docs: usize,
 
     /// Max number of files of documents stored in each zip file
-    #[clap(long, display_order = 71, default_value = "40", parse(try_from_str = parse_quantity), min_values = 1, value_name = "quantity")]
+    #[arg(long, display_order = 71, default_value = "40", value_parser = parse_quantity, value_name = "quantity")]
     pub archive_files: usize,
 
     /// Optional prefix for naming the zip backup files when storing documents
-    #[clap(long, display_order = 72, parse(try_from_str = parse_file_prefix), value_name = "name")]
+    #[arg(long, display_order = 72, value_parser = parse_file_prefix, value_name = "name")]
     pub zip_prefix: Option<String>,
 
     /// Use only when your Solr Cloud returns a distinct count of docs for some queries in a row.
     /// This may be caused by replication problems between cluster nodes of shard replicas of a core.
     /// Response with 'num_found' bellow the greatest value are ignored for getting all possible docs.
     /// Use with `--params shards=shard_name` for retrieving all docs for each shard of the core
-    #[clap(
+    #[arg(
         long,
         display_order = 73,
         default_value = "0",
-        min_values = 0,
-        max_values = 99,
         value_name = "count",
+        // value_parser = clap::value_parser!(usize).range(0..99),
         hide_default_value = true
     )]
     pub workaround_shards: usize,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     pub options: CommonArgs,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     pub transfer: ParallelArgs,
 }
 
@@ -131,29 +134,36 @@ pub struct Backup {
 pub struct Restore {
     /// Mode to perform commits of the documents transaction log while updating the core
     /// [possible values: none, soft, hard, <interval>]
-    #[clap(short, long, display_order = 40, default_value = "hard", parse(try_from_str = parse_commit_mode), value_name = "mode")]
+    #[arg(short, long, display_order = 40, default_value = "hard", value_parser = parse_commit_mode, value_name = "mode")]
     pub flush: CommitMode,
 
     /// Do not perform a final hard commit before finishing
-    #[clap(long, display_order = 41)]
+    #[arg(long, display_order = 41)]
     pub no_final_commit: bool,
 
     /// Disable core replication at start and enable again at end
-    #[clap(long, display_order = 42)]
+    #[arg(long, display_order = 42)]
     pub disable_replication: bool,
 
     /// Search pattern for matching names of the zip backup files
-    #[clap(short, long, display_order = 70, value_name = "core*.zip")]
+    #[arg(short, long, display_order = 70, value_name = "core*.zip")]
     pub search: Option<String>,
 
     /// Optional order for searching the zip archives
-    #[clap(long, display_order = 71, default_value = "none", parse(try_from_str = parse_sort_order), possible_values = SORT_VALUES, hide_possible_values = true,hide_default_value = true, value_name = "asc | desc")]
+    #[clap(
+        long,
+        display_order = 71,
+        default_value = "none",
+        hide_possible_values = true,
+        hide_default_value = true,
+        value_name = "asc | desc"
+    )]
     pub order: SortOrder,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     pub options: CommonArgs,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     pub transfer: ParallelArgs,
 }
 
@@ -163,103 +173,108 @@ pub struct Delete {
     /// Use '*:*' for excluding all documents in the core.
     /// There are no way of recovering excluded docs.
     /// Use with caution and check twice.
-    #[clap(short, long, display_order = 40, value_name = "f1:val1 AND f2:val2")]
+    #[arg(short, long, display_order = 40, value_name = "f1:val1 AND f2:val2")]
     pub query: String,
 
     /// Wether to perform a commits of transaction log after removing the documents
-    #[clap(short, display_order = 41, long, default_value = "soft", parse(try_from_str = parse_commit_mode), value_name = "mode", possible_values = COMMIT_AFTER_VALUES)]
+    #[arg(short, display_order = 41, long, default_value = "soft", value_name = "mode")]
     pub flush: CommitMode,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     pub options: CommonArgs,
 }
 
 #[derive(Parser, Debug)]
 pub struct Execute {
-    #[clap(flatten)]
+    #[command(flatten)]
     pub options: CommonArgs,
 }
 
-// endregion
+// #endregion
 
-// region Cli common
+// #region Cli common
 
 #[derive(Args, Clone, Debug)]
 pub struct CommonArgs {
     /// Url pointing to the Solr cluster
-    #[clap(short, long, display_order = 10, env = SOLR_COPY_URL, parse(try_from_str = parse_solr_url), value_name = "localhost:8983/solr")]
+    #[arg(short, long, display_order = 10, env = SOLR_COPY_URL, value_parser = parse_solr_url, value_name = "localhost:8983/solr")]
     pub url: String,
 
     /// Case sensitive name of the core in the Solr server
-    #[clap(short, long, display_order = 20, value_name = "core")]
+    #[arg(short, long, display_order = 20, value_name = "core")]
     pub core: String,
 
     /// What level of detail should print messages
-    #[clap(long, display_order = 90, value_name = "level", default_value = "info", possible_values = LOG_LEVEL_VALUES)]
-    pub log_level: String,
+    #[arg(long, display_order = 90, value_name = "level", default_value = "info", value_enum)]
+    pub log_level: LevelFilter,
 
     /// Terminal output to print messages
-    #[clap(long, display_order = 91, value_name = "mode", default_value = "mixed", possible_values = LOG_TERM_VALUES)]
-    pub log_mode: String,
+    #[arg(long, display_order = 91, value_name = "mode", default_value = "mixed", value_parser = parse_terminal_mode)]
+    pub log_mode: TerminalMode,
 
     /// Write messages to a local file
-    #[clap(long, display_order = 92, value_name = "path", parse(from_os_str))]
+    #[arg(long, display_order = 92, value_name = "path")]
     pub log_file_path: Option<PathBuf>,
 
     /// What level of detail should write messages to the file
-    #[clap(long, display_order = 93, value_name = "level", default_value = "debug", possible_values = LOG_LEVEL_VALUES, hide_possible_values = true)]
-    pub log_file_level: String,
+    #[arg(
+        long,
+        display_order = 93,
+        value_name = "level",
+        default_value = "debug",
+        value_enum,
+        hide_possible_values = true
+    )]
+    pub log_file_level: LevelFilter,
 }
 
 #[derive(Args, Debug)]
 /// Dumps and restores documents from a Apache Solr core into local backup files
 pub struct ParallelArgs {
     /// Existing folder where the zip backup files containing the extracted documents are stored
-    #[clap(short, display_order = 30, long, parse(from_os_str), env = SOLR_COPY_DIR, value_name = "/path/to/output")]
+    #[arg(short, display_order = 30, long, env = SOLR_COPY_DIR, value_name = "/path/to/output")]
     pub dir: PathBuf,
 
     /// Extra parameter for Solr Update Handler.
     /// See: https://lucene.apache.org/solr/guide/transforming-and-indexing-custom-json.html
-    #[clap(short, long, display_order = 60, value_name = "useParams=mypars")]
+    #[arg(short, long, display_order = 60, value_name = "useParams=mypars")]
     pub params: Option<String>,
 
     /// How many times should continue on source document errors
-    #[clap(short, long, display_order = 61, default_value = "0", min_values = 0, value_name = "count", parse(try_from_str = parse_quantity_max))]
+    #[arg(short, long, display_order = 61, default_value = "0", value_name = "count", value_parser = parse_quantity_max)]
     pub max_errors: usize,
 
     /// Delay before any processing in solr server. Format as: 30s, 15min, 1h
-    #[clap(long, display_order = 62, default_value = "0", min_values = 0, value_name = "time", parse(try_from_str = parse_millis), hide_default_value = true)]
+    #[arg(long, display_order = 62, default_value = "0", value_name = "time", value_parser = parse_millis, hide_default_value = true)]
     pub delay_before: usize,
 
     /// Delay between each http operations in solr server. Format as: 3s, 500ms, 1min
-    #[clap(long, display_order = 63, default_value = "0", min_values = 0, value_name = "time", parse(try_from_str = parse_millis), hide_default_value = true)]
+    #[arg(long, display_order = 63, default_value = "0", value_name = "time", value_parser = parse_millis, hide_default_value = true)]
     pub delay_per_request: usize,
 
     /// Delay after all processing. Usefull for letting Solr breath.
-    #[clap(long, display_order = 64, default_value = "0", min_values = 0, value_name = "time", parse(try_from_str = parse_millis), hide_default_value = true)]
+    #[arg(long, display_order = 64, default_value = "0", value_name = "time", value_parser = parse_millis, hide_default_value = true)]
     pub delay_after: usize,
 
     /// Number parallel threads exchanging documents with the solr core
-    #[clap(
+    #[arg(
         short,
         long,
         display_order = 80,
         default_value = "1",
-        min_values = 1,
-        max_values = 128,
-        value_name = "count"
+        value_name = "count",
+        // value_parser = clap::value_parser!(usize).range(1..128),
     )]
     pub readers: usize,
 
     /// Number parallel threads syncing documents with the zip archives
-    #[clap(
+    #[arg(
         short,
         long,
         display_order = 80,
         default_value = "1",
-        min_values = 1,
-        max_values = 128,
-        value_name = "count"
+        value_name = "count",
+        // value_parser = clap::value_parser!(usize).range(1..=128),
     )]
     pub writers: usize,
 }
@@ -278,7 +293,7 @@ pub enum CommitMode {
     Within { millis: usize },
 }
 
-#[derive(ValueEnum, Clone, Copy, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 /// Used in bigger solr cores with huge number of docs because querying the end of docs is expensive and fails frequently
 pub enum IterateMode {
     None,
@@ -290,26 +305,19 @@ pub enum IterateMode {
     Range,
 }
 
-#[derive(ValueEnum, Clone, Copy, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 pub enum SortOrder {
     None,
     Asc,
     Desc,
 }
 
-const ITERATE_VALUES: &[&str] = &["minute", "hour", "day", "range"];
-const COMMIT_AFTER_VALUES: &[&str] = &["none", "soft", "hard"];
-const SORT_VALUES: &[&str] = &["none", "asc", "desc"];
-
-const LOG_LEVEL_VALUES: &[&str] = &["off", "error", "warn", "info", "debug", "trace"];
-const LOG_TERM_VALUES: &[&str] = &["stdout", "stderr", "mixed"];
-
 const SOLR_COPY_DIR: &str = "SOLR_COPY_DIR";
 const SOLR_COPY_URL: &str = "SOLR_COPY_URL";
 
-// endregion
+// #endregion
 
-// region param pasing
+// #region param pasing
 
 fn parse_quantity(src: &str) -> Result<usize, String> {
     lazy_static! {
@@ -442,32 +450,21 @@ fn parse_commit_mode(s: &str) -> Result<CommitMode, String> {
     }
 }
 
-fn parse_iterate_mode(s: &str) -> Result<IterateMode, String> {
+fn parse_terminal_mode(s: &str) -> Result<TerminalMode, String> {
     let lower = s.to_ascii_lowercase();
     match lower.as_str() {
-        "minute" => Ok(IterateMode::Minute),
-        "hour" => Ok(IterateMode::Hour),
-        "day" => Ok(IterateMode::Day),
-        "range" => Ok(IterateMode::Range),
-        _ => Err(format!("'{}'. [alowed: none minute hour day range]", s)),
+        "stdout" => Ok(TerminalMode::Stdout),
+        "stderr" => Ok(TerminalMode::Stderr),
+        "mixed" => Ok(TerminalMode::Mixed),
+        _ => Err(format!("Invalid terminal mode: {}. [alowed: stdout stderr mixed]", s)),
     }
 }
 
-fn parse_sort_order(s: &str) -> Result<SortOrder, String> {
-    let lower = s.to_ascii_lowercase();
-    match lower.as_str() {
-        "none" => Ok(SortOrder::None),
-        "asc" => Ok(SortOrder::Asc),
-        "desc" => Ok(SortOrder::Desc),
-        _ => Err(format!("'{}'. [alowed: none asc desc]", s)),
-    }
-}
+// #endregion
 
-// endregion
+// #region Cli impl
 
-// region Cli impl
-
-impl Arguments {
+impl Commands {
     pub fn validate(&self) -> Result<(), String> {
         match self {
             Self::Backup(get) => get.validate(),
@@ -488,7 +485,7 @@ impl Arguments {
 
 impl CommonArgs {
     pub fn is_quiet(&self) -> bool {
-        self.log_level.to_ascii_lowercase() == "off"
+        self.log_level == LevelFilter::Off
     }
 
     pub fn to_command(&self) -> Execute {
@@ -522,7 +519,7 @@ impl ParallelArgs {
     }
 }
 
-// region CommitMode
+// #region CommitMode
 
 impl Default for CommitMode {
     fn default() -> Self {
@@ -586,28 +583,17 @@ fn assert_dir_exists(dir: &Path) -> Result<(), String> {
     }
 }
 
-// endregion
+// #endregion
 
-// region Order By
+// #region Order By
 
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 pub enum SortDirection {
     Asc,
     Desc,
 }
 
-impl fmt::Debug for SortDirection {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                SortDirection::Asc => "asc",
-                _ => "desc",
-            }
-        )
-    }
-}
-
+#[derive(Parser, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SortField {
     pub field: String,
     pub direction: SortDirection,
@@ -651,17 +637,18 @@ impl FromStr for SortField {
     }
 }
 
-// endregion
+// #endregion
 
-// endregion
+// #endregion
 
 #[cfg(test)]
 pub mod tests {
 
-    // region Mockup
+    // #region Mockup
 
-    use crate::args::{parse_millis, parse_quantity, Arguments, Cli, CommitMode};
+    use crate::args::{parse_millis, parse_quantity, Cli, Commands, CommitMode};
     use clap::Parser;
+    use log::LevelFilter;
 
     // use clap::StructOpt;
 
@@ -675,15 +662,15 @@ pub mod tests {
             }
         }
 
-        pub fn mockup_args_backup() -> Arguments {
+        pub fn mockup_args_backup() -> Commands {
             Self::parse_from(TEST_ARGS_BACKUP).arguments
         }
 
-        pub fn mockup_args_restore() -> Arguments {
+        pub fn mockup_args_restore() -> Commands {
             Self::parse_from(TEST_ARGS_RESTORE).arguments
         }
 
-        pub fn mockup_args_commit() -> Arguments {
+        pub fn mockup_args_commit() -> Commands {
             Self::parse_from(TEST_ARGS_COMMIT).arguments
         }
     }
@@ -710,9 +697,7 @@ pub mod tests {
         "--query",
         "ownerId:173826 AND date:[{begin} TO {end}]",
         "--order",
-        "date:asc",
-        "id:desc",
-        "vehiclePlate:asc",
+        "date:asc,id:desc,vehiclePlate:asc",
         "--select",
         TEST_SELECT_FIELDS,
         "--between",
@@ -774,13 +759,13 @@ pub mod tests {
         "debug",
     ];
 
-    // endregion
+    // #endregion
 
     #[test]
     fn check_params_backup() {
         let parsed = Cli::mockup_args_backup();
         match parsed {
-            Arguments::Backup(get) => {
+            Commands::Backup(get) => {
                 assert_eq!(get.options.url, TEST_ARGS_BACKUP[3]);
                 assert_eq!(get.options.core, TEST_ARGS_BACKUP[5]);
                 assert_eq!(get.transfer.dir.to_str().unwrap(), TEST_ARGS_BACKUP[7]);
@@ -791,7 +776,7 @@ pub mod tests {
                 assert_eq!(get.archive_files, 6);
                 assert_eq!(get.transfer.readers, 7);
                 assert_eq!(get.transfer.writers, 9);
-                assert_eq!(get.options.log_level, "debug");
+                assert_eq!(get.options.log_level, LevelFilter::Debug);
             }
             _ => panic!("command must be 'backup' !"),
         };
@@ -801,14 +786,14 @@ pub mod tests {
     fn check_params_restore() {
         let parsed = Cli::mockup_args_restore();
         match parsed {
-            Arguments::Restore(put) => {
+            Commands::Restore(put) => {
                 assert_eq!(put.options.url, TEST_ARGS_RESTORE[3]);
                 assert_eq!(put.transfer.dir.to_str().unwrap(), TEST_ARGS_RESTORE[5]);
                 assert_eq!(put.options.core, TEST_ARGS_RESTORE[7]);
                 assert_eq!(put.search.unwrap(), TEST_ARGS_RESTORE[9]);
                 assert_eq!(put.flush, CommitMode::Soft);
                 assert_eq!(put.flush.as_param("?"), "?softCommit=true");
-                assert_eq!(put.options.log_level, "debug");
+                assert_eq!(put.options.log_level, LevelFilter::Debug);
             }
             _ => panic!("command must be 'restore' !"),
         };
@@ -818,10 +803,10 @@ pub mod tests {
     fn check_params_commit() {
         let parsed = Cli::mockup_args_commit();
         match parsed {
-            Arguments::Commit(put) => {
+            Commands::Commit(put) => {
                 assert_eq!(put.options.url, TEST_ARGS_COMMIT[3]);
                 assert_eq!(put.options.core, TEST_ARGS_COMMIT[5]);
-                assert_eq!(put.options.log_level, "debug");
+                assert_eq!(put.options.log_level, LevelFilter::Debug);
             }
             _ => panic!("command must be 'commit' !"),
         };

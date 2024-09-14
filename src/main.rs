@@ -37,26 +37,22 @@ mod steps;
 
 use clap::Parser;
 
-use simplelog::{
-    ColorChoice, CombinedLogger, Config, LevelFilter, SharedLogger, TermLogger, TerminalMode,
-    WriteLogger,
-};
+use simplelog::{ColorChoice, CombinedLogger, Config, SharedLogger, TermLogger, WriteLogger};
 
-pub use crate::args::{Arguments, Cli};
+pub use crate::args::{Cli, Commands};
 use crate::fails::{throw, BoxedResult};
 
 use std::fs::File;
-use std::str::FromStr;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let parsed = Cli::parse_from_args()?;
 
     let args = &parsed.arguments;
     match args {
-        Arguments::Backup(get) => backup::backup_main(get),
-        Arguments::Restore(put) => restore::restore_main(put),
-        Arguments::Commit(cmd) => commit::commit_main(cmd),
-        Arguments::Delete(del) => delete::delete_main(del),
+        Commands::Backup(get) => backup::backup_main(get),
+        Commands::Restore(put) => restore::restore_main(put),
+        Commands::Commit(cmd) => commit::commit_main(cmd),
+        Commands::Delete(del) => delete::delete_main(del),
     }
 }
 
@@ -73,38 +69,23 @@ impl Cli {
     }
 
     fn start_log(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let options = self.arguments.get_options();
+        let opt = self.arguments.get_options();
 
         let mut enabled: Vec<Box<dyn SharedLogger>> = Vec::new();
-        if !options.is_quiet() {
-            let level = Self::parse_level_filter(options.log_level.as_str())?;
-            let mode = Self::parse_term_mode(options.log_mode.as_str())?;
-            enabled.push(TermLogger::new(level, Config::default(), mode, ColorChoice::Auto));
+        if !opt.is_quiet() {
+            enabled.push(TermLogger::new(
+                opt.log_level,
+                Config::default(),
+                opt.log_mode,
+                ColorChoice::Auto,
+            ));
         }
-        if let Some(filepath) = &options.log_file_path {
-            let level2 = Self::parse_level_filter(options.log_file_level.as_str())?;
+        if let Some(filepath) = &opt.log_file_path {
             let file_to_log = File::create(filepath).unwrap();
-            enabled.push(WriteLogger::new(level2, Config::default(), file_to_log));
+            enabled.push(WriteLogger::new(opt.log_level, Config::default(), file_to_log));
         }
         CombinedLogger::init(enabled).unwrap();
         Ok(())
-    }
-
-    fn parse_level_filter(s: &str) -> BoxedResult<LevelFilter> {
-        match LevelFilter::from_str(s) {
-            Ok(res) => Ok(res),
-            Err(_) => throw(format!("'{}'. [alowed: off, error, warn, info, debug, trace]", s)),
-        }
-    }
-
-    fn parse_term_mode(mode: &str) -> BoxedResult<TerminalMode> {
-        let mode_str = mode.to_ascii_lowercase();
-        match mode_str.as_ref() {
-            "stdout" => Ok(TerminalMode::Stdout),
-            "stderr" => Ok(TerminalMode::Stderr),
-            "mixed" => Ok(TerminalMode::Mixed),
-            _ => throw(format!("Unknown terminal mode: {}", mode_str)),
-        }
     }
 }
 
