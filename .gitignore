@@ -15,4 +15,5 @@ lcov.info
 
 # User excluded files
 scratchpad.*
+*.zip
 
