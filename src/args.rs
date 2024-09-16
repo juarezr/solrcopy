@@ -216,6 +216,12 @@ pub struct CommonArgs {
     #[arg(short, long, display_order = 20, value_name = "core")]
     pub core: String,
 
+    #[command(flatten)]
+    pub logging: LoggingArgs,
+}
+
+#[derive(Parser, Clone, Debug)]
+pub struct LoggingArgs {
     /// What level of detail should print messages
     #[arg(long, display_order = 90, value_name = "level", default_value = "info", value_enum)]
     pub log_level: LevelFilter,
@@ -485,21 +491,25 @@ impl Commands {
         }
     }
 
-    pub fn get_options(&self) -> &CommonArgs {
+    pub fn get_options(&self) -> Option<&CommonArgs> {
         match &self {
-            Self::Backup(get) => &get.options,
-            Self::Restore(put) => &put.options,
-            Self::Commit(com) => &com.options,
-            Self::Delete(del) => &del.options,
+            Self::Backup(get) => Some(&get.options),
+            Self::Restore(put) => Some(&put.options),
+            Self::Commit(com) => Some(&com.options),
+            Self::Delete(del) => Some(&del.options),
+            _ => None,
+    }
+}
+
+    pub fn get_logging(&self) -> LoggingArgs {
+        match self.get_options() {
+            None => LoggingArgs::default().clone(),
+            Some(opt) => opt.get_logging().clone(),
         }
     }
 }
 
 impl CommonArgs {
-    pub fn is_quiet(&self) -> bool {
-        self.log_level == LevelFilter::Off
-    }
-
     pub fn to_command(&self) -> Execute {
         Execute { options: self.clone() }
     }
@@ -523,11 +533,36 @@ impl CommonArgs {
     pub fn get_update_url(&self) -> String {
         self.get_update_url_with(EMPTY_STR)
     }
+
+    pub fn get_logging(&self) -> &LoggingArgs {
+        &self.logging
+    }
+
+    pub fn is_quiet(&self) -> bool {
+        self.logging.log_level == LevelFilter::Off
+    }
 }
 
 impl ParallelArgs {
     pub fn get_param(&self, separator: &str) -> String {
         self.params.as_ref().unwrap_or(&EMPTY_STRING).with_prefix(separator)
+    }
+}
+
+impl LoggingArgs {
+    pub fn is_quiet(&self) -> bool {
+        self.log_level == LevelFilter::Off
+    }
+}
+
+impl Default for LoggingArgs {
+    fn default() -> Self {
+        Self {
+            log_level: LevelFilter::Off,
+            log_mode: Default::default(),
+            log_file_path: Default::default(),
+            log_file_level: LevelFilter::Off,
+        }
     }
 }
 
@@ -788,7 +823,7 @@ pub mod tests {
                 assert_eq!(get.archive_files, 6);
                 assert_eq!(get.transfer.readers, 7);
                 assert_eq!(get.transfer.writers, 9);
-                assert_eq!(get.options.log_level, LevelFilter::Debug);
+                assert_eq!(get.options.get_logging().log_level, LevelFilter::Debug);
             }
             _ => panic!("command must be 'backup' !"),
         };
@@ -848,6 +883,134 @@ pub mod tests {
     fn check_parse_quantity() {
         assert_eq!(parse_quantity("3k"), Ok(3_000));
         assert_eq!(parse_quantity("4 k"), Ok(4_000));
+                assert_eq!(put.flush, CommitMode::Soft);
+                assert_eq!(put.flush.as_param("?"), "?softCommit=true");
+                assert_eq!(put.options.get_logging().log_level, LevelFilter::Debug);
+            }
+            _ => panic!("command must be 'restore' !"),
+        };
+    }
+
+    #[test]
+    fn check_params_commit() {
+        let parsed = Cli::mockup_args_commit();
+        match parsed {
+            Commands::Commit(put) => {
+                assert_eq!(put.options.url, TEST_ARGS_COMMIT[3]);
+                assert_eq!(put.options.core, TEST_ARGS_COMMIT[5]);
+                assert_eq!(put.options.get_logging().log_level, LevelFilter::Debug);
+            }
+            _ => panic!("command must be 'commit' !"),
+        };
+    }
+
+    #[test]
+    fn check_params_help() {
+        Cli::mockup_from(TEST_ARGS_HELP);
+    }
+
+    #[test]
+    fn check_params_version() {
+        Cli::mockup_from(TEST_ARGS_VERSION);
+    }
+
+    #[test]
+    fn check_params_get_help() {
+        Cli::mockup_from(TEST_ARGS_HELP_BACKUP);
+    }
+
+    #[test]
+    fn check_params_put_help() {
+        Cli::mockup_from(TEST_ARGS_HELP_RESTORE);
+    }
+
+    #[test]
+    fn check_parse_quantity() {
+        assert_eq!(parse_quantity("3k"), Ok(3_000));
+        assert_eq!(parse_quantity("4 k"), Ok(4_000));
+        assert_eq!(parse_quantity("5kb"), Ok(5_000));
+        assert_eq!(parse_quantity("666m"), Ok(666_000_000));
+        assert_eq!(parse_quantity("777mb"), Ok(777_000_000));
+        assert_eq!(parse_quantity("888mb"), Ok(888_000_000));
+        assert_eq!(parse_quantity("999 mb"), Ok(999_000_000));
+    }
+
+    #[test]
+    fn check_parse_millis() {
+        assert_eq!(parse_millis("3ms"), Ok(3));
+        assert_eq!(parse_millis("4 ms"), Ok(4));
+        assert_eq!(parse_millis("5s"), Ok(5_000));
+        assert_eq!(parse_millis("666s"), Ok(666_000));
+        assert_eq!(parse_millis("7m"), Ok(420_000));
+        assert_eq!(parse_millis("8min"), Ok(480_000));
+        assert_eq!(parse_millis("9 minutes"), Ok(540_000));
+        assert_eq!(parse_millis("10h"), Ok(36_000_000));
+    }
+
+                assert_eq!(put.flush, CommitMode::Soft);
+                assert_eq!(put.flush.as_param("?"), "?softCommit=true");
+                assert_eq!(put.options.get_logging().log_level, LevelFilter::Debug);
+            }
+            _ => panic!("command must be 'restore' !"),
+        };
+    }
+
+    #[test]
+    fn check_params_commit() {
+        let parsed = Cli::mockup_args_commit();
+        match parsed {
+            Commands::Commit(put) => {
+                assert_eq!(put.options.url, TEST_ARGS_COMMIT[3]);
+                assert_eq!(put.options.core, TEST_ARGS_COMMIT[5]);
+                assert_eq!(put.options.get_logging().log_level, LevelFilter::Debug);
+            }
+            _ => panic!("command must be 'commit' !"),
+        };
+    }
+
+    #[test]
+    fn check_params_help() {
+        Cli::mockup_from(TEST_ARGS_HELP);
+    }
+
+    #[test]
+    fn check_params_version() {
+        Cli::mockup_from(TEST_ARGS_VERSION);
+    }
+
+    #[test]
+    fn check_params_get_help() {
+        Cli::mockup_from(TEST_ARGS_HELP_BACKUP);
+    }
+
+    #[test]
+    fn check_params_put_help() {
+        Cli::mockup_from(TEST_ARGS_HELP_RESTORE);
+    }
+
+    #[test]
+    fn check_parse_quantity() {
+        assert_eq!(parse_quantity("3k"), Ok(3_000));
+        assert_eq!(parse_quantity("4 k"), Ok(4_000));
+        assert_eq!(parse_quantity("5kb"), Ok(5_000));
+        assert_eq!(parse_quantity("666m"), Ok(666_000_000));
+        assert_eq!(parse_quantity("777mb"), Ok(777_000_000));
+        assert_eq!(parse_quantity("888mb"), Ok(888_000_000));
+        assert_eq!(parse_quantity("999 mb"), Ok(999_000_000));
+    }
+
+    #[test]
+    fn check_parse_millis() {
+        assert_eq!(parse_millis("3ms"), Ok(3));
+        assert_eq!(parse_millis("4 ms"), Ok(4));
+        assert_eq!(parse_millis("5s"), Ok(5_000));
+        assert_eq!(parse_millis("666s"), Ok(666_000));
+        assert_eq!(parse_millis("7m"), Ok(420_000));
+        assert_eq!(parse_millis("8min"), Ok(480_000));
+        assert_eq!(parse_millis("9 minutes"), Ok(540_000));
+        assert_eq!(parse_millis("10h"), Ok(36_000_000));
+    }
+
         assert_eq!(parse_quantity("5kb"), Ok(5_000));
         assert_eq!(parse_quantity("666m"), Ok(666_000_000));
         assert_eq!(parse_quantity("777mb"), Ok(777_000_000));
