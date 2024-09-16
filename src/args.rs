@@ -6,6 +6,8 @@ use url::Url;
 
 use crate::helpers::*;
 
+// #region Cli arguments
+
 // #region Cli structs
 
 /// Command line tool for backup and restore of documents stored in cores of Apache Solr.
@@ -317,7 +319,7 @@ const SOLR_COPY_URL: &str = "SOLR_COPY_URL";
 
 // #endregion
 
-// #region param pasing
+// #region Param parsing
 
 fn parse_quantity(src: &str) -> Result<u64, String> {
     lazy_static! {
@@ -519,8 +521,6 @@ impl ParallelArgs {
     }
 }
 
-// #region CommitMode
-
 impl Default for CommitMode {
     fn default() -> Self {
         CommitMode::Within { millis: 40_000 }
@@ -556,36 +556,6 @@ impl CommitMode {
     //     }
     // }
 }
-
-pub trait Validation {
-    fn validate(&self) -> Result<(), String> {
-        Ok(())
-    }
-}
-
-impl Validation for Backup {
-    fn validate(&self) -> Result<(), String> {
-        assert_dir_exists(&self.transfer.dir)
-    }
-}
-
-impl Validation for Restore {
-    fn validate(&self) -> Result<(), String> {
-        assert_dir_exists(&self.transfer.dir)
-    }
-}
-
-fn assert_dir_exists(dir: &Path) -> Result<(), String> {
-    if !dir.exists() {
-        Err(format!("Missing folder of zip backup files: {:?}", dir))
-    } else {
-        Ok(())
-    }
-}
-
-// #endregion
-
-// #region Order By
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 pub enum SortDirection {
@@ -634,6 +604,36 @@ impl FromStr for SortField {
                 }
             }
         }
+    }
+}
+
+// #endregion
+
+// #region Cli validation
+
+pub trait Validation {
+    fn validate(&self) -> Result<(), String> {
+        Ok(())
+    }
+}
+
+impl Validation for Backup {
+    fn validate(&self) -> Result<(), String> {
+        assert_dir_exists(&self.transfer.dir)
+    }
+}
+
+impl Validation for Restore {
+    fn validate(&self) -> Result<(), String> {
+        assert_dir_exists(&self.transfer.dir)
+    }
+}
+
+fn assert_dir_exists(dir: &Path) -> Result<(), String> {
+    if !dir.exists() {
+        Err(format!("Missing folder of zip backup files: {:?}", dir))
+    } else {
+        Ok(())
     }
 }
 
@@ -761,6 +761,8 @@ pub mod tests {
 
     // #endregion
 
+    // #region Tests
+
     #[test]
     fn check_params_backup() {
         let parsed = Cli::mockup_args_backup();
@@ -854,6 +856,8 @@ pub mod tests {
         assert_eq!(parse_millis("9 minutes"), Ok(540_000));
         assert_eq!(parse_millis("10h"), Ok(36_000_000));
     }
+
+    // #endregion
 }
 
 // end of file
