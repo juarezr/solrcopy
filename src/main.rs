@@ -69,7 +69,7 @@ impl Cli {
     }
 
     fn start_log(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let opt = self.arguments.get_options();
+        let opt = self.arguments.get_logging();
 
         let mut enabled: Vec<Box<dyn SharedLogger>> = Vec::new();
         if !opt.is_quiet() {
