@@ -1,3 +1,4 @@
+use clap::builder::styling::{AnsiColor as Ansi, Styles};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use regex::Regex;
 use simplelog::{LevelFilter, TerminalMode};
@@ -10,6 +11,15 @@ use crate::helpers::*;
 
 // #region Cli structs
 
+const STYLES: Styles = Styles::styled()
+    .usage(Ansi::BrightYellow.on_default().bold())
+    .header(Ansi::BrightYellow.on_default().bold())
+    .literal(Ansi::BrightBlue.on_default())
+    .placeholder(Ansi::BrightMagenta.on_default())
+    .error(Ansi::BrightRed.on_default())
+    .valid(Ansi::BrightGreen.on_default())
+    .invalid(Ansi::BrightRed.on_default());
+
 /// Command line tool for backup and restore of documents stored in cores of Apache Solr.
 ///
 /// Solrcopy is a command for doing backup and restore of documents stored on Solr cores.
@@ -19,7 +29,7 @@ use crate::helpers::*;
 /// as extracted and your responsible for extracting, storing and updating the correct data
 /// from and into correct cores.
 #[derive(Parser, Debug)]
-#[command(name = "solrcopy", arg_required_else_help = true)]
+#[command(author, version, about, version, arg_required_else_help = true, styles = STYLES)]
 pub struct Cli {
     #[command(subcommand)]
     pub arguments: Commands,
@@ -46,7 +56,7 @@ pub enum Commands {
 pub struct Backup {
     /// Solr Query param 'q' for filtering which documents are retrieved
     /// See: https://lucene.apache.org/solr/guide/6_6/the-standard-query-parser.html
-    #[clap(short, long, display_order = 40, value_name = "'f1:vl1 AND f2:vl2'")]
+    #[arg(short, long, display_order = 40, value_name = "'f1:vl1 AND f2:vl2'")]
     pub query: Option<String>,
 
     /// Solr core fields names for sorting documents for retrieval
@@ -152,7 +162,7 @@ pub struct Restore {
     pub search: Option<String>,
 
     /// Optional order for searching the zip archives
-    #[clap(
+    #[arg(
         long,
         display_order = 71,
         default_value = "none",
@@ -471,7 +481,7 @@ impl Commands {
         match self {
             Self::Backup(get) => get.validate(),
             Self::Restore(put) => put.validate(),
-            Self::Commit(_) | Self::Delete(_) => Ok(()),
+            _ => Ok(()),
         }
     }
 
