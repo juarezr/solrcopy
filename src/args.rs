@@ -1,5 +1,6 @@
 use clap::builder::styling::{AnsiColor as Ansi, Styles};
 use clap::{Args, Parser, Subcommand, ValueEnum};
+use clap_complete::Shell;
 use regex::Regex;
 use simplelog::{LevelFilter, TerminalMode};
 use std::{fmt, path::Path, path::PathBuf, str::FromStr};
@@ -39,17 +40,15 @@ pub struct Cli {
 #[allow(clippy::large_enum_variant)]
 pub enum Commands {
     /// Dumps documents from a Apache Solr core into local backup files
-    #[command(arg_required_else_help = true)]
     Backup(Backup),
     /// Restore documents from local backup files into a Apache Solr core
-    #[command(arg_required_else_help = true)]
     Restore(Restore),
     /// Perform a commit in the Solr core index for persisting documents in disk/memory
-    #[command(arg_required_else_help = true)]
     Commit(Execute),
     /// Removes documents from the Solr core definitively
-    #[command(arg_required_else_help = true)]
     Delete(Delete),
+    /// Generates completion scripts for different shells
+    Completion(Completion),
 }
 
 #[derive(Parser, Debug)]
@@ -200,6 +199,17 @@ pub struct Delete {
 pub struct Execute {
     #[command(flatten)]
     pub options: CommonArgs,
+}
+
+#[derive(Parser, Debug)]
+pub struct Completion {
+    /// Specifies the shell for which the completion script should be generated
+    #[arg(short, long, display_order = 10, value_name = "shell", env = "SHELL", value_parser = parse_shell)]
+    pub shell: Option<Shell>,
+
+    /// Write completion script to <path/to/dir> or to stdout if not specified
+    #[arg(long, display_order = 70, value_name = "path/to/dir")]
+    pub output_dir: Option<PathBuf>,
 }
 
 // #endregion
@@ -478,6 +488,14 @@ fn parse_terminal_mode(s: &str) -> Result<TerminalMode, String> {
     }
 }
 
+fn parse_shell(s: &str) -> Result<Shell, String> {
+    let full = PathBuf::from(s);
+    let invl = format!("Invalid shell: {}", s);
+    let name = full.file_name().unwrap().to_str().ok_or(invl.clone())?;
+    let lowr = name.to_ascii_lowercase();
+    <Shell as FromStr>::from_str(&lowr).map_err(|_| invl)
+}
+
 // #endregion
 
 // #region Cli impl
@@ -498,8 +516,8 @@ impl Commands {
             Self::Commit(com) => Some(&com.options),
             Self::Delete(del) => Some(&del.options),
             _ => None,
+        }
     }
-}
 
     pub fn get_logging(&self) -> LoggingArgs {
         match self.get_options() {
@@ -840,51 +858,6 @@ pub mod tests {
                 assert_eq!(put.search.unwrap(), TEST_ARGS_RESTORE[9]);
                 assert_eq!(put.flush, CommitMode::Soft);
                 assert_eq!(put.flush.as_param("?"), "?softCommit=true");
-                assert_eq!(put.options.log_level, LevelFilter::Debug);
-            }
-            _ => panic!("command must be 'restore' !"),
-        };
-    }
-
-    #[test]
-    fn check_params_commit() {
-        let parsed = Cli::mockup_args_commit();
-        match parsed {
-            Commands::Commit(put) => {
-                assert_eq!(put.options.url, TEST_ARGS_COMMIT[3]);
-                assert_eq!(put.options.core, TEST_ARGS_COMMIT[5]);
-                assert_eq!(put.options.log_level, LevelFilter::Debug);
-            }
-            _ => panic!("command must be 'commit' !"),
-        };
-    }
-
-    #[test]
-    fn check_params_help() {
-        Cli::mockup_from(TEST_ARGS_HELP);
-    }
-
-    #[test]
-    fn check_params_version() {
-        Cli::mockup_from(TEST_ARGS_VERSION);
-    }
-
-    #[test]
-    fn check_params_get_help() {
-        Cli::mockup_from(TEST_ARGS_HELP_BACKUP);
-    }
-
-    #[test]
-    fn check_params_put_help() {
-        Cli::mockup_from(TEST_ARGS_HELP_RESTORE);
-    }
-
-    #[test]
-    fn check_parse_quantity() {
-        assert_eq!(parse_quantity("3k"), Ok(3_000));
-        assert_eq!(parse_quantity("4 k"), Ok(4_000));
-                assert_eq!(put.flush, CommitMode::Soft);
-                assert_eq!(put.flush.as_param("?"), "?softCommit=true");
                 assert_eq!(put.options.get_logging().log_level, LevelFilter::Debug);
             }
             _ => panic!("command must be 'restore' !"),
@@ -928,89 +901,6 @@ pub mod tests {
     fn check_parse_quantity() {
         assert_eq!(parse_quantity("3k"), Ok(3_000));
         assert_eq!(parse_quantity("4 k"), Ok(4_000));
-        assert_eq!(parse_quantity("5kb"), Ok(5_000));
-        assert_eq!(parse_quantity("666m"), Ok(666_000_000));
-        assert_eq!(parse_quantity("777mb"), Ok(777_000_000));
-        assert_eq!(parse_quantity("888mb"), Ok(888_000_000));
-        assert_eq!(parse_quantity("999 mb"), Ok(999_000_000));
-    }
-
-    #[test]
-    fn check_parse_millis() {
-        assert_eq!(parse_millis("3ms"), Ok(3));
-        assert_eq!(parse_millis("4 ms"), Ok(4));
-        assert_eq!(parse_millis("5s"), Ok(5_000));
-        assert_eq!(parse_millis("666s"), Ok(666_000));
-        assert_eq!(parse_millis("7m"), Ok(420_000));
-        assert_eq!(parse_millis("8min"), Ok(480_000));
-        assert_eq!(parse_millis("9 minutes"), Ok(540_000));
-        assert_eq!(parse_millis("10h"), Ok(36_000_000));
-    }
-
-                assert_eq!(put.flush, CommitMode::Soft);
-                assert_eq!(put.flush.as_param("?"), "?softCommit=true");
-                assert_eq!(put.options.get_logging().log_level, LevelFilter::Debug);
-            }
-            _ => panic!("command must be 'restore' !"),
-        };
-    }
-
-    #[test]
-    fn check_params_commit() {
-        let parsed = Cli::mockup_args_commit();
-        match parsed {
-            Commands::Commit(put) => {
-                assert_eq!(put.options.url, TEST_ARGS_COMMIT[3]);
-                assert_eq!(put.options.core, TEST_ARGS_COMMIT[5]);
-                assert_eq!(put.options.get_logging().log_level, LevelFilter::Debug);
-            }
-            _ => panic!("command must be 'commit' !"),
-        };
-    }
-
-    #[test]
-    fn check_params_help() {
-        Cli::mockup_from(TEST_ARGS_HELP);
-    }
-
-    #[test]
-    fn check_params_version() {
-        Cli::mockup_from(TEST_ARGS_VERSION);
-    }
-
-    #[test]
-    fn check_params_get_help() {
-        Cli::mockup_from(TEST_ARGS_HELP_BACKUP);
-    }
-
-    #[test]
-    fn check_params_put_help() {
-        Cli::mockup_from(TEST_ARGS_HELP_RESTORE);
-    }
-
-    #[test]
-    fn check_parse_quantity() {
-        assert_eq!(parse_quantity("3k"), Ok(3_000));
-        assert_eq!(parse_quantity("4 k"), Ok(4_000));
-        assert_eq!(parse_quantity("5kb"), Ok(5_000));
-        assert_eq!(parse_quantity("666m"), Ok(666_000_000));
-        assert_eq!(parse_quantity("777mb"), Ok(777_000_000));
-        assert_eq!(parse_quantity("888mb"), Ok(888_000_000));
-        assert_eq!(parse_quantity("999 mb"), Ok(999_000_000));
-    }
-
-    #[test]
-    fn check_parse_millis() {
-        assert_eq!(parse_millis("3ms"), Ok(3));
-        assert_eq!(parse_millis("4 ms"), Ok(4));
-        assert_eq!(parse_millis("5s"), Ok(5_000));
-        assert_eq!(parse_millis("666s"), Ok(666_000));
-        assert_eq!(parse_millis("7m"), Ok(420_000));
-        assert_eq!(parse_millis("8min"), Ok(480_000));
-        assert_eq!(parse_millis("9 minutes"), Ok(540_000));
-        assert_eq!(parse_millis("10h"), Ok(36_000_000));
-    }
-
         assert_eq!(parse_quantity("5kb"), Ok(5_000));
         assert_eq!(parse_quantity("666m"), Ok(666_000_000));
         assert_eq!(parse_quantity("777mb"), Ok(777_000_000));
