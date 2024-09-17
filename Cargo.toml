@@ -20,7 +20,7 @@ regex = "1.10.*"
 url = "2.5.*"
 lazy_static = "1.5.*"
 ureq = { version = "2.10.*", features = ["tls", "charset", "cookies", "brotli"] }
-zip = { version = "0.6.*",  features = ["deflate", "time"] }
+zip = { version = "2.2.*",  features = ["deflate", "time"] }
 indicatif = "0.17.*"
 chrono = "0.4.*"
 glob = "0.3.*"

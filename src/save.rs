@@ -1,5 +1,5 @@
 use log::error;
-use zip::{result::ZipResult, write::FileOptions, ZipWriter};
+use zip::{result::ZipResult, write::SimpleFileOptions, ZipWriter};
 
 use std::{
     io::Write,
@@ -55,7 +55,7 @@ impl Archiver {
 
         let zip = self.writer.as_mut().unwrap();
 
-        let opts: FileOptions = FileOptions::default()
+        let opts = SimpleFileOptions::default()
             .compression_method(zip::CompressionMethod::Deflated)
             .unix_permissions(0o644);
 
@@ -66,8 +66,8 @@ impl Archiver {
     }
 
     pub fn close_archive(&mut self) -> ZipResult<()> {
-        if self.writer.is_some() {
-            self.writer.as_mut().unwrap().finish()?;
+        if let Some(wr) = self.writer.take() {
+            wr.finish()?;
         }
         self.writer = None;
         Ok(())
