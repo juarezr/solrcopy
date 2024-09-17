@@ -89,12 +89,7 @@ impl Slices<String> {
     fn get_range_slices(&self) -> BoxedResult<Slices<u64>> {
         let v1 = Self::parse_between_number(self.curr.as_str())?;
         let v2 = Self::parse_between_number(self.end.as_str())?;
-        Ok(Slices::<u64> {
-            curr: v1,
-            end: v2,
-            increment: self.increment,
-            mode: IterateMode::Range,
-        })
+        Ok(Slices::<u64> { curr: v1, end: v2, increment: self.increment, mode: IterateMode::Range })
     }
 
     fn get_period_slices(&self) -> BoxedResult<Slices<NaiveDateTime>> {
@@ -309,7 +304,7 @@ impl Backup {
     }
 
     pub fn get_docs_to_retrieve(&self, schema: &SolrCore) -> u64 {
-        schema.num_found.min(self.limit.unwrap_or(std::u64::MAX))
+        schema.num_found.min(self.limit.unwrap_or(u64::MAX))
     }
 
     pub fn get_steps(&self, schema: &SolrCore) -> Requests {
@@ -356,7 +351,7 @@ impl Backup {
             let joined = all.join(COMMA);
             "&sort=".append(&joined)
         };
-        let parts = vec![
+        let parts = [
             self.options.url.with_suffix("/"),
             self.options.core.clone(),
             "/select?wt=json&indent=off&omitHeader=true".to_string(),

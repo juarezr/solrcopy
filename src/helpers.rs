@@ -144,7 +144,7 @@ impl StringHelpers for str {
         let starts = found + prefix.len();
         let text_len = self.len();
 
-        let ulast_pos = last_pos.abs() as usize;
+        let ulast_pos = last_pos.unsigned_abs();
         let positive = last_pos > 0;
         let smaller = ulast_pos < text_len;
 

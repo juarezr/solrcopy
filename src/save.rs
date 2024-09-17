@@ -40,7 +40,7 @@ impl Archiver {
         let file_name = self.file_pattern.replace("{}", suffix);
         let zip_path = Path::new(&self.folder);
         let zip_name = Path::new(&file_name);
-        let zip_file = zip_path.join(&zip_name);
+        let zip_file = zip_path.join(zip_name);
 
         let file = std::fs::File::create(&zip_file)?;
         let zip = zip::ZipWriter::new(file);

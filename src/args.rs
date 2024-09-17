@@ -389,7 +389,7 @@ fn parse_quantity(src: &str) -> Result<u64, String> {
 fn parse_quantity_max(s: &str) -> Result<u64, String> {
     let lower = s.to_ascii_lowercase();
     match lower.as_str() {
-        "max" => Ok(std::u64::MAX),
+        "max" => Ok(u64::MAX),
         _ => match parse_quantity(s) {
             Ok(value) => Ok(value),
             Err(_) => Err(format!("'{}'. [alowed: all, <quantity>]", s)),
