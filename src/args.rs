@@ -1,4 +1,7 @@
-use clap::builder::styling::{AnsiColor as Ansi, Styles};
+use clap::builder::{
+    styling::{AnsiColor as Ansi, Styles},
+    ArgPredicate,
+};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
 use regex::Regex;
@@ -204,11 +207,28 @@ pub struct Execute {
 #[derive(Parser, Debug)]
 pub struct Completion {
     /// Specifies the shell for which the completion script should be generated
-    #[arg(short, long, display_order = 10, value_name = "shell", env = "SHELL", value_parser = parse_shell)]
+    #[arg(
+        short, 
+        long, 
+        display_order = 10, 
+        env = "SHELL", 
+        value_parser = parse_shell, 
+        default_value_if("output_dir", ArgPredicate::IsPresent, Some("default"))
+)]
     pub shell: Option<Shell>,
 
+    /// Write completion script to all supported shells in the output directory
+    #[arg(short, long, display_order = 70)]
+    pub all: bool,
+
     /// Write completion script to <path/to/dir> or to stdout if not specified
-    #[arg(long, display_order = 70, value_name = "path/to/dir")]
+    #[arg(
+        short,
+        long,
+        display_order = 71,
+        value_name = "path/to/dir",
+        required_if_eq("all", "true")
+    )]
     pub output_dir: Option<PathBuf>,
 }
 
@@ -670,6 +690,16 @@ impl FromStr for SortField {
     }
 }
 
+impl Completion {
+    pub fn get_shells(&self) -> Vec<Shell> {
+        let sh: Option<Shell> = if self.all { None } else { self.shell };
+        match sh {
+            Some(sh1) => vec![sh1],
+            None => Shell::value_variants().to_vec(),
+        }
+    }
+}
+
 // #endregion
 
 // #region Cli validation
@@ -709,7 +739,10 @@ pub mod tests {
 
     // #region Mockup
 
+    use std::path::PathBuf;
+
     use crate::args::{parse_millis, parse_quantity, Cli, Commands, CommitMode};
+
     use clap::Parser;
     use log::LevelFilter;
 
@@ -854,10 +887,13 @@ pub mod tests {
         "error",
     ];
 
+    const TEST_ARGS_COMPLETION: &'static [&'static str] = &["solrcopy", "completion", "--shell", "bash", "--output-dir", "target"];
 
     // #endregion
 
     // #region Tests
+
+    use clap_complete::Shell::Bash;
 
     #[test]
     fn check_params_backup() {
@@ -924,6 +960,18 @@ pub mod tests {
                 assert_eq!(logs.log_file_level, LevelFilter::Error);
             }
             _ => panic!("command must be 'delete' !"),
+        };
+    }
+
+    #[test]
+    fn check_params_completion() {
+        let parsed = Cli::mockup_from(TEST_ARGS_COMPLETION);
+        match parsed {
+            Commands::Completion(res) => {
+                assert_eq!(res.shell, Some(Bash));
+                assert_eq!(res.output_dir, Some(PathBuf::from("target")));
+            }
+            _ => panic!("command must be 'completion' !"),
         };
     }
 

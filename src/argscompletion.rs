@@ -1,6 +1,6 @@
 use std::{fs::File, io, io::Write, path::PathBuf};
 
-use clap::{CommandFactory, ValueEnum};
+use clap::CommandFactory;
 use clap_complete::{generate, Generator, Shell};
 
 use crate::{args::Cli, args::Completion};
@@ -8,13 +8,12 @@ use crate::{args::Cli, args::Completion};
 use crate::fails::{BoxedError, BoxedResult};
 
 pub(crate) fn gen_completion(params: &Completion) -> BoxedError {
-    let chosen: &[Shell] = match params.shell {
-        Some(shell) => &[shell],
-        None => Shell::value_variants(),
-    };
+    let chosen = params.get_shells();
     for shell in chosen {
-        let path = generate_for(shell, &params.output_dir)?;
-        println!("{:?}: {:?}", shell, path);
+        let path = generate_for(&shell, &params.output_dir)?;
+        if let Some(filepath) = path {
+            println!("{:?}: {}", shell, filepath.display());
+        }
     }
     Ok(())
 }
