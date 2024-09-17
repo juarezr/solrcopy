@@ -121,6 +121,24 @@
       }
     },
     {
+      "label": "cargo completion",
+      "icon": {
+        "id": "combine"
+      },
+      "type": "cargo",
+      "command": "run",
+      "args": [
+        "completion --all -o target"
+      ],
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
+    },
+    {
       "label": "cargo deb",
       "icon": {
         "id": "package"
@@ -134,7 +152,7 @@
         "kind": "build",
       },
       "dependsOn": [
-        "cargo release"
+        "cargo release", "cargo completion"
       ]
     },
     {
@@ -151,7 +169,7 @@
         "kind": "build",
       },
       "dependsOn": [
-        "cargo release"
+        "cargo release", "cargo completion"
       ]
     },
     // #endregion
