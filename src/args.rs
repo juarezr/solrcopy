@@ -713,15 +713,26 @@ pub mod tests {
     use clap::Parser;
     use log::LevelFilter;
 
-    // use clap::StructOpt;
-
     impl Cli {
-        pub fn mockup_from(argument_list: &[&str]) {
-            match Self::try_parse_from(argument_list) {
-                Ok(_) => {
-                    panic!("Error parsing command line arguments: {}", argument_list.join(" "))
+        pub fn mockup_from(argm: &[&str]) -> Commands {
+            Self::parse_from(argm).arguments
+        }
+
+        pub fn mockup_and_panic(argm: &[&str]) -> Commands {
+            let unknown = &["--unknown", "argument"];
+            let combined = [argm, unknown].concat();
+            let res = Self::try_parse_from(combined);
+            res.unwrap().arguments
+        }
+
+        pub fn mockup_for_help(argm: &[&str]) {
+            match Self::try_parse_from(argm) {
+                Ok(ocli) => {
+                    panic!("Ok parsing CLI arguments: {} -> {:?}", argm.join(" "), ocli)
                 }
-                Err(_) => (),
+                Err(ef) => {
+                    println!("Err parsing CLI arguments: {}", ef)
+                }
             }
         }
 
@@ -737,6 +748,10 @@ pub mod tests {
             Self::parse_from(TEST_ARGS_COMMIT).arguments
         }
     }
+
+    // #endregion Mockup
+
+    // #region CLI Args
 
     pub const TEST_SELECT_FIELDS: &'static str = "id,date,vehiclePlate";
 
@@ -822,6 +837,24 @@ pub mod tests {
         "debug",
     ];
 
+    const TEST_ARGS_DELETE: &'static [&'static str] = &[
+        "solrcopy",
+        "delete",
+        "--url",
+        "http://solr-server.com:8983/solr",
+        "--core",
+        "demo",
+        "--query",
+        "*:*",
+        "--flush",
+        "hard",
+        "--log-level",
+        "debug",
+        "--log-file-level",
+        "error",
+    ];
+
+
     // #endregion
 
     // #region Tests
@@ -878,23 +911,70 @@ pub mod tests {
     }
 
     #[test]
+    fn check_params_delete() {
+        let parsed = Cli::mockup_from(TEST_ARGS_DELETE);
+        match parsed {
+            Commands::Delete(res) => {
+                assert_eq!(res.options.url, TEST_ARGS_DELETE[3]);
+                assert_eq!(res.options.core, TEST_ARGS_DELETE[5]);
+                assert_eq!(res.query, TEST_ARGS_DELETE[7]);
+                assert_eq!(res.flush, CommitMode::Hard);
+                let logs = res.options.get_logging();
+                assert_eq!(logs.log_level, LevelFilter::Debug);
+                assert_eq!(logs.log_file_level, LevelFilter::Error);
+            }
+            _ => panic!("command must be 'delete' !"),
+        };
+    }
+
+    #[test]
     fn check_params_help() {
-        Cli::mockup_from(TEST_ARGS_HELP);
+        Cli::mockup_for_help(TEST_ARGS_HELP);
     }
 
     #[test]
     fn check_params_version() {
-        Cli::mockup_from(TEST_ARGS_VERSION);
+        Cli::mockup_for_help(TEST_ARGS_VERSION);
     }
 
     #[test]
     fn check_params_get_help() {
-        Cli::mockup_from(TEST_ARGS_HELP_BACKUP);
+        Cli::mockup_for_help(TEST_ARGS_HELP_BACKUP);
     }
 
     #[test]
     fn check_params_put_help() {
-        Cli::mockup_from(TEST_ARGS_HELP_RESTORE);
+        Cli::mockup_for_help(TEST_ARGS_HELP_RESTORE);
+    }
+
+    #[test]
+    #[should_panic]
+    fn check_parse_unknown() {
+        Cli::mockup_and_panic(&["solrcopy"]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn check_parse_backup_unknown() {
+        Cli::mockup_and_panic(TEST_ARGS_BACKUP);
+    }
+
+    #[test]
+    #[should_panic]
+    fn check_parse_restore_unknown() {
+        Cli::mockup_and_panic(TEST_ARGS_RESTORE);
+    }
+
+    #[test]
+    #[should_panic]
+    fn check_parse_commit_unknown() {
+        Cli::mockup_and_panic(TEST_ARGS_COMMIT);
+    }
+
+    #[test]
+    #[should_panic]
+    fn check_parse_delete_unknown() {
+        Cli::mockup_and_panic(TEST_ARGS_DELETE);
     }
 
     #[test]
