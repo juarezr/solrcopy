@@ -175,8 +175,7 @@ fn start_retrieving_docs(
 }
 
 fn retrieve_docs_from_solr(
-    reader: u64, producer: &Sender<Documents>, step: Step, client: &mut SolrClient,
-    must_match: u64,
+    reader: u64, producer: &Sender<Documents>, step: Step, client: &mut SolrClient, must_match: u64,
 ) -> bool {
     let query_url = step.url.as_str();
     let response = fetch_docs_from_solr(reader, client, query_url, must_match);

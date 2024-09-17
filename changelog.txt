@@ -1,7 +1,7 @@
 debian (0.6.0) stable; urgency=low
 
   * improved: upgraded clap to 4.5
-  * improved: upgraded crate depedencies to most up to date version
+  * improved: upgraded crate dependencies to the most up to date version
   * improved: upgraded rust to 1.80
   * improved: migrated source code to rust 2024
 
@@ -11,7 +11,7 @@ debian (0.5.7) unstable; urgency=low
 
   * improved: upgraded rust to 1.59
   * improved: migrated source code to rust 2021
-  * improved: upgraded crate depedencies to most up to date version
+  * improved: upgraded crate dependencies to the most up to date version
 
 -- Juarez Rudsatz <juarezr@gmail.com>  Wed, 23 Mar 2022 00:05:07 -0300
 

@@ -38,16 +38,15 @@ fn generate_manpage(output_dir: &Option<PathBuf>) -> BoxedResult<Option<PathBuf>
 
         return Ok(Some(manpath));
     }
-    return raise("No output directory specified to output manpage");
+    raise("No output directory specified to output manpage")
 }
 
 fn generate_for(shell: &Shell, output_dir: &Option<PathBuf>) -> BoxedResult<Option<PathBuf>> {
     let app = Cli::command().get_name().to_string();
     let mut cmd = Cli::command();
-    let path: Option<PathBuf> = match output_dir {
-        Some(dir) => Some(dir.join(shell.file_name(&app))),
-        None => None,
-    };
+
+    let path = output_dir.clone().map(|dir| dir.join(shell.file_name(&app)));
+
     let mut file: Box<dyn Write> = match path.clone() {
         None => Box::new(io::stdout()),
         Some(dir) => Box::new(File::create(&dir)?),
