@@ -15,6 +15,7 @@ keywords = ["solr", "dataimport", "dih", "fulltext-search", "apache-solr"]
 [dependencies]
 clap = { version = "4.5.*", features = ["derive", "env", "color"] }
 clap_complete = "4.5.*"
+clap_mangen = "0.2.*"
 regex = "1.10.*"
 url = "2.5.*"
 lazy_static = "1.5.*"
@@ -48,7 +49,8 @@ assets = [
   # $ cargo run --release -- completion -all -o target
   ["target/solrcopy.bash", "usr/share/bash-completion/completions/solrcopy", "644"],
   ["target/solrcopy.fish", "usr/share/fish/vendor_completions.d/solrcopy.fish", "644"],
-  ["target/_solrcopy", "usr/share/zsh/vendor-completions/", "644"],  
+  ["target/_solrcopy", "usr/share/zsh/vendor-completions/", "644"],
+  ["target/solrcopy.1", "usr/share/man/man1/", "644"],
 ]
 extended-description = """\
 Solrcopy is a command for doing backup and restore of documents stored on Solr \

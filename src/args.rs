@@ -1,7 +1,4 @@
-use clap::builder::{
-    styling::{AnsiColor as Ansi, Styles},
-    ArgPredicate,
-};
+use clap::builder::styling::{AnsiColor as Ansi, Styles};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
 use regex::Regex;
@@ -207,28 +204,19 @@ pub struct Execute {
 #[derive(Parser, Debug)]
 pub struct Completion {
     /// Specifies the shell for which the completion script should be generated
-    #[arg(
-        short, 
-        long, 
-        display_order = 10, 
-        env = "SHELL", 
-        value_parser = parse_shell, 
-        default_value_if("output_dir", ArgPredicate::IsPresent, Some("default"))
-)]
+    #[arg(short, long, display_order = 10, value_parser = parse_shell, required_unless_present_any(["all", "manpage"]))]
     pub shell: Option<Shell>,
 
-    /// Write completion script to all supported shells in the output directory
-    #[arg(short, long, display_order = 70)]
+    /// Generate a manpage for this application in the output directory
+    #[arg(short, long, display_order = 69, requires("output_dir"))]
+    pub manpage: bool,
+
+    /// Generate completion script to all supported shells in the output directory
+    #[arg(short, long, display_order = 70, requires("output_dir"))]
     pub all: bool,
 
     /// Write completion script to <path/to/dir> or to stdout if not specified
-    #[arg(
-        short,
-        long,
-        display_order = 71,
-        value_name = "path/to/dir",
-        required_if_eq("all", "true")
-    )]
+    #[arg(short, long, display_order = 71, value_name = "path/to/dir")]
     pub output_dir: Option<PathBuf>,
 }
 
@@ -887,7 +875,8 @@ pub mod tests {
         "error",
     ];
 
-    const TEST_ARGS_COMPLETION: &'static [&'static str] = &["solrcopy", "completion", "--shell", "bash", "--output-dir", "target"];
+    const TEST_ARGS_COMPLETION: &'static [&'static str] =
+        &["solrcopy", "completion", "--shell", "bash", "--output-dir", "target"];
 
     // #endregion
 
