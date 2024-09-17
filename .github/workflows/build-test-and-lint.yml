@@ -88,14 +88,16 @@ jobs:
           command: fmt
           args: --all -- --check
 
-      - name: Run cargo-tarpaulin
+      - name: Install cargo-llvm-cov
         if: matrix.os == 'ubuntu-latest'
-        uses: actions-rs/tarpaulin@v0.1
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Run coverage report
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions-rs/cargo@v1
         with:
-          version: 'latest'
-          run-types: "AllTargets"
-          out-type: "Lcov"
-          args: '-v --line --count --branch --no-fail-fast'
+          command: llvm-cov 
+          args: --all-features --workspace --lcov --output-path lcov.info
 
       - name: Coveralls
         if: matrix.os == 'ubuntu-latest'
