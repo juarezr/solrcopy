@@ -14,6 +14,7 @@ Command line tool for backup and restore of documents stored in cores of [Apache
 - Check the issues in github
 - Patches welcome!
 
+<!-- markdownlint <!-- markdownlint-disable-next-line no-inline-html --> -->
 [<img alt="Send some cookies" src="http://img.shields.io/liberapay/receives/juarezr.svg?label=Send%20some%20cookies&logo=liberapay">](https://liberapay.com/juarezr/donate)
 
 ## Usage
