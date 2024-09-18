@@ -10,6 +10,10 @@ services:
       - data:/var/solr
     command:
       - solr-demo
-      - solr create_core -c target
+      - solr create -c target
+      - solr create -c films
+      - solr post -c films /opt/solr/example/films/films.xml
+      - solr create -c films2
+      - solr post -c films2 /opt/solr/example/films/films.json
 volumes:
   data:
