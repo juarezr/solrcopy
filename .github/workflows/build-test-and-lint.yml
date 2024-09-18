@@ -9,13 +9,20 @@
 
 on:
   push:
-    branches:
-    - master
-    - release/*
+    branches: [ "master", "release/*" ]
   pull_request:
-    branches:
-    - master
+    branches: [ master ]
+    types: [opened, reopened, synchronize, ready_for_review]
   workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Run this workflow in what branch?'
+        required: true
+        type: string
+        default: master
+  schedule:
+    # Run on the 3rd of every month at 2:01
+    - cron:  '1 2 3 * *'
 
 name: build-test-and-lint
 
@@ -44,7 +51,7 @@ jobs:
     runs-on: "${{ matrix.os }}"
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install minimal stable with clippy and rustfmt
         uses: actions-rs/toolchain@v1
@@ -136,7 +143,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install nightly toolchain
         uses: actions-rs/toolchain@v1
@@ -150,7 +157,7 @@ jobs:
           command: tree
           args: --verbose --color never
 
-      - name: Run cargo-udeps
+      - name: Find unused dependencies in Cargo.toml
         uses: aig787/cargo-udeps-action@v1
         with:
           version: 'latest'
