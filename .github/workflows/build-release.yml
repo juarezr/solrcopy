@@ -29,11 +29,9 @@ jobs:
     steps:
       - name: Get release version
         run: |
-          echo ::set-env name=RELEASE_VERSION::${RELEASE_VERSION:1}
           echo "github.event.release.tag_name : ${{ github.event.release.tag_name }}"
           echo "github.event.release.upload_url : ${{ github.event.release.upload_url }}"
           echo "github.event_path : ${{ github.event_path }}"
-          # cat ${{ github.event_path }}
 
       - name: Install rust toolchain
         uses: actions-rs/toolchain@v1
@@ -48,7 +46,7 @@ jobs:
         if: matrix.os == 'linux'
         with:
           command: install
-          args: cargo-deb cargo-rpm
+          args: cargo-deb cargo-generate-rpm
 
       - name: Install rpm tools
         if: matrix.os == 'linux'
@@ -63,7 +61,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends mingw-w64
 
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Create local folders
         run: mkdir -p target/${{ matrix.target }}/artifact
