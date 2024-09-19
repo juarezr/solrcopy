@@ -97,23 +97,23 @@ jobs:
         run: |
           echo '::group::Checking Future Incompatibilities';
 
-          printf '# Future Incompatibilities\n\n' > "${GITHUB_STEP_SUMMARY}";
+          printf '# Future Incompatibilities\n\n' >> "${GITHUB_STEP_SUMMARY}";
           printf '<!-- markdownlint-disable-file MD009 MD027 MD028 MD034 -->\n## Compilation\n\n' >> "${GITHUB_STEP_SUMMARY}";
 
-          cargo check --future-incompat-report 2>&1 | tee -a "${GITHUB_STEP_SUMMARY}";
+          cargo check --future-incompat-report 2>&1 >> "${GITHUB_STEP_SUMMARY}";
 
           echo '::endgroup::';
           echo '::group::Reporting Future Incompatibilities';
 
-          printf '\n## Future Incompatibilities Report\n\n' > "${GITHUB_STEP_SUMMARY}";
+          printf '\n## Future Incompatibilities Report\n\n' >> "${GITHUB_STEP_SUMMARY}";
 
-          if cargo report future-incompatibilities --color never | sed 's/^> $//g' | tee -a "${GITHUB_STEP_SUMMARY}"; then 
+          if cargo report future-incompatibilities --color never >> "${GITHUB_STEP_SUMMARY}"; then 
             echo "FUTURE_INCOMPATIBILITIES=1" >> "${GITHUB_OUTPUT}";
             echo "::warning file=Cargo.toml,line=15,col=2,endColumn=24,title=FUTURE-INCOMPATIBILITIES::Future imcompatibilities found in source code or dependencies.";
             false;
           else
             echo "FUTURE_INCOMPATIBILITIES=0" >> "${GITHUB_OUTPUT}";
-            printf 'No future incompatibilities found in this build.\n' > "${GITHUB_STEP_SUMMARY}";
+            printf 'No future incompatibilities found in this build.\n' >> "${GITHUB_STEP_SUMMARY}";
           fi
           echo '::endgroup::';
           
