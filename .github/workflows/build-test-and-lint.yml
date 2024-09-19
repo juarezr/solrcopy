@@ -49,9 +49,13 @@ jobs:
         with:
           ref: ${{ inputs.branch_commit_or_ref || '' }}
 
-      - name: Install Rust ${{ matrix.channel }} toolchain
+      - name: Rustup Self Update
+        if: matrix.os != 'macos-latest'
         run: |
           rustup self update
+
+      - name: Update Rust toolchain from channel ${{ matrix.channel }} 
+        run: |
           rustup update ${{ matrix.channel }}
           rustup default ${{ matrix.channel }}
 
@@ -164,7 +168,7 @@ jobs:
         with:
           ref: ${{ inputs.branch_commit_or_ref || '' }}
 
-      - name: Install Rust ${{ matrix.channel }} toolchain
+      - name: Update Rust toolchain from channel ${{ matrix.channel }} 
         run: |
           rustup self update
           rustup update ${{ matrix.channel }}
