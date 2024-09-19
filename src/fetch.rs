@@ -102,6 +102,7 @@ impl SolrCore {
 #[cfg(test)]
 pub mod tests {
     use crate::fetch::*;
+    use pretty_assertions::assert_eq;
 
     const CORE_1ROW: &str = r#"{
         "response":{"numFound":46,"start":0,

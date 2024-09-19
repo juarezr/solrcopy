@@ -885,6 +885,8 @@ pub mod tests {
     // #region Tests
 
     use clap_complete::Shell::Bash;
+    use pretty_assertions::assert_eq;
+
 
     #[test]
     fn check_params_backup() {

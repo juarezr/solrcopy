@@ -491,6 +491,7 @@ pub(crate) fn print_env_vars() {
 #[cfg(test)]
 mod tests {
     use crate::helpers::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn check_starts_with_any() {

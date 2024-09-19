@@ -83,6 +83,7 @@ macro_rules! should_fail {
 #[cfg(test)]
 mod tests {
     use crate::fails::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn check_throw_and_raise() {

@@ -394,6 +394,7 @@ mod tests {
         helpers::*,
         steps::*,
     };
+    use pretty_assertions::assert_eq;
 
     impl Commands {
         pub fn get(&self) -> BoxedResult<&Backup> {

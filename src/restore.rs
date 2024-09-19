@@ -278,6 +278,7 @@ fn send_to_solr(
 #[cfg(test)]
 mod tests {
     use crate::{args::*, fails::*};
+    use pretty_assertions::assert_eq;
 
     impl Commands {
         pub fn put(&self) -> BoxedResult<&Restore> {
