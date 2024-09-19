@@ -20,7 +20,7 @@
 extern crate lazy_static;
 
 mod args;
-mod argscompletion;
+mod assets;
 mod backup;
 mod bars;
 mod commit;
@@ -54,7 +54,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Commands::Restore(put) => restore::restore_main(put),
         Commands::Commit(cmd) => commit::commit_main(cmd),
         Commands::Delete(del) => delete::delete_main(del),
-        Commands::Completion(cpl) => argscompletion::gen_completion(cpl),
+        Commands::Generate(cpl) => assets::gen_assets(cpl),
     }
 }
 

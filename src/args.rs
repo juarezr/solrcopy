@@ -47,8 +47,8 @@ pub enum Commands {
     Commit(Execute),
     /// Removes documents from the Solr core definitively
     Delete(Delete),
-    /// Generates completion scripts for different shells
-    Completion(Completion),
+    /// Generates man page and completion scripts for different shells
+    Generate(Generate),
 }
 
 #[derive(Parser, Debug)]
@@ -202,8 +202,8 @@ pub struct Execute {
 }
 
 #[derive(Parser, Debug)]
-pub struct Completion {
-    /// Specifies the shell for which the completion script should be generated
+pub struct Generate {
+    /// Specifies the shell for which the argument completion script should be generated
     #[arg(short, long, display_order = 10, value_parser = parse_shell, required_unless_present_any(["all", "manpage"]))]
     pub shell: Option<Shell>,
 
@@ -211,12 +211,12 @@ pub struct Completion {
     #[arg(short, long, display_order = 69, requires("output_dir"))]
     pub manpage: bool,
 
-    /// Generate completion script to all supported shells in the output directory
+    /// Generate argument completion script in the output directory for all supported shells
     #[arg(short, long, display_order = 70, requires("output_dir"))]
     pub all: bool,
 
-    /// Write completion script to <path/to/dir> or to stdout if not specified
-    #[arg(short, long, display_order = 71, value_name = "path/to/dir")]
+    /// Write the generated assets to <path/to/output/dir> or to stdout if not specified
+    #[arg(short, long, display_order = 71, value_name = "path/to/output/dir")]
     pub output_dir: Option<PathBuf>,
 }
 
@@ -678,7 +678,7 @@ impl FromStr for SortField {
     }
 }
 
-impl Completion {
+impl Generate {
     pub fn get_shells(&self) -> Vec<Shell> {
         let sh: Option<Shell> = if self.all { None } else { self.shell };
         match sh {
@@ -875,8 +875,8 @@ pub mod tests {
         "error",
     ];
 
-    const TEST_ARGS_COMPLETION: &'static [&'static str] =
-        &["solrcopy", "completion", "--shell", "bash", "--output-dir", "target"];
+    const TEST_ARGS_GENERATE: &'static [&'static str] =
+        &["solrcopy", "generate", "--shell", "bash", "--output-dir", "target"];
 
     // #endregion
 
@@ -953,14 +953,14 @@ pub mod tests {
     }
 
     #[test]
-    fn check_params_completion() {
-        let parsed = Cli::mockup_from(TEST_ARGS_COMPLETION);
+    fn check_params_generate() {
+        let parsed = Cli::mockup_from(TEST_ARGS_GENERATE);
         match parsed {
-            Commands::Completion(res) => {
+            Commands::Generate(res) => {
                 assert_eq!(res.shell, Some(Bash));
                 assert_eq!(res.output_dir, Some(PathBuf::from("target")));
             }
-            _ => panic!("command must be 'completion' !"),
+            _ => panic!("command must be 'generate' !"),
         };
     }
 
