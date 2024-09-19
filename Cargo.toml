@@ -1,6 +1,6 @@
 [package]
 name = "solrcopy"
-version = "0.6.0"
+version = "0.6.3"
 edition = "2021"
 
 authors = ["Juarez Rudsatz <juarezr@gmail.com>"]
@@ -29,6 +29,10 @@ simplelog = "0.12.*"
 crossbeam-channel = "0.5.1"
 crossbeam-utils = "0.8.*"
 ctrlc = { version = "3.4.*", features = ["termination"] }
+
+# standard crate data is left out
+[dev-dependencies]
+pretty_assertions = "1.*"
 
 [features]
 testsolr = []
