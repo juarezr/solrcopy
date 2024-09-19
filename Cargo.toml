@@ -30,6 +30,9 @@ crossbeam-channel = "0.5.1"
 crossbeam-utils = "0.8.*"
 ctrlc = { version = "3.4.*", features = ["termination"] }
 
+[features]
+testsolr = []
+
 [badges]
 travis-ci = { repository = "juarezr/solrcopy", branch = "master" }
 
