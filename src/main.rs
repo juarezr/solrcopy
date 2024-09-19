@@ -1,3 +1,7 @@
+// region Module and crate references
+
+// region Strict Linting
+
 #![deny(warnings)]
 #![deny(anonymous_parameters)]
 #![deny(bare_trait_objects)]
@@ -8,13 +12,17 @@
 #![deny(unused_extern_crates)]
 #![deny(unused_import_braces)]
 
-// switches for develoment only
+// endregion
+
+// region Switches for develoment only (do not commit enabled)
 
 // #![allow(unused_variables)]
 // #![allow(unused_imports)]
 // #![allow(dead_code)]
 
-// app depedencies
+// endregion
+
+// region Module use
 
 #[macro_use]
 extern crate lazy_static;
@@ -36,88 +44,111 @@ mod save;
 mod state;
 mod steps;
 
-use clap::Parser;
+// endregion
 
-use simplelog::{ColorChoice, CombinedLogger, Config, SharedLogger, TermLogger, WriteLogger};
+// region Main Entry Point
 
-pub use crate::args::{Cli, Commands};
-use crate::fails::{throw, BoxedResult};
-
-use std::fs::File;
+use crate::args::Cli;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let parsed = Cli::parse_from_args()?;
 
-    command_exec(parsed)
+    wrangle::command_exec(parsed)
 }
 
-pub fn command_exec(parsed: Cli) -> Result<(), Box<dyn std::error::Error>> {
-    let args = &parsed.arguments;
-    match args {
-        Commands::Backup(get) => backup::backup_main(get),
-        Commands::Restore(put) => restore::restore_main(put),
-        Commands::Commit(cmd) => commit::commit_main(cmd),
-        Commands::Delete(del) => delete::delete_main(del),
-        Commands::Generate(cpl) => assets::gen_assets(cpl),
+// endregion
+
+// region Command line parsing
+
+mod wrangle {
+
+    use clap::Parser;
+    use simplelog::{ColorChoice, CombinedLogger, Config, SharedLogger, TermLogger, WriteLogger};
+    use std::fs::File;
+    use crate::args::{Cli, Commands};
+    use crate::fails::{throw, BoxedResult};
+    use crate::{assets, backup, commit, delete, restore};
+
+    pub fn command_exec(parsed: Cli) -> Result<(), Box<dyn std::error::Error>> {
+        let args = &parsed.arguments;
+        match args {
+            Commands::Backup(get) => backup::backup_main(get),
+            Commands::Restore(put) => restore::restore_main(put),
+            Commands::Commit(cmd) => commit::commit_main(cmd),
+            Commands::Delete(del) => delete::delete_main(del),
+            Commands::Generate(cpl) => assets::gen_assets(cpl),
+        }
     }
-}
 
-// region Cli impl
-
-impl Cli {
-    pub fn parse_from_args() -> BoxedResult<Self> {
-        let res = Self::parse();
-        if let Err(msg) = res.arguments.validate() {
-            throw(msg)?;
+    impl Cli {
+        pub fn parse_from_args() -> BoxedResult<Self> {
+            let res = Self::parse();
+            if let Err(msg) = res.arguments.validate() {
+                throw(msg)?;
+            }
+            res.start_log()?;
+            Ok(res)
         }
-        res.start_log()?;
-        Ok(res)
-    }
 
-    fn start_log(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let opt = self.arguments.get_logging();
+        fn start_log(&self) -> Result<(), Box<dyn std::error::Error>> {
+            let opt = self.arguments.get_logging();
 
-        let mut enabled: Vec<Box<dyn SharedLogger>> = Vec::new();
-        if !opt.is_quiet() {
-            enabled.push(TermLogger::new(
-                opt.log_level,
-                Config::default(),
-                opt.log_mode,
-                ColorChoice::Auto,
-            ));
+            let mut enabled: Vec<Box<dyn SharedLogger>> = Vec::new();
+            if !opt.is_quiet() {
+                enabled.push(TermLogger::new(
+                    opt.log_level,
+                    Config::default(),
+                    opt.log_mode,
+                    ColorChoice::Auto,
+                ));
+            }
+            if let Some(filepath) = &opt.log_file_path {
+                let file_to_log = File::create(filepath).unwrap();
+                enabled.push(WriteLogger::new(opt.log_level, Config::default(), file_to_log));
+            }
+            CombinedLogger::init(enabled).unwrap();
+            Ok(())
         }
-        if let Some(filepath) = &opt.log_file_path {
-            let file_to_log = File::create(filepath).unwrap();
-            enabled.push(WriteLogger::new(opt.log_level, Config::default(), file_to_log));
-        }
-        CombinedLogger::init(enabled).unwrap();
-        Ok(())
     }
 }
 
 // endregion
 
+// endregion
+
+// region Testing against Solr server
+
 #[cfg(test)]
 #[cfg(feature = "testsolr")]
+/// Test against Solr instance running on localhost:8983 by default
 mod solr_tests {
 
-    use crate::{args::Cli, command_exec};
+    use crate::args::{Cli, SOLR_COPY_DIR, SOLR_COPY_URL};
+    use super::wrangle::command_exec;
     use clap::Parser;
 
     fn test_command_line_args_for(args: &[&str]) {
+        // Use the same args as solrcopy binary for testing
         let parsed = Cli::parse_from(args);
 
+        // Execute the same way solrcopy would exec
         let res = command_exec(parsed);
 
-        assert_eq!(res.is_ok(), true);
+        // Display the error message if it failed
+        if let Err(err) = res {
+            let res = format!("Command: {}", args.join(" "));
+            let msg = format!("Failure: {:?}", err);
+
+            assert_eq!(res, msg, "\n   Tip: Check it the core has any documents indexed.");
+        }
     }
 
     fn get_solr_url() -> String {
-        std::env::var("SOLRCOPY_URL").unwrap_or_else(|_| "http://localhost:8983/solr".into())
+        std::env::var(SOLR_COPY_URL).unwrap_or_else(|_| "http://localhost:8983/solr".into())
     }
 
     fn get_output_dir() -> String {
-        std::env::var("SOLRCOPY_DIR").unwrap_or_else(|_| "target".into())
+        std::env::var(SOLR_COPY_DIR).unwrap_or_else(|_| "target".into())
     }
 
     /// Run this command to test backup from a running Solr instance
@@ -192,4 +223,4 @@ mod solr_tests {
     }
 }
 
-// end of file
+// endregion
