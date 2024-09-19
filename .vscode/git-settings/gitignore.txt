@@ -1,0 +1,15 @@
+#? Check out Git Ignore Patterns on:
+#@ https://github.com/github/gitignore.git
+
+Global/Windows
+Global/macOS
+Global/Linux
+
+Global/VisualStudioCode
+
+Global/Backup
+Global/Diff
+
+Rust
+
+# THE END #

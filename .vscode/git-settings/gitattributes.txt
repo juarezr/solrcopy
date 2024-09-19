@@ -1,0 +1,11 @@
+#? Check out Git File Atributes on:
+#@ https://github.com/gitattributes/gitattributes.git
+
+Common
+Markdown
+
+Global/VisualStudioCode
+
+Rust
+
+# THE END #
