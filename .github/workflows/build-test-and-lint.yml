@@ -57,6 +57,7 @@ jobs:
         run: |
           rustup update ${{ matrix.channel }}
           rustup default ${{ matrix.channel }}
+          rustup component add llvm-tools
 
       - name: Check Rust ${{ matrix.channel }} toolchain versions
         run: |
@@ -135,7 +136,7 @@ jobs:
 
       - name: Run coverage report
         if: matrix.os == 'ubuntu-latest'
-        run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+        run: cargo llvm-cov --all-features --workspace --lcov --no-cfg-coverage-nightly --output-path lcov.info
 
       - name: Coveralls
         if: matrix.os == 'ubuntu-latest'
