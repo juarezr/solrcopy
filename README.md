@@ -305,7 +305,7 @@ $ docker compose -f docker/docker-compose.yml up -d
 # Run this command to test backup
 $ cargo run -- backup --url http://localhost:8983/solr --core demo --dir $PWD/core-demo.json
 # Run this command to test restoring the backukp data into a existing empty core
-$ cargo run -- restore --url http://localhost:8983/solr --search demo --core clone --dir $PWD
+$ cargo run -- restore --url http://localhost:8983/solr --search demo --core target --dir $PWD
 ```
 
 #### Using only docker tools
