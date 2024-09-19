@@ -1,70 +1,68 @@
 ## Workflow triggered when issuing a new release
 
+name: build-release
+
 on:
   release:
     types: [published]
 
-name: build-release
-
 jobs:
   releasing:
     name: releasing
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.platform }}
     strategy:
+      fail-fast: true
       matrix:
-        build: [linux, win-gnu, macos]
-        # rustc --print target-list
         include:
-        - build: linux
-          os: linux
+        - platform: linux
+          os: ubuntu-latest
           target: x86_64-unknown-linux-gnu
           channel: stable
-          cross: false
-        - build: win-gnu
-          os: windows
+        - platform: windows
+          os: windows-latest
           target: x86_64-pc-windows-gnu
           channel: stable
-          cross: true
-        - build: macos
-          os: macos
+        - platform: macos
+          os: macos-latest
           target: x86_64-apple-darwin
           channel: stable
-          cross: true
+
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       RELEASE_VERSION: ${{ github.event.release.tag_name }}
-      TARGET_DIR: target/${{ matrix.target }}/release
-      ARTIFACT_DIR: target/${{ matrix.target }}/artifacts
+      TARGET_DIR: target/release
+      ARTIFACT_DIR: target/artifacts
       ARTIFACT_NAME: solrcopy-${{ github.event.release.tag_name }}-${{ matrix.target }}
     
     steps:
-      - name: Get release version
+      # region Install and update Rust
+
+      - name: Show release version
         run: |
           echo "github.event.release.tag_name : ${{ github.event.release.tag_name }}"
           echo "github.event.release.upload_url : ${{ github.event.release.upload_url }}"
           echo "github.event_path : ${{ github.event_path }}"
 
       - name: Install rpm tools
-        if: matrix.os == 'linux'
+        if: matrix.platform == 'linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends rpm
 
       - name: Install mingw toolchain
-        if: matrix.os == 'windows'
+        if: matrix.platform == 'windows'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends mingw-w64
 
-
       - name: Rustup Self Update
-        if: matrix.os != 'macos'
+        if: matrix.platform != 'macos'
         run: |
           rustup self update
 
       - name: Update Rust toolchain from channel ${{ matrix.channel }} 
         run: |
-          rustup target add --toolchain ${{ matrix.channel }} ${{ matrix.target }}
+          rustup update ${{ matrix.channel }}
           rustup default ${{ matrix.channel }}
 
       - name: Check Rust ${{ matrix.channel }} toolchain versions
@@ -75,9 +73,13 @@ jobs:
           rustup show
 
       - name: Install cargo plugins
-        if: matrix.os == 'linux'
+        if: matrix.platform == 'linux'
         run: cargo install cargo-deb cargo-generate-rpm
 
+      # endregion
+      
+      # region Compiling
+      
       - name: Checkout sources
         uses: actions/checkout@v4
 
@@ -88,51 +90,59 @@ jobs:
         run: cargo run -- generate --all --output-dir target/assets
 
       - name: Compiling the application for further packaging
-        run: cargo build --release --target=${{ matrix.target }}
+        run: cargo build --release
 
+      # endregion
+      
+      # region Packaging
+      
       - name: Make a tar package for release (linux and macos)
-        if: matrix.os == 'linux' || matrix.os == 'macos'
+        if: matrix.platform == 'linux' || matrix.platform == 'macos'
         run: tar --directory=${{ env.TARGET_DIR }} -czvf ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.tar.gz solrcopy
 
       - name: Make a Windows zip package
-        if: matrix.os == 'windows'
+        if: matrix.platform == 'windows'
         run: |
           ls -lshFGHL ${{ env.TARGET_DIR }}
           zip -j ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.zip ${{ env.TARGET_DIR }}/solrcopy.exe
 
       - name: Make the debian package
-        if: matrix.os == 'linux'
-        run: cargo deb --profile release --verbose --strip --no-build --target=${{ matrix.target }} --output ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.deb
+        if: matrix.platform == 'linux'
+        run: cargo deb --profile release --verbose --no-build --output ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.deb
         
       - name: Make a rpm package
-        if: matrix.os == 'linux'
-        run: cargo generate-rpm --profile release --target=${{ matrix.target }} --output ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.rpm
+        if: matrix.platform == 'linux'
+        run: cargo generate-rpm --profile release --output ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.rpm
 
+      # endregion
+      
+      # region Upload Artifact
+      
       - name: Upload Debian Package
         uses: actions/upload-release-asset@v1
-        if: matrix.os == 'linux'
+        if: matrix.platform == 'linux'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: target/${{ matrix.target }}/debian/solrcopy_${{ env.RELEASE_VERSION }}_amd64.deb
-          asset_name: solrcopy_${{ env.RELEASE_VERSION }}_amd64.deb
+          asset_path: ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.deb
+          asset_name: ${{ env.ARTIFACT_NAME }}.deb
           asset_content_type: application/vnd.debian.binary-package
 
       - name: Upload RPM Package
         uses: actions/upload-release-asset@v1
-        if: matrix.os == 'linux'
+        if: matrix.platform == 'linux'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${{ env.TARGET_DIR }}/solrcopy-${{ env.RELEASE_VERSION }}.rpm
-          asset_name: solrcopy-${{ env.RELEASE_VERSION }}.rpm
+          asset_path: ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.rpm
+          asset_name: ${{ env.ARTIFACT_NAME }}.rpm
           asset_content_type: application/x-rpm
 
       - name: Upload linux binary package
         uses: actions/upload-release-asset@v1
-        if: matrix.os == 'linux' || matrix.os == 'macos'
+        if: matrix.platform == 'linux' || matrix.platform == 'macos'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -143,7 +153,7 @@ jobs:
 
       - name: Upload windows binary package
         uses: actions/upload-release-asset@v1
-        if: matrix.os == 'windows'
+        if: matrix.platform == 'windows'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -151,5 +161,7 @@ jobs:
           asset_path: ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.zip
           asset_name: ${{ env.ARTIFACT_NAME }}.zip
           asset_content_type: application/octet-stream
+
+      # endregion
 
 # end of file
