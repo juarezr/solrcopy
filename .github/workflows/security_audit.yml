@@ -4,14 +4,26 @@ name: Monthly Security Audit
 on:
   schedule:
     - cron: '3 2 1 * *'
+  workflow_dispatch:
+    inputs:
+      branch_commit_or_ref:
+        description: 'Run this workflow in what branch/commit?'
+        required: true
+        type: string
+        default: master
+
 jobs:
   audit:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch_commit_or_ref || 'master' }}
 
       - name: Run security audit
         uses: actions-rs/audit-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+
+# THE END #
