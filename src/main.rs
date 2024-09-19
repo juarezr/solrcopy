@@ -121,15 +121,14 @@ mod solr_tests {
     }
 
     /// Run this command to test backup from a running Solr instance
-    fn check_exec_backup(url:  &str , dir: &str) {
-
+    fn check_exec_backup(url: &str, dir: &str) {
         let test_args = &["solrcopy", "backup", "--url", url, "--core", "demo", "--dir", dir];
 
         test_command_line_args_for(test_args);
     }
 
     /// Run this command to test backup from a running Solr instance
-    fn check_exec_restore(url:  &str , dir: &str) {
+    fn check_exec_restore(url: &str, dir: &str) {
         let test_args = &[
             "solrcopy", "restore", "--url", url, "--core", "target", "--search", "demo", "--dir",
             dir,
