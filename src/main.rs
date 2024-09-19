@@ -145,6 +145,8 @@ mod solr_tests {
         check_exec_backup(url, dir);
 
         check_exec_restore(url, dir);
+
+        check_exec_delete(url);
     }
 
     /// Run this command to test backup from a running Solr instance
@@ -160,18 +162,14 @@ mod solr_tests {
     }
 
     /// Run this command to test delete all docs in the from a running Solr instance
-    #[test]
-    fn check_exec_delete() {
-        let uri = get_solr_url();
-        let url = uri.as_str();
-
+    fn check_exec_delete(url: &str) {
         let test_args = &[
             "solrcopy",
             "delete",
             "--url",
             url,
             "--core",
-            "films",
+            "demo",
             "--query",
             "*:*",
             "--flush",
@@ -179,7 +177,6 @@ mod solr_tests {
             "--log-level",
             "debug",
         ];
-
         test_command_line_args_for(test_args);
     }
 
