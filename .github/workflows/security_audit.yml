@@ -15,15 +15,44 @@ on:
 jobs:
   audit:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        channel: [ stable ]
     steps:
-      - name: Checkout sources
+      # region Environment setup
+
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch_commit_or_ref || '' }}
 
+      - name: Update Rust toolchain from channel ${{ matrix.channel }} 
+        run: |
+          rustup self update
+          rustup update ${{ matrix.channel }}
+          rustup default ${{ matrix.channel }}
+
+      - name: Check Rust ${{ matrix.channel }} toolchain versions
+        run: |
+          rustup --version
+          cargo --version
+          rustc --version
+          rustup show
+
+      # endregion
+      
+      # region Run security audit
+
+      - name: Intall cargo-audit from channel ${{ matrix.channel }}
+        run: cargo install cargo-auditable cargo-audit
+
+      - name: Build with dependency lists embedded in the binaries
+        run: cargo auditable build --release
+
       - name: Run security audit
-        uses: actions-rs/audit-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+        run: cargo audit bin target/release/solrcopy
+
+      # endregion
 
 # THE END #
