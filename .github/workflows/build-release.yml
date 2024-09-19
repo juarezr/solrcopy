@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        build: [linux, win-gnu]
+        build: [linux, win-gnu, macos]
         # rustc --print target-list
         include:
         - build: linux
@@ -21,7 +21,12 @@ jobs:
         - build: win-gnu
           os: windows
           target: x86_64-pc-windows-gnu
-          channel: nightly-x86_64-gnu
+          channel: stable
+          cross: true
+        - build: macos
+          os: macos
+          target: x86_64-apple-darwin
+          channel: stable
           cross: true
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -84,6 +89,8 @@ jobs:
           command: build
           args: --release --verbose --target=${{ matrix.target }}
 
+      - name: Make a tar package for release (linux and macos)
+        if: matrix.os == 'linux' || matrix.os == 'macos'
         run: tar --directory=${{ env.TARGET_DIR }} -czvf ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.tar.gz solrcopy
 
       - name: Make a Windows zip package
@@ -130,7 +137,7 @@ jobs:
 
       - name: Upload linux binary package
         uses: actions/upload-release-asset@v1
-        if: matrix.os == 'linux'
+        if: matrix.os == 'linux' || matrix.os == 'macos'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
