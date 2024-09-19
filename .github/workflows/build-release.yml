@@ -56,20 +56,23 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends mingw-w64
 
-      - name: Install rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: default
-          toolchain: stable
-          target: ${{ matrix.target }}
-          override: true
+      - name: Install Rust ${{ matrix.channel }} toolchain for ${{ matrix.target }}
+        run: |
+          rustup self update
+          rustup update
+          rustup target add --toolchain ${{ matrix.channel }} ${{ matrix.target }}
+          rustup default ${{ matrix.channel }}
+
+      - name: Check Rust ${{ matrix.channel }} toolchain versions
+        run: |
+          rustup --version
+          cargo --version
+          rustc --version
+          rustup show
 
       - name: Install cargo plugins
-        uses: actions-rs/cargo@v1
         if: matrix.os == 'linux'
-        with:
-          command: install
-          args: cargo-deb cargo-generate-rpm
+        run: cargo install cargo-deb cargo-generate-rpm
 
       - name: Checkout sources
         uses: actions/checkout@v4
@@ -78,18 +81,10 @@ jobs:
         run: mkdir -p ${{ env.ARTIFACT_DIR }} target/assets
 
       - name: Generate Assets
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: ${{ matrix.cross }}
-          command: run
-          args: run -- generate --all --output-dir target/assets
+        run: cargo run -- generate --all --output-dir target/assets
 
-      - name: Run cargo build
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: ${{ matrix.cross }}
-          command: build
-          args: --release --verbose --target=${{ matrix.target }}
+      - name: Compiling the application for further packaging
+        run: cargo build --release --target=${{ matrix.target }}
 
       - name: Make a tar package for release (linux and macos)
         if: matrix.os == 'linux' || matrix.os == 'macos'
@@ -102,18 +97,12 @@ jobs:
           zip -j ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.zip ${{ env.TARGET_DIR }}/solrcopy.exe
 
       - name: Make the debian package
-        uses: actions-rs/cargo@v1
         if: matrix.os == 'linux'
-        with:
-          command: deb
-          args: --profile release --verbose --strip --no-build --target=${{ matrix.target }} --output ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.deb
-
+        run: cargo deb --profile release --verbose --strip --no-build --target=${{ matrix.target }} --output ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.deb
+        
       - name: Make a rpm package
-        uses: actions-rs/cargo@v1
         if: matrix.os == 'linux'
-        with:
-          command: generate-rpm
-          args: --profile release --target=${{ matrix.target }} --output ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.rpm
+        run: cargo generate-rpm --profile release --target=${{ matrix.target }} --output ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.rpm
 
       - name: Upload Debian Package
         uses: actions/upload-release-asset@v1

@@ -38,7 +38,7 @@ jobs:
       fail-fast: true
       matrix:
         os: [ ubuntu-latest, windows-latest, macos-latest ]
-        toolchain: [ stable ]
+        channel: [ stable ]
     runs-on: "${{ matrix.os }}"
 
     steps:
@@ -49,16 +49,18 @@ jobs:
         with:
           ref: ${{ inputs.branch_commit_or_ref || 'master' }}
 
-      - name: Install Rust ${{ matrix.toolchain }} toolchain
+      - name: Install Rust ${{ matrix.channel }} toolchain
         run: |
-          rustup update ${{ matrix.toolchain }}
-          rustup default ${{ matrix.toolchain }}
+          rustup self update
+          rustup update ${{ matrix.channel }}
+          rustup default ${{ matrix.channel }}
 
-      - name: Check Rust ${{ matrix.toolchain }} toolchain versions
+      - name: Check Rust ${{ matrix.channel }} toolchain versions
         run: |
           rustup --version
           cargo --version
           rustc --version
+          rustup show
 
       # endregion
       
@@ -153,7 +155,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        toolchain: [ nightly ]
+        channel: [ nightly ]
     steps:
       # region Environment setup
 
@@ -162,16 +164,18 @@ jobs:
         with:
           ref: ${{ inputs.branch_commit_or_ref || 'master' }}
 
-      - name: Install Rust ${{ matrix.toolchain }} toolchain
+      - name: Install Rust ${{ matrix.channel }} toolchain
         run: |
-          rustup update ${{ matrix.toolchain }}
-          rustup default ${{ matrix.toolchain }}
+          rustup self update
+          rustup update ${{ matrix.channel }}
+          rustup default ${{ matrix.channel }}
 
-      - name: Check Rust ${{ matrix.toolchain }} toolchain versions
+      - name: Check Rust ${{ matrix.channel }} toolchain versions
         run: |
           rustup --version
           cargo --version
           rustc --version
+          rustup show
 
       # endregion
       
