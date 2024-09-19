@@ -1,3 +1,5 @@
+## Workflow triggered when issuing a new release
+
 on:
   release:
     types: [published]

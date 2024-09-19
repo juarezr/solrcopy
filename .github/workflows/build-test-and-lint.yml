@@ -1,11 +1,6 @@
-# Based on:
-#   - https://github.com/actions-rs/example/blob/master/.github/workflows/quickstart.yml
-#
-# Using:
-#   - https://github.com/actions-rs/toolchain   -> https://github.com/marketplace/actions/rust-toolchain
-#   - https://github.com/actions-rs/cargo       -> https://github.com/marketplace/actions/rust-cargo
-#
-# for simplicity we are checking compilation but testing everything on the Ubuntu environment only.
+## Workflow triggered by pull_request and pushes on master branch
+
+# Due to limitations we are checking compilation but testing everything on the Ubuntu environment only.
 
 on:
   push:
@@ -13,16 +8,16 @@ on:
   pull_request:
     branches: [ master ]
     types: [opened, reopened, synchronize, ready_for_review]
-  workflow_dispatch:
-    inputs:
-      branch_commit_ref:
-        description: 'Run this workflow in what branch?'
-        required: true
-        type: string
-        default: master
   schedule:
     # Run on the 3rd of every month at 2:01
     - cron:  '1 2 3 * *'
+  workflow_dispatch:
+    inputs:
+      branch_commit_or_ref:
+        description: 'Run this workflow in what branch/commit?'
+        required: true
+        type: string
+        default: master
 
 name: build-test-and-lint
 
@@ -46,10 +41,12 @@ jobs:
     runs-on: "${{ matrix.os }}"
 
     steps:
+      # region Checkout and Install
+
       - name: Checkout sources
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.branch_commit_ref || 'master' }}
+          ref: ${{ inputs.branch_commit_or_ref || 'master' }}
 
       - name: Install minimal stable with clippy and rustfmt
         uses: actions-rs/toolchain@v1
@@ -60,14 +57,19 @@ jobs:
           override: true
           components: rustfmt, clippy
 
-      - name: Run cargo build
+      # endregion
+      
+      # region Testing
+      
+      - name: Run cargo check
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --verbose
+          args: --all-features
 
       - name: Run Solr for testing
         uses: hoverkraft-tech/compose-action@v2.0.1
+        if: matrix.os == 'ubuntu-latest'
         with:
           compose-file: "./docker/docker-compose.yml"
           up-flags: "-d"
@@ -77,6 +79,10 @@ jobs:
         with:
           command: test 
 
+      # endregion
+      
+      # region Linting
+      
       - name: Run cargo clippy
         if: matrix.os == 'ubuntu-latest'
         uses: actions-rs/clippy-check@v1
@@ -125,6 +131,10 @@ jobs:
           command: doc
           args: --no-deps --document-private-items --all-features
 
+      # endregion
+      
+      # region Test Coverage
+      
       - name: Install cargo-llvm-cov
         if: matrix.os == 'ubuntu-latest'
         uses: taiki-e/install-action@cargo-llvm-cov
@@ -149,6 +159,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      # endregion
+
   deps:
     needs: ci
     runs-on: ubuntu-latest
@@ -156,7 +168,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.branch_commit_ref || 'master' }}
+          ref: ${{ inputs.branch_commit_or_ref || 'master' }}
 
       - name: Install nightly toolchain
         uses: actions-rs/toolchain@v1
