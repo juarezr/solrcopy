@@ -54,6 +54,12 @@ jobs:
           rustup update ${{ matrix.toolchain }}
           rustup default ${{ matrix.toolchain }}
 
+      - name: Check Rust ${{ matrix.toolchain }} toolchain versions
+        run: |
+          rustup --version
+          cargo --version
+          rustc --version
+
       # endregion
       
       # region Testing
@@ -108,7 +114,7 @@ jobs:
           
       - name: Run cargo fmt
         if: matrix.os == 'ubuntu-latest'
-        run: cargo fmt --check --all-features
+        run: cargo fmt --check
           
       - name: Run cargo doc
         if: matrix.os == 'ubuntu-latest'
@@ -149,16 +155,27 @@ jobs:
       matrix:
         toolchain: [ nightly ]
     steps:
+      # region Environment setup
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch_commit_or_ref || 'master' }}
 
-
       - name: Install Rust ${{ matrix.toolchain }} toolchain
         run: |
           rustup update ${{ matrix.toolchain }}
           rustup default ${{ matrix.toolchain }}
+
+      - name: Check Rust ${{ matrix.toolchain }} toolchain versions
+        run: |
+          rustup --version
+          cargo --version
+          rustc --version
+
+      # endregion
+      
+      # region Checking unused dependencies
 
       - name: Print dependency tree
         run: cargo tree --verbose --color never
@@ -168,5 +185,7 @@ jobs:
         with:
           version: 'latest'
           args: '--all-targets'
+
+      # endregion
 
 # end of file
