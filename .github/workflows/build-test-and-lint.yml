@@ -30,14 +30,15 @@ jobs:
     if: (!github.event.pull_request.draft) && (!contains( github.event.pull_request.labels.*.name, 'prevent-ci'))
     steps:
       - name: Checking if CI shoud run for this push/PR...
-        run: echo Resuming CI. Continuing next jobs...
+        run: echo 'Resuming CI. Continuing next jobs...'
 
   ci:
     needs: run_when
     strategy:
       fail-fast: true
       matrix:
-        os: [ "ubuntu-latest", "windows-latest", "macos-latest" ]
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        toolchain: [ stable ]
     runs-on: "${{ matrix.os }}"
 
     steps:
@@ -48,24 +49,17 @@ jobs:
         with:
           ref: ${{ inputs.branch_commit_or_ref || 'master' }}
 
-      - name: Install minimal stable with clippy and rustfmt
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          default: true
-          override: true
-          components: rustfmt, clippy
+      - name: Install Rust ${{ matrix.toolchain }} toolchain
+        run: |
+          rustup update ${{ matrix.toolchain }}
+          rustup default ${{ matrix.toolchain }}
 
       # endregion
       
       # region Testing
       
       - name: Run cargo check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --all-features
+        run: cargo check --all-features
 
       - name: Run Solr for testing
         uses: hoverkraft-tech/compose-action@v2.0.1
@@ -75,9 +69,7 @@ jobs:
           up-flags: "-d"
 
       - name: Run cargo test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test 
+        run: cargo test
 
       # endregion
       
@@ -85,11 +77,8 @@ jobs:
       
       - name: Run cargo clippy
         if: matrix.os == 'ubuntu-latest'
-        uses: actions-rs/clippy-check@v1
         continue-on-error: true   # show all errors
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features
+        run: cargo clippy --all-features
 
       - name: Check source code for future incompatibilities
         id: report_future_incompatibilities
@@ -119,17 +108,11 @@ jobs:
           
       - name: Run cargo fmt
         if: matrix.os == 'ubuntu-latest'
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --check --all-features
+        run: cargo fmt --check --all-features
           
       - name: Run cargo doc
         if: matrix.os == 'ubuntu-latest'
-        uses: actions-rs/cargo@v1
-        with:
-          command: doc
-          args: --no-deps --document-private-items --all-features
+        run: cargo doc --no-deps --document-private-items --all-features
 
       # endregion
       
@@ -141,10 +124,7 @@ jobs:
 
       - name: Run coverage report
         if: matrix.os == 'ubuntu-latest'
-        uses: actions-rs/cargo@v1
-        with:
-          command: llvm-cov 
-          args: --all-features --workspace --lcov --output-path lcov.info
+        run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
 
       - name: Coveralls
         if: matrix.os == 'ubuntu-latest'
@@ -164,23 +144,24 @@ jobs:
   deps:
     needs: ci
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        toolchain: [ nightly ]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch_commit_or_ref || 'master' }}
 
-      - name: Install nightly toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
+
+      - name: Install Rust ${{ matrix.toolchain }} toolchain
+        run: |
+          rustup update ${{ matrix.toolchain }}
+          rustup default ${{ matrix.toolchain }}
 
       - name: Print dependency tree
-        uses: actions-rs/cargo@v1
-        with:
-          command: tree
-          args: --verbose --color never
+        run: cargo tree --verbose --color never
 
       - name: Find unused dependencies in Cargo.toml
         uses: aig787/cargo-udeps-action@v1
