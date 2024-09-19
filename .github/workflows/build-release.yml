@@ -56,10 +56,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends mingw-w64
 
-      - name: Install Rust ${{ matrix.channel }} toolchain for ${{ matrix.target }}
+
+      - name: Rustup Self Update
+        if: matrix.os != 'macos'
         run: |
           rustup self update
-          rustup update
+
+      - name: Update Rust toolchain from channel ${{ matrix.channel }} 
+        run: |
           rustup target add --toolchain ${{ matrix.channel }} ${{ matrix.target }}
           rustup default ${{ matrix.channel }}
 
