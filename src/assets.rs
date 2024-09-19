@@ -3,11 +3,11 @@ use std::{fs::File, io, io::Write, path::PathBuf};
 use clap::CommandFactory;
 use clap_complete::{generate, Generator, Shell};
 
-use crate::{args::Cli, args::Completion};
+use crate::{args::Cli, args::Generate};
 
 use crate::fails::{raise, BoxedError, BoxedResult};
 
-pub(crate) fn gen_completion(params: &Completion) -> BoxedError {
+pub(crate) fn gen_assets(params: &Generate) -> BoxedError {
     let chosen = params.get_shells();
     for shell in chosen {
         let path = generate_for(&shell, &params.output_dir)?;

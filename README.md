@@ -54,16 +54,17 @@ Solrcopy is a command for doing backup and restore of documents stored on Solr c
 Usage: solrcopy <COMMAND>
 
 Commands:
-  backup      Dumps documents from a Apache Solr core into local backup files
-  restore     Restore documents from local backup files into a Apache Solr core
-  commit      Perform a commit in the Solr core index for persisting documents in disk/memory
-  delete      Removes documents from the Solr core definitively
-  completion  Generates completion scripts for different shells
-  help        Print this message or the help of the given subcommand(s)
+  backup    Dumps documents from a Apache Solr core into local backup files
+  restore   Restore documents from local backup files into a Apache Solr core
+  commit    Perform a commit in the Solr core index for persisting documents in disk/memory
+  delete    Removes documents from the Solr core definitively
+  generate  Generates man page and completion scripts for different shells
+  help      Print this message or the help of the given subcommand(s)
 
 Options:
   -h, --help
           Print help (see a summary with '-h')
+
   -V, --version
           Print version
 ```
