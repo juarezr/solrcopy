@@ -45,17 +45,6 @@ jobs:
         os: [ "ubuntu-latest", "windows-latest", "macos-latest" ]
     runs-on: "${{ matrix.os }}"
 
-    services:
-      solr:
-        image: solr:slim
-        ports:
-        - "8983:8983"
-        volumes:
-          - data:/var/solr
-        # https://docs.docker.com/reference/cli/docker/container/create/#options
-        options: >-
-          solr-demo
-
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
@@ -76,6 +65,12 @@ jobs:
         with:
           command: check
           args: --verbose
+
+      - name: Run Solr for testing
+        uses: hoverkraft-tech/compose-action@v2.0.1
+        with:
+          compose-file: "./docker/docker-compose.yml"
+          up-flags: "-d"
 
       - name: Run cargo test
         uses: actions-rs/cargo@v1
