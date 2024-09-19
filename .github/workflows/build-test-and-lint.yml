@@ -27,23 +27,18 @@ on:
 name: build-test-and-lint
 
 jobs:
-  run-guard:
+  run_when:
     # it succeeds if any of the following conditions are met:
     #   - when the PR is not a draft and is not labeled 'prevent-ci'
     #   - when the PR is labeled 'force-ci'
     runs-on: ubuntu-latest
-    if: |
-      (  (!github.event.pull_request.draft) &&
-         (github.event.action != 'labeled') &&
-         (!contains( github.event.pull_request.labels.*.name, 'prevent-ci')) )
-      || ((github.event.action != 'labeled') && contains( github.event.pull_request.labels.*.name, 'force-ci'))
-      || (github.event.label.name == 'force-ci')
+    if: (!github.event.pull_request.draft) && (!contains( github.event.pull_request.labels.*.name, 'prevent-ci'))
     steps:
       - name: Checking if CI shoud run for this push/PR...
         run: echo Resuming CI. Continuing next jobs...
 
   ci:
-    needs: run-guard
+    needs: run_when
     strategy:
       fail-fast: true
       matrix:
@@ -93,9 +88,9 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --all-features
 
-      - name: Check if the code or dependencies have future incompatibilities
+      - name: Check source code for future incompatibilities
         id: report_future_incompatibilities
-        if: matrix.os == 'linux'
+        if: matrix.os == 'ubuntu-latest'
         run: |
           echo '::group::Checking Future Incompatibilities';
 
@@ -124,6 +119,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: fmt
+          args: --check --all-features
           
       - name: Run cargo doc
         if: matrix.os == 'ubuntu-latest'
