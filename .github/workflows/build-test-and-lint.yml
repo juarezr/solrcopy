@@ -2,6 +2,8 @@
 
 # Due to limitations we are checking compilation but testing everything on the Ubuntu environment only.
 
+name: build-test-and-lint
+
 on:
   push:
     branches: [ "master", "release/*" ]
@@ -19,13 +21,10 @@ on:
         type: string
         default: master
 
-name: build-test-and-lint
-
 jobs:
   run_when:
     # it succeeds if any of the following conditions are met:
     #   - when the PR is not a draft and is not labeled 'prevent-ci'
-    #   - when the PR is labeled 'force-ci'
     runs-on: ubuntu-latest
     if: (!github.event.pull_request.draft) && (!contains( github.event.pull_request.labels.*.name, 'prevent-ci'))
     steps:
@@ -34,12 +33,12 @@ jobs:
 
   ci:
     needs: run_when
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
       matrix:
         os: [ ubuntu-latest, windows-latest, macos-latest ]
         channel: [ stable ]
-    runs-on: "${{ matrix.os }}"
 
     steps:
       # region Checkout and Install
