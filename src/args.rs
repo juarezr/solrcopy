@@ -54,7 +54,7 @@ pub enum Commands {
 #[derive(Parser, Debug)]
 pub struct Backup {
     /// Solr Query param 'q' for filtering which documents are retrieved
-    /// See: https://lucene.apache.org/solr/guide/6_6/the-standard-query-parser.html
+    /// See: <https://lucene.apache.org/solr/guide/6_6/the-standard-query-parser.html>
     #[arg(short, long, display_order = 40, value_name = "'f1:vl1 AND f2:vl2'")]
     pub query: Option<String>,
 
@@ -144,7 +144,7 @@ pub struct Backup {
 #[derive(Parser, Debug)]
 pub struct Restore {
     /// Mode to perform commits of the documents transaction log while updating the core
-    /// [possible values: none, soft, hard, <interval>]
+    /// [possible values: none, soft, hard, {interval} ]
     #[arg(short, long, display_order = 40, default_value = "hard", value_parser = parse_commit_mode, value_name = "mode")]
     pub flush: CommitMode,
 
@@ -272,7 +272,7 @@ pub struct ParallelArgs {
     pub dir: PathBuf,
 
     /// Extra parameter for Solr Update Handler.
-    /// See: https://lucene.apache.org/solr/guide/transforming-and-indexing-custom-json.html
+    /// See: <https://lucene.apache.org/solr/guide/transforming-and-indexing-custom-json.html>
     #[arg(short, long, display_order = 60, value_name = "useParams=mypars")]
     pub params: Option<String>,
 

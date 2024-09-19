@@ -91,10 +91,14 @@
     {
       "label": "cargo doc",
       "icon": {
-        "id": "target"
+        "id": "book"
       },
       "type": "cargo",
       "command": "doc",
+      "args": [
+        "--no-deps",
+        "--document-private-items"
+      ],
       "problemMatcher": [
         "$rustc"
       ],
@@ -152,7 +156,8 @@
         "kind": "build",
       },
       "dependsOn": [
-        "cargo release", "cargo completion"
+        "cargo release",
+        "cargo completion"
       ]
     },
     {
@@ -169,7 +174,8 @@
         "kind": "build",
       },
       "dependsOn": [
-        "cargo release", "cargo completion"
+        "cargo release",
+        "cargo completion"
       ]
     },
     // #endregion

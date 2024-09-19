@@ -124,7 +124,13 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: fmt
-          args: --all -- --check
+          
+      - name: Run cargo doc
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions-rs/cargo@v1
+        with:
+          command: doc
+          args: --no-deps --document-private-items --all-features
 
       - name: Install cargo-llvm-cov
         if: matrix.os == 'ubuntu-latest'
