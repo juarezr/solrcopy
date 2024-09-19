@@ -47,7 +47,7 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.branch_commit_or_ref || 'master' }}
+          ref: ${{ inputs.branch_commit_or_ref || '' }}
 
       - name: Install Rust ${{ matrix.channel }} toolchain
         run: |
@@ -162,7 +162,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.branch_commit_or_ref || 'master' }}
+          ref: ${{ inputs.branch_commit_or_ref || '' }}
 
       - name: Install Rust ${{ matrix.channel }} toolchain
         run: |

@@ -19,7 +19,7 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.branch_commit_or_ref || 'master' }}
+          ref: ${{ inputs.branch_commit_or_ref || '' }}
 
       - name: Run security audit
         uses: actions-rs/audit-check@v1
