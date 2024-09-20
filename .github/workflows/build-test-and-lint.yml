@@ -53,7 +53,7 @@ jobs:
         run: |
           rustup self update
 
-      - name: Update Rust toolchain from channel ${{ matrix.channel }} 
+      - name: Update Rust toolchain from channel ${{ matrix.channel }}
         run: |
           rustup update ${{ matrix.channel }}
           rustup default ${{ matrix.channel }}
@@ -61,10 +61,19 @@ jobs:
 
       - name: Check Rust ${{ matrix.channel }} toolchain versions
         run: |
-          rustup --version
-          cargo --version
-          rustc --version
-          rustup show
+          printf '# Rust Information\n\n' >> "${GITHUB_STEP_SUMMARY}";
+          printf '## Program Versions on Channel ${{ matrix.channel }}\n\n' >> "${GITHUB_STEP_SUMMARY}";
+          
+          rustup --version | tee -a  >> "${GITHUB_STEP_SUMMARY}";
+          cargo --version | tee -a  >> "${GITHUB_STEP_SUMMARY}";
+          rustc --version | tee -a  >> "${GITHUB_STEP_SUMMARY}";
+
+          printf '## Toolchain Information\n\n```sh\n$ rustup show\n' >> "${GITHUB_STEP_SUMMARY}";
+          rustup show | tee -a  >> "${GITHUB_STEP_SUMMARY}";
+
+          printf '## Cargo Commands\n\n```sh\n$ cargo --list\n' >> "${GITHUB_STEP_SUMMARY}";
+          cargo --list | tee -a  >> "${GITHUB_STEP_SUMMARY}";
+          printf '```\n\n' >> "${GITHUB_STEP_SUMMARY}";
 
       # endregion
       
