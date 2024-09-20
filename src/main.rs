@@ -72,7 +72,7 @@ mod wrangle {
     use simplelog::{ColorChoice, CombinedLogger, Config, SharedLogger, TermLogger, WriteLogger};
     use std::fs::File;
 
-    pub (crate) fn command_exec(parsed: Cli) -> Result<(), Box<dyn std::error::Error>> {
+    pub(crate) fn command_exec(parsed: Cli) -> Result<(), Box<dyn std::error::Error>> {
         let args = &parsed.arguments;
         match args {
             Commands::Backup(get) => backup::backup_main(get),
@@ -84,7 +84,7 @@ mod wrangle {
     }
 
     impl Cli {
-        pub (crate) fn parse_from_args() -> BoxedResult<Self> {
+        pub(crate) fn parse_from_args() -> BoxedResult<Self> {
             let res = Self::parse();
             if let Err(msg) = res.arguments.validate() {
                 throw(msg)?;
