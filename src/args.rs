@@ -347,8 +347,8 @@ pub enum SortOrder {
     Desc,
 }
 
-const SOLR_COPY_DIR: &str = "SOLR_COPY_DIR";
-const SOLR_COPY_URL: &str = "SOLR_COPY_URL";
+pub const SOLR_COPY_DIR: &str = "SOLR_COPY_DIR";
+pub const SOLR_COPY_URL: &str = "SOLR_COPY_URL";
 
 // #endregion
 
@@ -506,19 +506,6 @@ fn parse_shell(s: &str) -> Result<Shell, String> {
 // #endregion
 
 // #region Cli impl
-
-impl Cli {
-    pub fn mockup_from(argm: &[&str]) -> Commands {
-        Self::parse_from(argm).arguments
-    }
-
-    pub fn mockup_and_panic(argm: &[&str]) -> Commands {
-        let unknown = &["--unknown", "argument"];
-        let combined = [argm, unknown].concat();
-        let res = Self::try_parse_from(combined);
-        res.unwrap().arguments
-    }
-}
 
 impl Commands {
     pub fn validate(&self) -> Result<(), String> {
@@ -747,6 +734,17 @@ pub mod tests {
     use std::path::PathBuf;
 
     impl Cli {
+        pub fn mockup_from(argm: &[&str]) -> Commands {
+            Self::parse_from(argm).arguments
+        }
+
+        pub fn mockup_and_panic(argm: &[&str]) -> Commands {
+            let unknown = &["--unknown", "argument"];
+            let combined = [argm, unknown].concat();
+            let res = Self::try_parse_from(combined);
+            res.unwrap().arguments
+        }
+
         pub fn mockup_for_help(argm: &[&str]) {
             match Self::try_parse_from(argm) {
                 Ok(ocli) => {
