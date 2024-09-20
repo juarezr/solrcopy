@@ -8,12 +8,48 @@ services:
      - "8983:8983"
     volumes:
       - data:/var/solr
+    configs:
+      - source: solr-test-setup.sh
+        target: /opt/solr/docker/scripts/solr-test-setup
     command:
-      - solr-demo
-      - solr create -c target
-      - solr create -c films
-      - solr post -c films /opt/solr/example/films/films.xml
-      - solr create -c films2
-      - solr post -c films2 /opt/solr/example/films/films.json
+      - solr-test-setup
 volumes:
   data:
+
+configs:
+  solr-test-setup.sh:
+    content: |
+      #!/bin/bash
+
+      # Configure a Solr demo and then run solr in the foreground
+
+      set -euo pipefail
+
+      if test -n "${VERBOSE:-}"; then set -x; fi
+
+      source run-initdb
+
+      if [ -d /var/solr/data/demo ]; then
+        echo "Solr cores already exists; skipping demo creation"
+      else
+        start-local-solr
+
+        /opt/solr/bin/solr create -c demo
+        /opt/solr/bin/solr post -c demo /opt/solr/example/exampledocs/*.xml
+        /opt/solr/bin/solr post -c demo /opt/solr/example/exampledocs/books.json
+        /opt/solr/bin/solr post -c demo /opt/solr/example/exampledocs/books.csv
+
+        /opt/solr/bin/solr create -c target
+
+        /opt/solr/bin/solr create -c films
+        /opt/solr/bin/solr post -c films /opt/solr/example/films/films.xml
+
+        /opt/solr/bin/solr create -c films2
+        /opt/solr/bin/solr post -c films2 /opt/solr/example/films/films.json
+
+        stop-local-solr
+      fi
+
+      exec solr-fg
+
+      # END OF SCRIPT #
