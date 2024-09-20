@@ -1,0 +1,27 @@
+# Testing Solrcopy using a container with Solr
+
+#$ cargo install --force cargo-make
+
+[tasks.up]
+command = "docker"
+args = ["compose", "-f", "./docker/docker-compose.yml", "up", "-d"]
+
+[tasks.down]
+command = "docker"
+args = ["compose", "-f", "./docker/docker-compose.yml", "down", "-v"]
+
+[tasks.solr]
+dependencies = ["down", "up"]
+
+[tasks.example]
+script_runner = "@rust"
+script = '''
+//! ```cargo
+//! [dependencies]
+//! envmnt = "*"
+//! ```
+fn main() {
+    let value = envmnt::get_or("PATH", "NO PATH VAR DEFINED");
+    println!("Path Value: {}", &value);
+}
+'''
