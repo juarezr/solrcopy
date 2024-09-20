@@ -1,5 +1,5 @@
 #[cfg(test)]
-// #[cfg(feature = "testsolr")]
+#[cfg(feature = "testsolr")]
 /// Test against Solr instance running on localhost:8983 by default
 mod testsolr {
 
@@ -12,15 +12,12 @@ mod testsolr {
     fn test_command_line_args_for(args: &[&str]) {
         // Use the same args as solrcopy binary for testing
         let parsed = Cli::parse_from(args);
-
         // Execute the same way solrcopy would exec
         let res = command_exec(&parsed.arguments);
-
         // Display the error message if it failed
         if let Err(err) = res {
             let res = format!("Command: {}", args.join(" "));
             let msg = format!("Failure: {:?}", err);
-
             assert_eq!(res, msg, "\n   Tip: Check it the core has any documents indexed.");
         }
     }
