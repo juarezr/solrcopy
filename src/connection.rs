@@ -6,12 +6,12 @@ use std::{error::Error, fmt};
 // region SolrError
 
 #[derive(Debug)]
-pub struct SolrError {
+pub (crate) struct SolrError {
     pub details: String,
 }
 
 impl SolrError {
-    pub fn from(message: String) -> Self {
+    pub (crate) fn from(message: String) -> Self {
         SolrError { details: message }
     }
 
@@ -37,7 +37,7 @@ impl Error for SolrError {
 // region SolrClient
 
 #[derive(Debug)]
-pub struct SolrClient {
+pub (crate) struct SolrClient {
     http: ureq::Agent,
     max_retries: usize,
     retry_count: usize,
@@ -52,7 +52,7 @@ const SOLR_DEF_TIMEOUT: isize = 60;
 const SOLR_DEF_RETRIES: isize = 8;
 
 impl SolrClient {
-    pub fn new() -> Self {
+    pub (crate) fn new() -> Self {
         let retries = env_value(SOLR_COPY_RETRIES, SOLR_DEF_RETRIES);
         let timeout = Self::get_timeout();
         let duration = Duration::from_secs(timeout);
@@ -72,7 +72,7 @@ impl SolrClient {
         timeout.to_u64()
     }
 
-    pub fn get_as_text(&mut self, url: &str) -> Result<String, SolrError> {
+    pub (crate) fn get_as_text(&mut self, url: &str) -> Result<String, SolrError> {
         trace!("GET {}", url);
         loop {
             let request = self.http.get(url);
@@ -85,11 +85,11 @@ impl SolrClient {
         }
     }
 
-    pub fn post_as_json(&mut self, url: &str, content: &str) -> Result<String, SolrError> {
+    pub (crate) fn post_as_json(&mut self, url: &str, content: &str) -> Result<String, SolrError> {
         self.post_with_content_type(url, "application/json", content)
     }
 
-    pub fn post_as_xml(&mut self, url: &str, content: &str) -> Result<String, SolrError> {
+    pub (crate) fn post_as_xml(&mut self, url: &str, content: &str) -> Result<String, SolrError> {
         self.post_with_content_type(url, "application/xml", content)
     }
 
@@ -164,17 +164,17 @@ impl SolrClient {
 
     // region Helpers
 
-    pub fn query_get_as_text(url: &str) -> Result<String, SolrError> {
+    pub (crate) fn query_get_as_text(url: &str) -> Result<String, SolrError> {
         let mut con = SolrClient::new();
         con.get_as_text(url)
     }
 
-    pub fn send_post_as_json(url: &str, content: &str) -> Result<String, SolrError> {
+    pub (crate) fn send_post_as_json(url: &str, content: &str) -> Result<String, SolrError> {
         let mut con = SolrClient::new();
         con.post_as_json(url, content)
     }
 
-    pub fn send_post_as_xml(url: &str, content: &str) -> Result<String, SolrError> {
+    pub (crate) fn send_post_as_xml(url: &str, content: &str) -> Result<String, SolrError> {
         let mut con = SolrClient::new();
         con.post_as_xml(url, content)
     }

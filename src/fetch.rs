@@ -5,7 +5,7 @@ use regex::Regex;
 // region Solr Core
 
 impl Backup {
-    pub fn inspect_core(&self) -> BoxedResult<SolrCore> {
+    pub (crate) fn inspect_core(&self) -> BoxedResult<SolrCore> {
         let diagnostics_query_url = self.get_query_for_diagnostics();
         debug!("Inspecting schema of core {} at: {}", self.options.core, diagnostics_query_url);
 
@@ -57,7 +57,7 @@ impl SolrCore {
         Ok(res)
     }
 
-    pub fn parse_num_found(json: &str) -> BoxedResult<u64> {
+    pub (crate) fn parse_num_found(json: &str) -> BoxedResult<u64> {
         lazy_static! {
             static ref REGNF: Regex = Regex::new("\"numFound\":(\\d+),").unwrap();
         }
@@ -91,7 +91,7 @@ impl SolrCore {
     /// ``` json
     /// {"response":{"numFound":46,"start":0,"docs":_____}}
     /// ```
-    pub fn parse_docs_from_query(json: &str) -> Option<&str> {
+    pub (crate) fn parse_docs_from_query(json: &str) -> Option<&str> {
         json.find_text_between("docs\":", "}}") // -> [{  ... }]
     }
 }
@@ -99,7 +99,7 @@ impl SolrCore {
 // endregion
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use crate::fetch::{SolrCore, StringHelpers};
     use pretty_assertions::assert_eq;
 

@@ -30,14 +30,14 @@ const STYLES: Styles = Styles::styled()
 /// from and into correct cores.
 #[derive(Parser, Debug)]
 #[command(author, version, about, version, arg_required_else_help = true, styles = STYLES)]
-pub struct Cli {
+pub(crate) struct Cli {
     #[command(subcommand)]
     pub arguments: Commands,
 }
 
 #[derive(Subcommand, Debug)]
 #[allow(clippy::large_enum_variant)]
-pub enum Commands {
+pub(crate) enum Commands {
     /// Dumps documents from a Apache Solr core into local backup files
     Backup(Backup),
     /// Restore documents from local backup files into a Apache Solr core
@@ -51,7 +51,7 @@ pub enum Commands {
 }
 
 #[derive(Parser, Debug)]
-pub struct Backup {
+pub(crate) struct Backup {
     /// Solr Query param 'q' for filtering which documents are retrieved
     /// See: <https://lucene.apache.org/solr/guide/6_6/the-standard-query-parser.html>
     #[arg(short, long, display_order = 40, value_name = "'f1:vl1 AND f2:vl2'")]
@@ -141,7 +141,7 @@ pub struct Backup {
 }
 
 #[derive(Parser, Debug)]
-pub struct Restore {
+pub(crate) struct Restore {
     /// Mode to perform commits of the documents transaction log while updating the core
     /// [possible values: none, soft, hard, {interval} ]
     #[arg(short, long, display_order = 40, default_value = "hard", value_parser = parse_commit_mode, value_name = "mode")]
@@ -178,7 +178,7 @@ pub struct Restore {
 }
 
 #[derive(Parser, Debug)]
-pub struct Delete {
+pub(crate) struct Delete {
     /// Solr Query for filtering which documents are removed in the core.
     /// Use '*:*' for excluding all documents in the core.
     /// There are no way of recovering excluded docs.
@@ -195,13 +195,13 @@ pub struct Delete {
 }
 
 #[derive(Parser, Debug)]
-pub struct Execute {
+pub(crate) struct Execute {
     #[command(flatten)]
     pub options: CommonArgs,
 }
 
 #[derive(Parser, Debug)]
-pub struct Generate {
+pub(crate) struct Generate {
     /// Specifies the shell for which the argument completion script should be generated
     #[arg(short, long, display_order = 10, value_parser = parse_shell, required_unless_present_any(["all", "manpage"]))]
     pub shell: Option<Shell>,
@@ -224,7 +224,7 @@ pub struct Generate {
 // #region Cli common
 
 #[derive(Args, Clone, Debug)]
-pub struct CommonArgs {
+pub(crate) struct CommonArgs {
     /// Url pointing to the Solr cluster
     #[arg(short, long, display_order = 10, env = SOLR_COPY_URL, value_parser = parse_solr_url, value_name = "localhost:8983/solr")]
     pub url: String,
@@ -238,7 +238,7 @@ pub struct CommonArgs {
 }
 
 #[derive(Parser, Clone, Debug)]
-pub struct LoggingArgs {
+pub(crate) struct LoggingArgs {
     /// What level of detail should print messages
     #[arg(long, display_order = 90, value_name = "level", default_value = "info", value_enum)]
     pub log_level: LevelFilter,
@@ -265,7 +265,7 @@ pub struct LoggingArgs {
 
 #[derive(Args, Debug)]
 /// Dumps and restores documents from a Apache Solr core into local backup files
-pub struct ParallelArgs {
+pub(crate) struct ParallelArgs {
     /// Existing folder where the zip backup files containing the extracted documents are stored
     #[arg(short, display_order = 30, long, env = SOLR_COPY_DIR, value_name = "/path/to/output")]
     pub dir: PathBuf,
@@ -316,7 +316,7 @@ pub struct ParallelArgs {
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 /// Tells Solrt to performs a commit of the updated documents while updating the core
-pub enum CommitMode {
+pub(crate) enum CommitMode {
     /// Do not perform commit
     None,
     /// Perform a hard commit by each step for flushing all uncommitted documents in a transaction log to disk
@@ -330,7 +330,7 @@ pub enum CommitMode {
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 /// Used in bigger solr cores with huge number of docs because querying the end of docs is expensive and fails frequently
-pub enum IterateMode {
+pub(crate) enum IterateMode {
     None,
     /// Break the query in slices by a first ordered date field repeating between {begin} and {end} in the query parameters
     Minute,
@@ -341,14 +341,14 @@ pub enum IterateMode {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-pub enum SortOrder {
+pub(crate) enum SortOrder {
     None,
     Asc,
     Desc,
 }
 
-pub const SOLR_COPY_DIR: &str = "SOLR_COPY_DIR";
-pub const SOLR_COPY_URL: &str = "SOLR_COPY_URL";
+pub(crate) const SOLR_COPY_DIR: &str = "SOLR_COPY_DIR";
+pub(crate) const SOLR_COPY_URL: &str = "SOLR_COPY_URL";
 
 // #endregion
 
@@ -508,7 +508,7 @@ fn parse_shell(s: &str) -> Result<Shell, String> {
 // #region Cli impl
 
 impl Commands {
-    pub fn validate(&self) -> Result<(), String> {
+    pub(crate) fn validate(&self) -> Result<(), String> {
         match self {
             Self::Backup(get) => get.validate(),
             Self::Restore(put) => put.validate(),
@@ -516,7 +516,7 @@ impl Commands {
         }
     }
 
-    pub fn get_options(&self) -> Option<&CommonArgs> {
+    pub(crate) fn get_options(&self) -> Option<&CommonArgs> {
         match &self {
             Self::Backup(get) => Some(&get.options),
             Self::Restore(put) => Some(&put.options),
@@ -526,7 +526,7 @@ impl Commands {
         }
     }
 
-    pub fn get_logging(&self) -> LoggingArgs {
+    pub(crate) fn get_logging(&self) -> LoggingArgs {
         match self.get_options() {
             None => LoggingArgs::default().clone(),
             Some(opt) => opt.get_logging().clone(),
@@ -535,11 +535,11 @@ impl Commands {
 }
 
 impl CommonArgs {
-    pub fn to_command(&self) -> Execute {
+    pub(crate) fn to_command(&self) -> Execute {
         Execute { options: self.clone() }
     }
 
-    pub fn get_core_handler_url(&self, handler_url_path: &str) -> String {
+    pub(crate) fn get_core_handler_url(&self, handler_url_path: &str) -> String {
         #[rustfmt::skip]
         let parts: Vec<String> = vec![
             self.url.with_suffix("/"),
@@ -549,33 +549,33 @@ impl CommonArgs {
         parts.concat()
     }
 
-    pub fn get_update_url_with(&self, query_string_params: &str) -> String {
+    pub(crate) fn get_update_url_with(&self, query_string_params: &str) -> String {
         let parts: Vec<String> =
             vec![self.get_core_handler_url("/update"), query_string_params.with_prefix("?")];
         parts.concat()
     }
 
-    pub fn get_update_url(&self) -> String {
+    pub(crate) fn get_update_url(&self) -> String {
         self.get_update_url_with(EMPTY_STR)
     }
 
-    pub fn get_logging(&self) -> &LoggingArgs {
+    pub(crate) fn get_logging(&self) -> &LoggingArgs {
         &self.logging
     }
 
-    pub fn is_quiet(&self) -> bool {
+    pub(crate) fn is_quiet(&self) -> bool {
         self.logging.log_level == LevelFilter::Off
     }
 }
 
 impl ParallelArgs {
-    pub fn get_param(&self, separator: &str) -> String {
+    pub(crate) fn get_param(&self, separator: &str) -> String {
         self.params.as_ref().unwrap_or(&EMPTY_STRING).with_prefix(separator)
     }
 }
 
 impl LoggingArgs {
-    pub fn is_quiet(&self) -> bool {
+    pub(crate) fn is_quiet(&self) -> bool {
         self.log_level == LevelFilter::Off
     }
 }
@@ -606,7 +606,7 @@ impl FromStr for CommitMode {
 }
 
 impl CommitMode {
-    pub fn as_param(&self, separator: &str) -> String {
+    pub(crate) fn as_param(&self, separator: &str) -> String {
         match self {
             CommitMode::Soft => separator.append("softCommit=true"),
             CommitMode::Hard => separator.append("commit=true"),
@@ -615,7 +615,7 @@ impl CommitMode {
         }
     }
 
-    // pub fn as_xml(&self, separator: &str) -> String {
+    // pub (crate) fn as_xml(&self, separator: &str) -> String {
     //     match self {
     //         CommitMode::Soft => separator.append("<commit />"),
     //         CommitMode::Hard => separator.append("<commit />"),
@@ -628,13 +628,13 @@ impl CommitMode {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-pub enum SortDirection {
+pub(crate) enum SortDirection {
     Asc,
     Desc,
 }
 
 #[derive(Parser, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct SortField {
+pub(crate) struct SortField {
     pub field: String,
     pub direction: SortDirection,
 }
@@ -678,7 +678,7 @@ impl FromStr for SortField {
 }
 
 impl Generate {
-    pub fn get_shells(&self) -> Vec<Shell> {
+    pub(crate) fn get_shells(&self) -> Vec<Shell> {
         let sh: Option<Shell> = if self.all { None } else { self.shell };
         match sh {
             Some(sh1) => vec![sh1],
@@ -691,7 +691,7 @@ impl Generate {
 
 // #region Cli validation
 
-pub trait Validation {
+pub(crate) trait Validation {
     fn validate(&self) -> Result<(), String> {
         Ok(())
     }
@@ -722,30 +722,26 @@ fn assert_dir_exists(dir: &Path) -> Result<(), String> {
 // #endregion
 
 #[cfg(test)]
-pub mod tests {
+pub(crate) mod shared {
 
-    // #region Mockup
-
-    use crate::args::{parse_millis, parse_quantity, Cli, Commands, CommitMode};
+    use crate::args::{Cli, Commands};
     use clap::Parser;
-    use clap_complete::Shell::Bash;
-    use log::LevelFilter;
-    use pretty_assertions::assert_eq;
-    use std::path::PathBuf;
+
+    pub(crate) const TEST_SELECT_FIELDS: &'static str = "id,date,vehiclePlate";
 
     impl Cli {
-        pub fn mockup_from(argm: &[&str]) -> Commands {
+        pub(crate) fn mockup_from(argm: &[&str]) -> Commands {
             Self::parse_from(argm).arguments
         }
 
-        pub fn mockup_and_panic(argm: &[&str]) -> Commands {
+        pub(crate) fn mockup_and_panic(argm: &[&str]) -> Commands {
             let unknown = &["--unknown", "argument"];
             let combined = [argm, unknown].concat();
             let res = Self::try_parse_from(combined);
             res.unwrap().arguments
         }
 
-        pub fn mockup_for_help(argm: &[&str]) {
+        pub(crate) fn mockup_for_help(argm: &[&str]) {
             match Self::try_parse_from(argm) {
                 Ok(ocli) => {
                     panic!("Ok parsing CLI arguments: {} -> {:?}", argm.join(" "), ocli)
@@ -755,16 +751,32 @@ pub mod tests {
                 }
             }
         }
+    }
+}
 
-        pub fn mockup_args_backup() -> Commands {
+#[cfg(test)]
+pub(crate) mod tests {
+
+    // #region Mockup
+
+    use super::shared::TEST_SELECT_FIELDS;
+    use super::{parse_millis, parse_quantity, Cli, Commands, CommitMode};
+    use clap::Parser;
+    use clap_complete::Shell::Bash;
+    use log::LevelFilter;
+    use pretty_assertions::assert_eq;
+    use std::path::PathBuf;
+
+    impl Cli {
+        pub(crate) fn mockup_args_backup() -> Commands {
             Self::parse_from(TEST_ARGS_BACKUP).arguments
         }
 
-        pub fn mockup_args_restore() -> Commands {
+        pub(crate) fn mockup_args_restore() -> Commands {
             Self::parse_from(TEST_ARGS_RESTORE).arguments
         }
 
-        pub fn mockup_args_commit() -> Commands {
+        pub(crate) fn mockup_args_commit() -> Commands {
             Self::parse_from(TEST_ARGS_COMMIT).arguments
         }
     }
@@ -772,8 +784,6 @@ pub mod tests {
     // #endregion Mockup
 
     // #region CLI Args
-
-    pub const TEST_SELECT_FIELDS: &'static str = "id,date,vehiclePlate";
 
     const TEST_ARGS_HELP: &'static [&'static str] = &["solrcopy", "--help"];
 
@@ -789,7 +799,7 @@ pub mod tests {
         "--url",
         "http://solr-server.com:8983/solr",
         "--core",
-        "mileage",
+        "demo",
         "--dir",
         "./tmp",
         "--query",

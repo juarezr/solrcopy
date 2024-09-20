@@ -6,16 +6,16 @@ pub type BoxedResult<T> = Result<T, Box<dyn Error>>;
 
 pub type BoxedError = Result<(), Box<dyn Error>>;
 
-pub struct Failed {
+pub (crate) struct Failed {
     details: String,
 }
 
 impl Failed {
-    pub fn new(msg: &str) -> Self {
+    pub (crate) fn new(msg: &str) -> Self {
         Self { details: msg.to_string() }
     }
 
-    pub fn from(msg: String) -> Self {
+    pub (crate) fn from(msg: String) -> Self {
         Self { details: msg }
     }
 
@@ -44,23 +44,23 @@ impl Error for Failed {
 
 // region utilities
 
-pub fn throw<T>(message: String) -> BoxedResult<T> {
+pub (crate) fn throw<T>(message: String) -> BoxedResult<T> {
     Err(Box::new(Failed::new(&message)))
 }
 
-pub fn failed(message: String) -> impl FnOnce() -> Box<dyn Error> {
+pub (crate) fn failed(message: String) -> impl FnOnce() -> Box<dyn Error> {
     let res: Box<dyn Error> = Box::new(Failed::new(&message));
     move || res
 }
 
-pub fn rethrow<T, E>(failure: E) -> BoxedResult<T>
+pub (crate) fn rethrow<T, E>(failure: E) -> BoxedResult<T>
 where
     E: Error + 'static,
 {
     Err(Box::new(failure))
 }
 
-pub fn raise<T>(message: &str) -> BoxedResult<T> {
+pub (crate) fn raise<T>(message: &str) -> BoxedResult<T> {
     Err(Box::new(Failed::new(message)))
 }
 

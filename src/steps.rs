@@ -9,7 +9,7 @@ use chrono::{DateTime, Duration, NaiveDate, NaiveDateTime, Utc};
 // region Struct
 
 #[derive(Debug)]
-pub struct Slices<T> {
+pub(crate) struct Slices<T> {
     pub curr: T,
     pub end: T,
     pub increment: u64,
@@ -17,13 +17,13 @@ pub struct Slices<T> {
 }
 
 #[derive(Debug)]
-pub struct SliceItem {
+pub(crate) struct SliceItem {
     pub begin: String,
     pub end: String,
 }
 
 #[derive(Debug, Clone)]
-pub struct Requests {
+pub(crate) struct Requests {
     pub curr: u64,
     pub limit: u64,
     pub num_docs: u64,
@@ -31,19 +31,19 @@ pub struct Requests {
 }
 
 #[derive(Debug)]
-pub struct Step {
+pub(crate) struct Step {
     pub curr: u64,
     pub url: String,
 }
 
 #[derive(Debug)]
-pub struct Documents {
+pub(crate) struct Documents {
     pub step: Step,
     pub docs: String,
 }
 
 #[derive(Debug)]
-pub struct SolrCore {
+pub(crate) struct SolrCore {
     pub num_found: u64,
     pub fields: Vec<String>,
 }
@@ -53,7 +53,7 @@ pub struct SolrCore {
 // region Iterators
 
 impl Slices<String> {
-    pub fn get_iterator(&self) -> Box<dyn Iterator<Item = SliceItem>> {
+    pub(crate) fn get_iterator(&self) -> Box<dyn Iterator<Item = SliceItem>> {
         if self.curr.is_empty() {
             return Box::new(Self::get_slice_of(1, 1));
         }
@@ -65,7 +65,7 @@ impl Slices<String> {
         res
     }
 
-    pub fn estimate_steps(&self) -> BoxedResult<u64> {
+    pub(crate) fn estimate_steps(&self) -> BoxedResult<u64> {
         if self.curr.is_empty() {
             return Ok(1);
         }
@@ -218,7 +218,7 @@ impl Iterator for Slices<NaiveDateTime> {
 }
 
 impl SliceItem {
-    pub fn filter(&self, step: Step) -> Step {
+    pub(crate) fn filter(&self, step: Step) -> Step {
         if self.begin.is_empty() {
             step
         } else {
@@ -230,7 +230,7 @@ impl SliceItem {
 }
 
 impl Requests {
-    pub fn len(&self) -> u64 {
+    pub(crate) fn len(&self) -> u64 {
         let res = self.limit / self.num_docs;
         if self.limit % self.num_docs == 0 {
             res
@@ -281,7 +281,7 @@ fn format_solr_time(date_time: NaiveDateTime) -> String {
 // region Solr requests
 
 impl Backup {
-    pub fn get_archive_pattern(&self, num_found: u64) -> String {
+    pub(crate) fn get_archive_pattern(&self, num_found: u64) -> String {
         let prefix = match &self.zip_prefix {
             Some(text) => text.to_string(),
             None => {
@@ -293,7 +293,7 @@ impl Backup {
         format!("{}_docs_{}_seq_{}.zip", prefix, num_found, BRACKETS)
     }
 
-    pub fn estimate_docs_quantity(
+    pub(crate) fn estimate_docs_quantity(
         &self, schema: &SolrCore, slices: &Slices<String>,
     ) -> BoxedResult<u64> {
         let end_limit = self.get_docs_to_retrieve(schema);
@@ -303,11 +303,11 @@ impl Backup {
         Ok(num_retrieving * slice_count)
     }
 
-    pub fn get_docs_to_retrieve(&self, schema: &SolrCore) -> u64 {
+    pub(crate) fn get_docs_to_retrieve(&self, schema: &SolrCore) -> u64 {
         schema.num_found.min(self.limit.unwrap_or(u64::MAX))
     }
 
-    pub fn get_steps(&self, schema: &SolrCore) -> Requests {
+    pub(crate) fn get_steps(&self, schema: &SolrCore) -> Requests {
         let core_fields: &[String] = &schema.fields;
         let fl = self.get_query_fields(core_fields);
         let query = self.get_query_url(&fl, true);
@@ -315,7 +315,7 @@ impl Backup {
         Requests { curr: self.skip, limit: end_limit, num_docs: self.num_docs, url: query }
     }
 
-    pub fn get_query_fields(&self, core_fields: &[String]) -> String {
+    pub(crate) fn get_query_fields(&self, core_fields: &[String]) -> String {
         let fields = if self.select.is_empty() { core_fields } else { &self.select };
         if fields.is_empty() {
             EMPTY_STRING
@@ -325,12 +325,12 @@ impl Backup {
         }
     }
 
-    pub fn get_query_for_diagnostics(&self) -> String {
+    pub(crate) fn get_query_for_diagnostics(&self) -> String {
         let url = self.get_query_url(EMPTY_STR, false);
         format!("{}&start=0&rows=1", url)
     }
 
-    pub fn replace_vars(&self, query: &str, raw: bool) -> String {
+    pub(crate) fn replace_vars(&self, query: &str, raw: bool) -> String {
         if raw || self.iterate_between.is_empty() {
             query.to_string()
         } else {
@@ -339,7 +339,7 @@ impl Backup {
         }
     }
 
-    pub fn get_query_url(&self, selected: &str, raw: bool) -> String {
+    pub(crate) fn get_query_url(&self, selected: &str, raw: bool) -> String {
         let qparam = self.query.as_deref().unwrap_or("*:*");
         let qfixed = self.replace_vars(qparam, raw);
         let filter = solr_query(&qfixed);
@@ -363,7 +363,7 @@ impl Backup {
         parts.concat()
     }
 
-    pub fn get_slices(&self) -> Slices<String> {
+    pub(crate) fn get_slices(&self) -> Slices<String> {
         let (begin, end) = self.get_between();
         Slices::<String> {
             curr: begin.to_string(),
@@ -389,7 +389,7 @@ mod tests {
     // region mockup
 
     use crate::{
-        args::{tests::*, Backup, Cli, Commands, IterateMode},
+        args::{shared::TEST_SELECT_FIELDS, Backup, Cli, Commands, IterateMode},
         fails::{raise, BoxedResult},
         helpers::{COMMA, EMPTY_STR},
         steps::{Slices, SolrCore},
@@ -397,7 +397,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     impl Commands {
-        pub fn get(&self) -> BoxedResult<&Backup> {
+        pub(crate) fn get(&self) -> BoxedResult<&Backup> {
             match &self {
                 Self::Backup(gets) => Ok(&gets),
                 _ => raise("command must be 'backup' !"),
@@ -406,7 +406,7 @@ mod tests {
     }
 
     impl SolrCore {
-        pub fn mockup() -> Self {
+        pub(crate) fn mockup() -> Self {
             SolrCore { num_found: 100, fields: vec![TEST_SELECT_FIELDS.split(COMMA).collect()] }
         }
     }
