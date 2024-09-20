@@ -1,13 +1,11 @@
 #![allow(dead_code)]
 
-// region ProgressBar
-
+use super::helpers::IntegerHelpers;
 use crossbeam_channel::Receiver;
 use indicatif::{ProgressBar, ProgressStyle};
-
 use std::time::{Duration, Instant};
 
-use crate::helpers::*;
+// region ProgressBar
 
 fn new_style(style_template: &str) -> ProgressStyle {
     ProgressStyle::default_bar().template(style_template).unwrap()

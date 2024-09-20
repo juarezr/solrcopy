@@ -1,7 +1,6 @@
+use super::{args::Backup, connection::SolrClient, fails::*, helpers::*, steps::SolrCore};
 use log::debug;
 use regex::Regex;
-
-use super::{args::Backup, connection::SolrClient, fails::*, helpers::*, steps::SolrCore};
 
 // region Solr Core
 
@@ -101,7 +100,7 @@ impl SolrCore {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::fetch::*;
+    use crate::fetch::{SolrCore, StringHelpers};
     use pretty_assertions::assert_eq;
 
     const CORE_1ROW: &str = r#"{

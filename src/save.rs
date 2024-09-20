@@ -1,12 +1,10 @@
+use super::steps::Documents;
 use log::error;
-use zip::{result::ZipResult, write::SimpleFileOptions, ZipWriter};
-
 use std::{
     io::Write,
     path::{Path, PathBuf},
 };
-
-use crate::steps::Documents;
+use zip::{result::ZipResult, write::SimpleFileOptions, ZipWriter};
 
 // TODO: split in multiple files of constant size
 // TODO: limit file size based on zip.stats.bytes_written

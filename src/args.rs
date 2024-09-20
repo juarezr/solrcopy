@@ -1,3 +1,4 @@
+use crate::helpers::{CapturesHelpers, RegexHelpers, StringHelpers, EMPTY_STR, EMPTY_STRING};
 use clap::builder::styling::{AnsiColor as Ansi, Styles};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
@@ -5,8 +6,6 @@ use regex::Regex;
 use simplelog::{LevelFilter, TerminalMode};
 use std::{fmt, path::Path, path::PathBuf, str::FromStr};
 use url::Url;
-
-use crate::helpers::*;
 
 // #region Cli arguments
 
@@ -740,12 +739,12 @@ pub mod tests {
 
     // #region Mockup
 
-    use std::path::PathBuf;
-
     use crate::args::{parse_millis, parse_quantity, Cli, Commands, CommitMode};
-
     use clap::Parser;
+    use clap_complete::Shell::Bash;
     use log::LevelFilter;
+    use pretty_assertions::assert_eq;
+    use std::path::PathBuf;
 
     impl Cli {
         pub fn mockup_for_help(argm: &[&str]) {
@@ -883,10 +882,6 @@ pub mod tests {
     // #endregion
 
     // #region Tests
-
-    use clap_complete::Shell::Bash;
-    use pretty_assertions::assert_eq;
-
 
     #[test]
     fn check_params_backup() {

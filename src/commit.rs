@@ -1,6 +1,5 @@
-use log::{debug, info};
-
 use super::{args::Execute, connection::SolrClient};
+use log::{debug, info};
 
 pub(crate) fn commit_main(params: &Execute) -> Result<(), Box<dyn std::error::Error>> {
     debug!("# COMMIT {:?}", params);

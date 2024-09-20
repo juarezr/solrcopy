@@ -1,20 +1,18 @@
+use super::{
+    args::Backup,
+    bars::{foreach_progress, wait_with_progress},
+    connection::SolrClient,
+    fails::{raise, BoxedError},
+    helpers::{wait, wait_by, IntegerHelpers},
+    save::Archiver,
+    state::{monitor_term_sinal, UserInterruption},
+    steps::{Documents, Requests, Slices, SolrCore, Step},
+};
 use crossbeam_channel::{bounded, Receiver, Sender};
 use crossbeam_utils::thread;
 use log::{debug, error, info, trace};
-
 use std::sync::{atomic::AtomicBool, Arc};
 use std::{path::PathBuf, time::Instant};
-
-use crate::{
-    args::Backup,
-    bars::*,
-    connection::SolrClient,
-    fails::*,
-    helpers::*,
-    save::Archiver,
-    state::*,
-    steps::{Documents, Requests, Slices, SolrCore, Step},
-};
 
 pub(crate) fn backup_main(params: &Backup) -> BoxedError {
     debug!("# BACKUP {:?}", params);

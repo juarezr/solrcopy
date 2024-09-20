@@ -1,11 +1,8 @@
-use std::{fs::File, io, io::Write, path::PathBuf};
-
+use super::fails::{raise, BoxedError, BoxedResult};
+use super::{args::Cli, args::Generate};
 use clap::CommandFactory;
 use clap_complete::{generate, Generator, Shell};
-
-use crate::{args::Cli, args::Generate};
-
-use crate::fails::{raise, BoxedError, BoxedResult};
+use std::{fs::File, io, io::Write, path::PathBuf};
 
 pub(crate) fn gen_assets(params: &Generate) -> BoxedError {
     let chosen = params.get_shells();
