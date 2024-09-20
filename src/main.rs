@@ -53,7 +53,7 @@ mod testsolr;
 
 use crate::args::Cli;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let parsed = Cli::parse_from_args()?;
 
     wrangle::command_exec(parsed)
@@ -65,14 +65,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 mod wrangle {
 
-    use crate::args::{Cli, Commands};
+    use crate::args::{Cli, Commands, LoggingArgs};
     use crate::fails::{throw, BoxedResult};
     use crate::{assets, backup, commit, delete, restore};
     use clap::Parser;
     use simplelog::{ColorChoice, CombinedLogger, Config, SharedLogger, TermLogger, WriteLogger};
     use std::fs::File;
 
-    pub fn command_exec(parsed: Cli) -> Result<(), Box<dyn std::error::Error>> {
+    pub (crate) fn command_exec(parsed: Cli) -> Result<(), Box<dyn std::error::Error>> {
         let args = &parsed.arguments;
         match args {
             Commands::Backup(get) => backup::backup_main(get),
@@ -84,7 +84,7 @@ mod wrangle {
     }
 
     impl Cli {
-        pub fn parse_from_args() -> BoxedResult<Self> {
+        pub (crate) fn parse_from_args() -> BoxedResult<Self> {
             let res = Self::parse();
             if let Err(msg) = res.arguments.validate() {
                 throw(msg)?;
@@ -94,7 +94,7 @@ mod wrangle {
         }
 
         fn start_log(&self) -> Result<(), Box<dyn std::error::Error>> {
-            let opt = self.arguments.get_logging();
+            let opt: LoggingArgs = self.arguments.get_logging();
 
             let mut enabled: Vec<Box<dyn SharedLogger>> = Vec::new();
             if !opt.is_quiet() {

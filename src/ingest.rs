@@ -23,7 +23,7 @@ pub(crate) struct Docs {
 }
 
 impl Restore {
-    pub fn find_archives(&self) -> Result<Vec<PathBuf>, PatternError> {
+    pub (crate) fn find_archives(&self) -> Result<Vec<PathBuf>, PatternError> {
         let wilcard = self.get_pattern();
         let listed = glob(&wilcard)?;
         let mut found = listed.filter_map(Result::ok).collect::<Vec<_>>();
@@ -36,7 +36,7 @@ impl Restore {
         Ok(found)
     }
 
-    pub fn get_pattern(&self) -> String {
+    pub (crate) fn get_pattern(&self) -> String {
         let wilcard: String = match &self.search {
             Some(pat) => {
                 if pat.ends_with(".zip") || pat.contains('*') {
@@ -53,7 +53,7 @@ impl Restore {
         res.to_string()
     }
 
-    pub fn get_update_url(&self) -> String {
+    pub (crate) fn get_update_url(&self) -> String {
         // E.g: http://localhost:8983/solr/mycore/update?wt=json&overwrite=true&commitWithin=1000&useParams=my_params
         let parts: Vec<String> = vec![
             self.options.get_core_handler_url("/update/json/docs?overwrite=true"),
@@ -127,7 +127,7 @@ impl Iterator for ArchiveReader {
 }
 
 impl Docs {
-    pub fn new(archive_name: String, entry_name: String, documents: String) -> Self {
+    pub (crate) fn new(archive_name: String, entry_name: String, documents: String) -> Self {
         Docs { archive: archive_name, entry: entry_name, json: documents }
     }
 }

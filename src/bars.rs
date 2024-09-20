@@ -31,7 +31,7 @@ fn new_time_bar(len: u64) -> ProgressBar {
 
 // region implementarion
 
-pub fn foreach_progress(
+pub (crate) fn foreach_progress(
     reporter: Receiver<u64>, num_retrieving: u64, num_increment: u64, quiet: bool,
 ) -> u64 {
     let mut updated = 0;
@@ -49,7 +49,7 @@ pub fn foreach_progress(
     updated
 }
 
-pub fn wait_with_progress(millis: u64, message: &str) {
+pub (crate) fn wait_with_progress(millis: u64, message: &str) {
     if millis > 10 {
         let delta = millis.min(500).to_u64();
         let delay = Duration::from_millis(delta);

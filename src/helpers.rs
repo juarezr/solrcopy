@@ -5,22 +5,22 @@ use std::{convert::TryInto, env, path::Path, str::FromStr};
 
 // region Constants
 
-pub const EMPTY_STR: &str = "";
-pub const EMPTY_STRING: String = String::new();
+pub (crate) const EMPTY_STR: &str = "";
+pub (crate) const EMPTY_STRING: String = String::new();
 
-pub const PT: &str = ".";
-pub const COMMA: &str = ",";
-pub const SEMICOLON: &str = ";";
-pub const BRACKETS: &str = "{}";
+pub (crate) const PT: &str = ".";
+pub (crate) const COMMA: &str = ",";
+pub (crate) const SEMICOLON: &str = ";";
+pub (crate) const BRACKETS: &str = "{}";
 
-pub const SPACE: char = ' ';
-pub const ZERO: char = '0';
+pub (crate) const SPACE: char = ' ';
+pub (crate) const ZERO: char = '0';
 
 // endregion
 
 // region Utility helpers
 
-pub fn solr_query(query: &str) -> String {
+pub (crate) fn solr_query(query: &str) -> String {
     query
         .replace(" or ", " OR ")
         .replace(" and ", " AND ")
@@ -31,7 +31,7 @@ pub fn solr_query(query: &str) -> String {
 const ISO_DATE: &str = "2020-01-01T00:00:00Z";
 const ISO_SLEN: usize = 20;
 
-pub fn replace_solr_date(query: &str, pattern: &str, value: &str) -> String {
+pub (crate) fn replace_solr_date(query: &str, pattern: &str, value: &str) -> String {
     let vlen = value.len();
     let suffix = &ISO_DATE[vlen..];
 
@@ -39,23 +39,23 @@ pub fn replace_solr_date(query: &str, pattern: &str, value: &str) -> String {
     query.replace(pattern, &value2)
 }
 
-pub fn wait(secs: usize) {
+pub (crate) fn wait(secs: usize) {
     let millis = secs * 1000;
     std::thread::sleep(std::time::Duration::from_millis(millis.to_u64()));
 }
 
-pub fn wait_by(millis: usize) {
+pub (crate) fn wait_by(millis: usize) {
     std::thread::sleep(std::time::Duration::from_millis(millis.to_u64()));
 }
 
-pub fn env_var(var_name: &str, replacement: &str) -> String {
+pub (crate) fn env_var(var_name: &str, replacement: &str) -> String {
     match env::var(var_name) {
         Ok(var_value) => var_value,
         Err(_) => replacement.to_string(),
     }
 }
 
-pub fn env_value(var_name: &str, replacement: isize) -> isize {
+pub (crate) fn env_value(var_name: &str, replacement: isize) -> isize {
     match env::var(var_name) {
         Ok(var_value) => isize::from_str(&var_value).unwrap_or_else(|_| {
             panic!("Variable '{}' is not a integer value: {}", var_name, var_value)
@@ -64,7 +64,7 @@ pub fn env_value(var_name: &str, replacement: isize) -> isize {
     }
 }
 
-pub fn get_filename(file_path: &Path) -> Result<String, ()> {
+pub (crate) fn get_filename(file_path: &Path) -> Result<String, ()> {
     file_path.file_name().ok_or(())?.to_os_string().into_string().or(Err(()))
 }
 
@@ -72,7 +72,7 @@ pub fn get_filename(file_path: &Path) -> Result<String, ()> {
 
 // region Type Method Extensions
 
-pub trait StringHelpers {
+pub (crate) trait StringHelpers {
     fn contains_any(&self, patterns: &[&str]) -> bool;
 
     fn starts_with_any(&self, patterns: &[&str]) -> bool;
@@ -266,7 +266,7 @@ impl StringHelpers for str {
         self.chars().filter(|c| !c.is_whitespace()).collect()
     }
 }
-pub trait RegexHelpers {
+pub (crate) trait RegexHelpers {
     fn get_group<'a>(&'a self, text_to_search: &'a str, group_number: usize) -> Option<&'a str>;
 
     fn get_groups<'a>(&self, text_to_search: &'a str) -> Option<Captures<'a>>;
@@ -317,7 +317,7 @@ impl RegexHelpers for Regex {
         maps.collect::<Vec<_>>()
     }
 }
-pub trait CapturesHelpers {
+pub (crate) trait CapturesHelpers {
     /// Returns the match associated with the capture group at index `i`. If
     /// `i` does not correspond to a capture group, or if the capture group
     /// did not participate in the match, then a empty string is returned.
@@ -377,7 +377,7 @@ impl CapturesHelpers for Captures<'_> {
 
 // region Numbers helpers
 
-pub trait IntegerHelpers {
+pub (crate) trait IntegerHelpers {
     fn to_u64(self) -> u64;
 
     fn to_i64(self) -> i64;
