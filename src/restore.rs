@@ -282,7 +282,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     impl Commands {
-        pub (crate) fn put(&self) -> BoxedResult<&Restore> {
+        pub(crate) fn put(&self) -> BoxedResult<&Restore> {
             match &self {
                 Self::Restore(puts) => Ok(&puts),
                 _ => raise("command must be 'restore' !"),

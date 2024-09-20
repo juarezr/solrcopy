@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 // region Ctrl + C
 
-pub (crate) fn monitor_term_sinal() -> Arc<AtomicBool> {
+pub(crate) fn monitor_term_sinal() -> Arc<AtomicBool> {
     lazy_static! {
         static ref ABORTING: Arc<AtomicBool> = start_monitoring_term_sinal();
     }
@@ -35,7 +35,7 @@ fn start_monitoring_term_sinal() -> Arc<AtomicBool> {
 
 // region trait Suggaring
 
-pub (crate) trait UserInterruption // where
+pub(crate) trait UserInterruption // where
 // Self: Sized,
 {
     fn aborted(&self) -> bool;

@@ -13,7 +13,7 @@ use zip::{result::ZipResult, write::SimpleFileOptions, ZipWriter};
 
 type Compressor = ZipWriter<std::fs::File>;
 
-pub (crate) struct Archiver {
+pub(crate) struct Archiver {
     writer: Option<Compressor>,
     folder: PathBuf,
     file_pattern: String,
@@ -22,7 +22,7 @@ pub (crate) struct Archiver {
 }
 
 impl Archiver {
-    pub (crate) fn write_on(output_dir: &Path, output_pattern: &str, max: usize) -> Self {
+    pub(crate) fn write_on(output_dir: &Path, output_pattern: &str, max: usize) -> Self {
         Archiver {
             writer: None,
             folder: output_dir.to_owned(),
@@ -63,7 +63,7 @@ impl Archiver {
         Ok(())
     }
 
-    pub (crate) fn close_archive(&mut self) -> ZipResult<()> {
+    pub(crate) fn close_archive(&mut self) -> ZipResult<()> {
         if let Some(wr) = self.writer.take() {
             wr.finish()?;
         }
@@ -71,7 +71,7 @@ impl Archiver {
         Ok(())
     }
 
-    pub (crate) fn write_documents(&mut self, docs: &Documents) -> ZipResult<()> {
+    pub(crate) fn write_documents(&mut self, docs: &Documents) -> ZipResult<()> {
         let json = &docs.docs;
         let step = &docs.step;
 

@@ -1,9 +1,9 @@
-// region Testing against Solr server
-
 #[cfg(test)]
 // #[cfg(feature = "testsolr")]
 /// Test against Solr instance running on localhost:8983 by default
 mod testsolr {
+
+    // region Helpers
 
     use crate::args::{Cli, SOLR_COPY_DIR, SOLR_COPY_URL};
     use crate::wrangle::command_exec;
@@ -32,6 +32,10 @@ mod testsolr {
     fn get_output_dir() -> String {
         std::env::var(SOLR_COPY_DIR).unwrap_or_else(|_| "target".into())
     }
+
+    // endregion
+
+    // region Tests
 
     /// Run this command to test backup from a running Solr instance
     fn check_exec_backup(url: &str, dir: &str) {
@@ -103,6 +107,6 @@ mod testsolr {
 
         test_command_line_args_for(test_args);
     }
-}
 
-// endregion
+    // endregion
+}
