@@ -66,14 +66,14 @@ pub fn raise<T>(message: &str) -> BoxedResult<T> {
 
 macro_rules! throws {
     ($($arg:tt)*) => {
-        Err(Box::new(Failed::from( format!($($arg)*) )))
+        Err(Box::new(crate::fails::Failed::from( format!($($arg)*) )))
     };
 }
 
 macro_rules! should_fail {
     ($($arg:tt)*) => {{
         let message = format!($($arg)*);
-        let res: Box<dyn std::error::Error> = Box::new(Failed::new(&message));
+        let res: Box<dyn std::error::Error> = Box::new(crate::fails::Failed::new(&message));
         move || res
     }};
 }
