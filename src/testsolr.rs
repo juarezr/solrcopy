@@ -14,7 +14,7 @@ mod testsolr {
         let parsed = Cli::parse_from(args);
 
         // Execute the same way solrcopy would exec
-        let res = command_exec(parsed);
+        let res = command_exec(&parsed.arguments);
 
         // Display the error message if it failed
         if let Err(err) = res {

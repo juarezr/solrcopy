@@ -6,10 +6,13 @@
 #![deny(anonymous_parameters)]
 #![deny(bare_trait_objects)]
 #![deny(elided_lifetimes_in_paths)]
+#![deny(missing_debug_implementations)]
 #![deny(single_use_lifetimes)]
 #![deny(trivial_casts)]
 #![deny(trivial_numeric_casts)]
+#![deny(unsafe_code)]
 #![deny(unused_extern_crates)]
+#![deny(unused_must_use)]
 #![deny(unused_import_braces)]
 
 // endregion
@@ -56,7 +59,7 @@ use crate::args::Cli;
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let parsed = Cli::parse_from_args()?;
 
-    wrangle::command_exec(parsed)
+    wrangle::command_exec(&parsed)
 }
 
 // endregion
@@ -65,15 +68,12 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 mod wrangle {
 
-    use crate::args::{Cli, Commands, LoggingArgs};
+    use crate::args::{Cli, Commands};
     use crate::fails::{throw, BoxedResult};
     use crate::{assets, backup, commit, delete, restore};
     use clap::Parser;
-    use simplelog::{ColorChoice, CombinedLogger, Config, SharedLogger, TermLogger, WriteLogger};
-    use std::fs::File;
 
-    pub(crate) fn command_exec(parsed: Cli) -> Result<(), Box<dyn std::error::Error>> {
-        let args = &parsed.arguments;
+    pub(crate) fn command_exec(args: &Commands) -> Result<(), Box<dyn std::error::Error>> {
         match args {
             Commands::Backup(get) => backup::backup_main(get),
             Commands::Restore(put) => restore::restore_main(put),
@@ -84,33 +84,14 @@ mod wrangle {
     }
 
     impl Cli {
-        pub(crate) fn parse_from_args() -> BoxedResult<Self> {
-            let res = Self::parse();
-            if let Err(msg) = res.arguments.validate() {
+        pub(crate) fn parse_from_args() -> BoxedResult<Commands> {
+            let parsed = Self::parse();
+            let cmds = parsed.arguments;
+            if let Err(msg) = cmds.validate() {
                 throw(msg)?;
             }
-            res.start_log()?;
-            Ok(res)
-        }
-
-        fn start_log(&self) -> Result<(), Box<dyn std::error::Error>> {
-            let opt: LoggingArgs = self.arguments.get_logging();
-
-            let mut enabled: Vec<Box<dyn SharedLogger>> = Vec::new();
-            if !opt.is_quiet() {
-                enabled.push(TermLogger::new(
-                    opt.log_level,
-                    Config::default(),
-                    opt.log_mode,
-                    ColorChoice::Auto,
-                ));
-            }
-            if let Some(filepath) = &opt.log_file_path {
-                let file_to_log = File::create(filepath).unwrap();
-                enabled.push(WriteLogger::new(opt.log_level, Config::default(), file_to_log));
-            }
-            CombinedLogger::init(enabled).unwrap();
-            Ok(())
+            cmds.get_logging().start_log()?;
+            Ok(cmds)
         }
     }
 }

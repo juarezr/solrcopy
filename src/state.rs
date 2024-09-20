@@ -1,6 +1,10 @@
 use log::{debug, error};
+use simplelog::{ColorChoice, CombinedLogger, Config, SharedLogger, TermLogger, WriteLogger};
+use std::fs::File;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+
+use crate::args::LoggingArgs;
 
 // region Ctrl + C
 
@@ -29,6 +33,30 @@ fn start_monitoring_term_sinal() -> Arc<AtomicBool> {
     debug!("# Waiting for Ctrl-C...");
 
     aborting
+}
+
+// endregion
+
+// region Logging
+
+impl LoggingArgs {
+    pub(crate) fn start_log(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let mut enabled: Vec<Box<dyn SharedLogger>> = Vec::new();
+        if !self.is_quiet() {
+            enabled.push(TermLogger::new(
+                self.log_level,
+                Config::default(),
+                self.log_mode,
+                ColorChoice::Auto,
+            ));
+        }
+        if let Some(filepath) = &self.log_file_path {
+            let file_to_log = File::create(filepath).unwrap();
+            enabled.push(WriteLogger::new(self.log_level, Config::default(), file_to_log));
+        }
+        CombinedLogger::init(enabled).unwrap();
+        Ok(())
+    }
 }
 
 // endregion
