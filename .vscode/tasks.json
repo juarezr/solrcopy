@@ -95,10 +95,6 @@
       },
       "type": "cargo",
       "command": "doc",
-      "args": [
-        "--no-deps",
-        "--document-private-items"
-      ],
       "problemMatcher": [
         "$rustc"
       ],
