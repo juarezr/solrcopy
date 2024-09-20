@@ -1,6 +1,5 @@
-use log::{debug, info};
-
 use super::{args::Delete, connection::SolrClient, fails::BoxedResult};
+use log::{debug, info};
 
 pub(crate) fn delete_main(params: &Delete) -> BoxedResult<()> {
     debug!("# DELETE  {:?}", params);

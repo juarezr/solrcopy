@@ -1,10 +1,10 @@
-use chrono::{DateTime, Duration, NaiveDate, NaiveDateTime, Utc};
-
-use crate::{
+use super::{
     args::{Backup, IterateMode},
-    fails::*,
-    helpers::*,
+    fails::{throw, BoxedResult},
+    helpers::{replace_solr_date, solr_query, IntegerHelpers, StringHelpers},
+    helpers::{BRACKETS, COMMA, EMPTY_STR, EMPTY_STRING},
 };
+use chrono::{DateTime, Duration, NaiveDate, NaiveDateTime, Utc};
 
 // region Struct
 
@@ -391,8 +391,8 @@ mod tests {
     use crate::{
         args::{tests::*, Backup, Cli, Commands, IterateMode},
         fails::{raise, BoxedResult},
-        helpers::*,
-        steps::*,
+        helpers::{COMMA, EMPTY_STR},
+        steps::{Slices, SolrCore},
     };
     use pretty_assertions::assert_eq;
 

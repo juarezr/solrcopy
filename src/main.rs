@@ -62,12 +62,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 mod wrangle {
 
-    use clap::Parser;
-    use simplelog::{ColorChoice, CombinedLogger, Config, SharedLogger, TermLogger, WriteLogger};
-    use std::fs::File;
     use crate::args::{Cli, Commands};
     use crate::fails::{throw, BoxedResult};
     use crate::{assets, backup, commit, delete, restore};
+    use clap::Parser;
+    use simplelog::{ColorChoice, CombinedLogger, Config, SharedLogger, TermLogger, WriteLogger};
+    use std::fs::File;
 
     pub fn command_exec(parsed: Cli) -> Result<(), Box<dyn std::error::Error>> {
         let args = &parsed.arguments;

@@ -1,14 +1,12 @@
-use log::error;
-use zip::ZipArchive;
-
-use glob::{glob, PatternError};
-use std::{fmt, fs::File, io::prelude::*, path::Path, path::PathBuf};
-
-use crate::{
+use super::{
     args::{Restore, SortOrder},
-    fails::*,
-    helpers::*,
+    fails::BoxedResult,
+    helpers::IntegerHelpers,
 };
+use glob::{glob, PatternError};
+use log::error;
+use std::{fmt, fs::File, io::prelude::*, path::Path, path::PathBuf};
+use zip::ZipArchive;
 
 type Decompressor = ZipArchive<File>;
 

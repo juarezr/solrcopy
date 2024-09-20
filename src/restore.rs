@@ -1,16 +1,14 @@
+use super::{
+    args::Restore, bars::*, connection::SolrClient, fails::*, helpers::*, ingest::*, state::*,
+};
 use crossbeam_channel::{bounded, Receiver, Sender};
 use crossbeam_utils::thread;
 use log::{debug, error, info, trace};
-
 use std::sync::{
     atomic::{AtomicBool, AtomicU64, Ordering},
     Arc,
 };
 use std::{path::Path, path::PathBuf, time::Instant};
-
-use crate::{
-    args::Restore, bars::*, connection::SolrClient, fails::*, helpers::*, ingest::*, state::*,
-};
 
 pub(crate) fn restore_main(params: &Restore) -> BoxedError {
     debug!("# RESTORE {:?}", params);
@@ -277,7 +275,10 @@ fn send_to_solr(
 
 #[cfg(test)]
 mod tests {
-    use crate::{args::*, fails::*};
+    use crate::{
+        args::{Cli, Commands, Restore},
+        fails::{raise, BoxedResult},
+    };
     use pretty_assertions::assert_eq;
 
     impl Commands {
