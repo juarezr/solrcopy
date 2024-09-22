@@ -4,6 +4,23 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "debugging",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=solrcopy",
+                    "--package=solrcopy"
+                ]
+            },
+            "args": "${input:arguments}",
+            "env": {
+                "RUST_BACKTRACE": "full"
+            },
+            "cwd": "${workspaceFolder}",
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Launch-backup",
             "cargo": {
                 "args": [
@@ -115,6 +132,32 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Launch-create",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=solrcopy",
+                    "--package=solrcopy"
+                ]
+            },
+            "program": "${cargo:program}",
+            "args": [
+                "create",
+                "--url",
+                "${input:solr_url}",
+                "--core",
+                "${input:arguments}",
+                "--log-level",
+                "debug",
+            ],
+            "env": {
+                "RUST_BACKTRACE": "full"
+            },
+            "cwd": "${workspaceFolder}",
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Unit-tests",
             "cargo": {
                 "args": [
@@ -150,7 +193,7 @@
                 "RUST_BACKTRACE": "full"
             },
             "cwd": "${workspaceFolder}",
-        }
+        },
     ],
     "inputs": [
         {

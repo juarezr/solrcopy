@@ -46,6 +46,8 @@ pub(crate) enum Commands {
     Commit(Execute),
     /// Removes documents from the Solr core definitively
     Delete(Delete),
+    /// Create a new empty core in the Solr instance
+    Create(Execute),
     /// Generates man page and completion scripts for different shells
     Generate(Generate),
 }
@@ -226,7 +228,7 @@ pub(crate) struct Generate {
 #[derive(Args, Clone, Debug)]
 pub(crate) struct CommonArgs {
     /// Url pointing to the Solr cluster
-    #[arg(short, long, display_order = 10, env = SOLR_COPY_URL, value_parser = parse_solr_url, value_name = "localhost:8983/solr")]
+    #[arg(short, long, display_order = 10, env = SOLR_COPY_URL, value_parser = parse_solr_url, default_value = "http://localhost:8983/solr")]
     pub url: String,
 
     /// Case sensitive name of the core in the Solr server
@@ -446,9 +448,8 @@ fn parse_solr_url(src: &str) -> Result<String, String> {
             .to_string());
     }
     if parsed.path_segments().is_none() {
-        return Err(
-            "Solr url path must be 'solr' as in: http:://server.domain:8983/solr".to_string()
-        );
+        return Err("Solr url path must be 'api' or 'solr' as in: http:://server.domain:8983/solr"
+            .to_string());
     } else {
         let paths = parsed.path_segments();
         if paths.iter().count() != 1 {
@@ -557,6 +558,17 @@ impl CommonArgs {
 
     pub(crate) fn get_update_url(&self) -> String {
         self.get_update_url_with(EMPTY_STR)
+    }
+
+    pub(crate) fn get_core_admin_v2_url_with(&self, query_string_params: &str) -> String {
+        let mut solr_uri = Url::parse(&self.url).unwrap();
+        solr_uri.set_path("api/cores");
+        let parts: Vec<String> = vec![solr_uri.to_string(), query_string_params.with_prefix("?")];
+        parts.concat()
+    }
+
+    pub(crate) fn get_core_admin_v2_url(&self) -> String {
+        self.get_core_admin_v2_url_with(EMPTY_STR)
     }
 
     pub(crate) fn get_logging(&self) -> &LoggingArgs {
