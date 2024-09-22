@@ -62,18 +62,19 @@ jobs:
       - name: Check Rust ${{ matrix.channel }} toolchain versions
         run: |
           printf '# Rust Information\n\n' >> "${GITHUB_STEP_SUMMARY}";
+
           printf '## Program Versions on Channel ${{ matrix.channel }}\n\n' >> "${GITHUB_STEP_SUMMARY}";
-          
           rustup --version >> "${GITHUB_STEP_SUMMARY}";
           cargo --version >> "${GITHUB_STEP_SUMMARY}";
           rustc --version >> "${GITHUB_STEP_SUMMARY}";
 
           printf '## Toolchain Information\n\n```sh\n$ rustup show\n' >> "${GITHUB_STEP_SUMMARY}";
           rustup show >> "${GITHUB_STEP_SUMMARY}";
+          printf '\n```\n\n' >> "${GITHUB_STEP_SUMMARY}";
 
-          printf '## Cargo Commands\n\n```sh\n$ cargo --list\n' >> "${GITHUB_STEP_SUMMARY}";
+          printf '\n\n## Cargo Commands\n\n```sh\n$ cargo --list\n' >> "${GITHUB_STEP_SUMMARY}";
           cargo --list >> "${GITHUB_STEP_SUMMARY}";
-          printf '```\n\n' >> "${GITHUB_STEP_SUMMARY}";
+          printf '\n```\n\n' >> "${GITHUB_STEP_SUMMARY}";
 
       # endregion
       
