@@ -23,7 +23,7 @@ impl Backup {
                 }
             }
         }
-        if res.num_found <= self.skip {
+        if res.num_found <= self.skip && self.skip > 0 {
             throw(format!(
                 "Requested {} in --skip but found {} docs with the query.",
                 self.skip, res.num_found

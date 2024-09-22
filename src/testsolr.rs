@@ -7,6 +7,7 @@ mod testsolr {
 
     use crate::args::{Cli, SOLR_COPY_DIR, SOLR_COPY_URL};
     use crate::wrangle::command_exec;
+    use chrono::offset::Local;
     use clap::Parser;
 
     fn test_command_line_args_for(args: &[&str]) {
@@ -71,6 +72,20 @@ mod testsolr {
 
         let test_args =
             &["solrcopy", "commit", "--url", url, "--core", "demo", "--log-level", "debug"];
+
+        test_command_line_args_for(test_args);
+    }
+
+    /// Run this command to test backup from a running Solr instance
+    #[test]
+    fn check_exec_create() {
+        let uri = get_solr_url();
+        let url = uri.as_str();
+        let now = Local::now().timestamp();
+        let added = format!("added_{}", now);
+
+        let test_args =
+            &["solrcopy", "create", "--url", url, "--core", &added, "--log-level", "debug"];
 
         test_command_line_args_for(test_args);
     }

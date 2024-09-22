@@ -36,6 +36,7 @@ mod backup;
 mod bars;
 mod commit;
 mod connection;
+mod create;
 mod delete;
 #[macro_use]
 mod fails;
@@ -70,7 +71,7 @@ mod wrangle {
 
     use crate::args::{Cli, Commands};
     use crate::fails::{throw, BoxedResult};
-    use crate::{assets, backup, commit, delete, restore};
+    use crate::{assets, backup, commit, create, delete, restore};
     use clap::Parser;
 
     pub(crate) fn command_exec(args: &Commands) -> Result<(), Box<dyn std::error::Error>> {
@@ -79,6 +80,7 @@ mod wrangle {
             Commands::Restore(put) => restore::restore_main(put),
             Commands::Commit(cmd) => commit::commit_main(cmd),
             Commands::Delete(del) => delete::delete_main(del),
+            Commands::Create(cre) => create::create_main(cre),
             Commands::Generate(cpl) => assets::gen_assets(cpl),
         }
     }

@@ -8,15 +8,27 @@ use std::{error::Error, fmt};
 #[derive(Debug)]
 pub(crate) struct SolrError {
     pub details: String,
+    pub code: Option<u16>,
 }
 
 impl SolrError {
     pub(crate) fn from(message: String) -> Self {
-        SolrError { details: message }
+        SolrError { details: message, code: None }
+    }
+
+    pub(crate) fn new(message: String, error_code: u16) -> Self {
+        SolrError { details: message, code: Some(error_code) }
     }
 
     fn say(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.details)
+    }
+
+    pub(crate) fn is_fatal(&self) -> bool {
+        if let Some(status) = self.code {
+            return status >= 500;
+        }
+        false
     }
 }
 
@@ -49,7 +61,16 @@ const SOLR_COPY_TIMEOUT: &str = "SOLR_COPY_TIMEOUT";
 const SOLR_COPY_RETRIES: &str = "SOLR_COPY_RETRIES";
 
 const SOLR_DEF_TIMEOUT: isize = 60;
+
+#[cfg(debug_assertions)]
+const SOLR_DEF_RETRIES: isize = 1;
+#[cfg(not(debug_assertions))]
 const SOLR_DEF_RETRIES: isize = 8;
+
+#[cfg(debug_assertions)]
+const SOLR_WAIT_SECS: usize = 1;
+#[cfg(not(debug_assertions))]
+const SOLR_WAIT_SECS: usize = 5;
 
 impl SolrClient {
     pub(crate) fn new() -> Self {
@@ -120,15 +141,15 @@ impl SolrClient {
                 }
                 Some(Ok(content))
             }
-            Err((fatal, failure)) => {
-                if !fatal && self.retry_count < self.max_retries {
+            Err(failure) => {
+                if !failure.is_fatal() && self.retry_count < self.max_retries {
                     self.retry_count += 1;
                     debug!(
                         "Retry {}/{}: Response Error: {}",
                         self.retry_count, self.max_retries, failure
                     );
                     // wait a little for the server recovering before retrying
-                    wait(5 * self.retry_count);
+                    wait(SOLR_WAIT_SECS * self.retry_count);
                     None
                 } else {
                     Some(Err(failure))
@@ -139,24 +160,24 @@ impl SolrClient {
 
     fn decode_response(
         &mut self, answer: Result<ureq::Response, ureq::Error>,
-    ) -> Result<String, (bool, SolrError)> {
+    ) -> Result<String, SolrError> {
         match answer {
             Ok(content) => {
+                let status = content.status();
                 let body = content.into_string();
                 match body {
                     Ok(content) => Ok(content),
-                    Err(failed) => Err((false, SolrError::from(failed.to_string()))),
+                    Err(failed) => Err(SolrError::new(failed.to_string(), status)),
                 }
             }
             Err(failure) => match failure {
                 ureq::Error::Status(code, response) => {
-                    let fatal = code >= 500;
                     let msg = response.status_text();
-                    Err((fatal, SolrError::from(msg.to_string())))
+                    Err(SolrError::new(msg.to_string(), code))
                 }
                 ureq::Error::Transport(transport) => {
                     let cause = transport.message().unwrap_or("Network failure.");
-                    Err((false, SolrError::from(cause.to_string())))
+                    Err(SolrError::from(cause.to_string()))
                 }
             },
         }
