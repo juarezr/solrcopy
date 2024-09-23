@@ -1,9 +1,23 @@
 name: 'Report Workflow Information'
 description: 'Reusable action meant to be used in workflow steps'
+branding:
+  icon: 'watch'
+  color: 'green'
+
 inputs:
   title:
-    description: 'A title for the report'
+    description: 'A reference to put in the report title'
     required: true
+    default: 'the Job'
+  arguments:
+    description: 'Inputs used in the job step'
+    required: false
+  environment:
+    description: 'Environment variables used in the job step'
+    required: false
+  variables:
+    description: 'Variables used in the job step'
+    required: false
 outputs:
   status:
     description: "Return report status"
@@ -31,9 +45,10 @@ runs:
         echo "${{ toJson(github) }}" | dump_ctx "GitHub";
         echo "${{ toJson(job) }}" | dump_ctx "Job";
         echo "${{ toJson(runner) }}" | dump_ctx "Runner";
-        echo "${{ toJson(inputs) }}" | dump_ctx "Inputs";
-        echo "${{ toJson(vars) }}" | dump_ctx "Variables";
-        echo "${{ toJson(env) }}" | dump_ctx "Environment";
+        echo "${{ inputs.arguments }}" | dump_ctx "Inputs";
+        echo "${{ inputs.environment }}" | dump_ctx "Environment";
+        echo "${{ inputs.variables }}" | dump_ctx "Variables";
+        echo "${{ toJson(inputs) }}" | dump_ctx "Composite Inputs";
 
         echo "status=finished" >> "${GITHUB_OUTPUT}";
 
