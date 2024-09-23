@@ -20,7 +20,7 @@ on:
 jobs:
   releasing:
     name: releasing
-    runs-on: ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
       matrix:
