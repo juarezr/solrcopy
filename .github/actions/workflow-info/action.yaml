@@ -27,16 +27,23 @@ runs:
   steps:
     - name: Report Workflow Information
       id: report_workflow_generation
+      env: 
+        REPORT_PARAMS: '${{ inputs.parameters }}'
+        REPORT_CONTENT: '${{ inputs.content }}'
       shell: bash
       run: |
+        echo "::group::Generating report" 
         echo "status=started" >> "${GITHUB_OUTPUT}";
+
         dump_ctx(){
+          echo "::group::Context ${1:-Unknown}"
           local text;
           if ! text="$(cat -)"; then printf 'Failed to dump context for %s\n' "${1:-Unknown}" >> "${GITHUB_STEP_SUMMARY}"; fi
           text="${text#"${text%%[![:space:]]*}"}"
           if test -n "${text:-}"; then
             printf '\n### %s Context\n\n\n```json\n%s\n```\n' "${1:-Unknown}" "${text:-Nothing in context}" >> "${GITHUB_STEP_SUMMARY}";
           fi
+          echo "::endgroup::";
         };
 
         printf '# Workflow Information on ${{ inputs.title }}\n\n' >> "${GITHUB_STEP_SUMMARY}";
@@ -44,8 +51,8 @@ runs:
         echo '- github.ref_name: ${{ github.ref_name }}' >> "${GITHUB_STEP_SUMMARY}";
         echo '- github.sha: ${{ github.sha }}' >> "${GITHUB_STEP_SUMMARY}";
 
-        echo '${{ inputs.parameters }}' | dump_ctx "Parameters";
-        echo '${{ inputs.content }}' | dump_ctx "Job";
+        echo "${REPORT_PARAMS:-}" | dump_ctx "Parameters";
+        echo "${REPORT_CONTENT:-}" | dump_ctx "Job";
 
         printf '\n## Context Information\n' >> "${GITHUB_STEP_SUMMARY}";
         echo '${{ toJson(runner) }}' | dump_ctx "Runner";
@@ -54,4 +61,5 @@ runs:
         fi
 
         echo "status=finished" >> "${GITHUB_OUTPUT}";
+        echo "::endgroup::"
 
