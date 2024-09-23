@@ -4,7 +4,6 @@ inputs:
   title:
     description: 'A title for the report'
     required: true
-    type: string
 outputs:
   status:
     description: "Return report status"
@@ -14,6 +13,7 @@ runs:
   steps:
     - name: Report Workflow Information
       id: report_workflow_generation
+      shell: bash
       run: |
         echo "status=started" >> "${GITHUB_OUTPUT}";
         dump_ctx(){
