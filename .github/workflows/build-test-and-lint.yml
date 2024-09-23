@@ -27,10 +27,12 @@ jobs:
     #   - when the PR is not a draft and is not labeled 'prevent-ci'
     runs-on: ubuntu-latest
     if: (!github.event.pull_request.draft) && (!contains( github.event.pull_request.labels.*.name, 'prevent-ci'))
+    env:
+      JOB_GITHUB_REF: ${{ github.head_ref || github.ref }}
     steps:
       - name: Report Workflow Information
         id: workflow_report
-        uses: ${{ github.repository }}/.github/actions/workflow-info@${{ github.ref }}
+        uses: ./.github/actions/workflow-info@${JOB_GITHUB_REF}
         with:
           title: '${{ github.ref_name }}'
 
