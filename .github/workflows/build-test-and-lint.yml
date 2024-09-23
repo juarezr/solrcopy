@@ -32,14 +32,19 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch_commit_or_ref || '' }}
+      
       - name: Report Workflow Information
         id: workflow_report
         uses: ./.github/actions/workflow-info
         with:
           title: '${{ github.ref_name }}'
-          arguments: '${{ toJson(inputs) }}'
-          variables: '${{ toJson(vars) }}'
-          environment: '${{ toJson(env) }}'
+          parameters: '${{ toJson(inputs) }}'
+          content: |
+            ```json
+            ${{ toJson(job) }}'
+            ```
 
   ci:
     needs: run_when

@@ -9,14 +9,14 @@ inputs:
     description: 'A reference to put in the report title'
     required: true
     default: 'the Job'
-  arguments:
-    description: 'Inputs used in the job step'
+  parameters:
+    description: 'Input variables used in Job'
     required: false
-  environment:
-    description: 'Environment variables used in the job step'
+  content:
+    description: 'Content to put in the report'
     required: false
-  variables:
-    description: 'Variables used in the job step'
+  verbose:
+    description: 'Output debug information in the job step'
     required: false
 outputs:
   status:
@@ -31,11 +31,11 @@ runs:
       run: |
         echo "status=started" >> "${GITHUB_OUTPUT}";
         dump_ctx(){
-          local content;
-          if ! content="$(cat -)"; then
-            printf 'Failed to dump context for %s\n' "${1:-Unknown}" >> "${GITHUB_STEP_SUMMARY}";
-          else
-            printf '\n### %s Context\n\n\n```json\n%s\n```\n' "${1:-Unknown}" "${content:-Nothing in context}" >> "${GITHUB_STEP_SUMMARY}";
+          local text;
+          if ! text="$(cat -)"; then printf 'Failed to dump context for %s\n' "${1:-Unknown}" >> "${GITHUB_STEP_SUMMARY}"; fi
+          text="${text#"${text%%[![:space:]]*}"}"
+          if test -n "${text:-}"; then
+            printf '\n### %s Context\n\n\n```json\n%s\n```\n' "${1:-Unknown}" "${text:-Nothing in context}" >> "${GITHUB_STEP_SUMMARY}";
           fi
         };
 
@@ -44,14 +44,14 @@ runs:
         echo '- github.ref_name: ${{ github.ref_name }}' >> "${GITHUB_STEP_SUMMARY}";
         echo '- github.sha: ${{ github.sha }}' >> "${GITHUB_STEP_SUMMARY}";
 
+        echo '${{ inputs.parameters }}' | dump_ctx "Parameters";
+        echo '${{ inputs.content }}' | dump_ctx "Job";
+
         printf '\n## Context Information\n' >> "${GITHUB_STEP_SUMMARY}";
-        echo '${{ toJson(github) }}' | dump_ctx "GitHub";
-        echo '${{ toJson(job) }}' | dump_ctx "Job";
         echo '${{ toJson(runner) }}' | dump_ctx "Runner";
-        echo '${{ inputs.arguments }}' | dump_ctx "Inputs";
-        echo '${{ inputs.environment }}' | dump_ctx "Environment";
-        echo '${{ inputs.variables }}' | dump_ctx "Variables";
-        echo '${{ toJson(inputs) }}' | dump_ctx "Composite Inputs";
+        if test -n "${{ inputs.verbose }}"; then
+          echo '${{ toJson(github) }}' | dump_ctx "GitHub";
+        fi
 
         echo "status=finished" >> "${GITHUB_OUTPUT}";
 

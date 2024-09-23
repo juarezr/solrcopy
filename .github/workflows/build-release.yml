@@ -35,13 +35,33 @@ jobs:
       ARTIFACT_NAME: solrcopy-${{ github.event.release.tag_name }}-${{ matrix.target }}
     
     steps:
-      # region Install and update Rust
+      # region Workflow information
+      
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch_commit_or_ref || '' }}
+      
+      - name: Report Workflow Information
+        id: workflow_report
+        uses: ./.github/actions/workflow-info
+        with:
+          title: '${{ github.ref_name }}'
+          parameters: '${{ toJson(inputs) }}'
+          content: |
+            ```json
+            ${{ toJson(job) }}'
+            ```
 
-      - name: Show release version
-        run: |
-          echo "github.event.release.tag_name : ${{ github.event.release.tag_name }}"
-          echo "github.event.release.upload_url : ${{ github.event.release.upload_url }}"
-          echo "github.event_path : ${{ github.event_path }}"
+            ### Release information
+            - Tag Name: ${{ github.event.release.tag_name }}
+            - Commit SHA: ${{ github.sha }}
+            - Ref: ${{ github.head_ref }}
+            - Upload URL: ${{ github.event.release.upload_url }}
+
+      # endregion
+      
+      # region Compiling
 
       - name: Install rpm tools
         if: matrix.platform == 'linux'
@@ -79,9 +99,6 @@ jobs:
       # endregion
       
       # region Compiling
-      
-      - name: Checkout sources
-        uses: actions/checkout@v4
 
       - name: Create local artifact folders
         run: mkdir -p ${{ env.ARTIFACT_DIR }} target/assets
