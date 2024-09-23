@@ -28,8 +28,11 @@ jobs:
     runs-on: ubuntu-latest
     if: (!github.event.pull_request.draft) && (!contains( github.event.pull_request.labels.*.name, 'prevent-ci'))
     steps:
-      - name: Checking if CI shoud run for this push/PR...
-        run: echo 'Resuming CI. Continuing next jobs...'
+      - name: Report Workflow Information
+        id: report_workflow_info
+        uses: ./.github/actions/report-action.yaml
+        with:
+          title: '${{ github.ref_name }}'
 
   ci:
     needs: run_when
