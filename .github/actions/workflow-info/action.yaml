@@ -31,9 +31,12 @@ runs:
       run: |
         echo "status=started" >> "${GITHUB_OUTPUT}";
         dump_ctx(){
-          printf '\n### %s Context\n\n\n```\n' "${1:-Unknown}" >> "${GITHUB_STEP_SUMMARY}";
-          cat /dev/stdin || printf 'Failed to dump context for %s\n' "${1:-Unknown}" >> "${GITHUB_STEP_SUMMARY}";
-          printf '\n```\n\nArguments: %s\n\n' "$*" >> "${GITHUB_STEP_SUMMARY}";
+          local content;
+          if ! content="$(cat -)"; then
+            printf 'Failed to dump context for %s\n' "${1:-Unknown}" >> "${GITHUB_STEP_SUMMARY}";
+          else
+            printf '\n### %s Context\n\n\n```json\n%s\n```\n' "${1:-Unknown}" "${content:-Nothing in context}" >> "${GITHUB_STEP_SUMMARY}";
+          fi
         };
 
         printf '# Workflow Information on ${{ inputs.title }}\n\n' >> "${GITHUB_STEP_SUMMARY}";
@@ -41,7 +44,7 @@ runs:
         echo '- github.ref_name: ${{ github.ref_name }}' >> "${GITHUB_STEP_SUMMARY}";
         echo '- github.sha: ${{ github.sha }}' >> "${GITHUB_STEP_SUMMARY}";
 
-        printf '\n## Context Information\n\n' >> "${GITHUB_STEP_SUMMARY}";
+        printf '\n## Context Information\n' >> "${GITHUB_STEP_SUMMARY}";
         echo '${{ toJson(github) }}' | dump_ctx "GitHub";
         echo '${{ toJson(job) }}' | dump_ctx "Job";
         echo '${{ toJson(runner) }}' | dump_ctx "Runner";
