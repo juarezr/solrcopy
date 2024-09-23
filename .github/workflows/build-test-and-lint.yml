@@ -30,7 +30,7 @@ jobs:
     steps:
       - name: Report Workflow Information
         id: workflow_report
-        uses: .github/actions/workflow-info@${{ github.ref_name }}
+        uses: ${{ github.repository }}/.github/actions/workflow-info@${{ github.ref }}
         with:
           title: '${{ github.ref_name }}'
 
