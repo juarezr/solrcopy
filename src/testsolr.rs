@@ -59,9 +59,9 @@ mod testsolr {
 
         check_exec_backup(url, dir);
 
-        check_exec_restore(url, dir);
-
         check_exec_delete(url);
+
+        check_exec_restore(url, dir);
     }
 
     /// Run this command to test backup from a running Solr instance

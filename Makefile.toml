@@ -2,16 +2,18 @@
 
 #$ cargo install --force cargo-make
 
-[tasks.up]
+#$ cargo make all
+
+[tasks.before]
 command = "docker"
 args = ["compose", "-f", "./docker/docker-compose.yml", "up", "-d"]
 
-[tasks.down]
+[tasks.after]
 command = "docker"
 args = ["compose", "-f", "./docker/docker-compose.yml", "down", "-v"]
 
-[tasks.solr]
-dependencies = ["down", "up"]
+[tasks.all]
+dependencies = ["after", "before"]
 
 [tasks.example]
 script_runner = "@rust"
