@@ -30,6 +30,8 @@ jobs:
     env:
       JOB_GITHUB_REF: ${{ github.head_ref || github.ref }}
     steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
       - name: Report Workflow Information
         id: workflow_report
         uses: ./.github/actions/workflow-info@fix/release-v0.6.5
