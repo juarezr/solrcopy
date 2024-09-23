@@ -24,6 +24,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
+        platform: [ linux, windows, macos ]
         include:
         - platform: linux
           os: ubuntu-latest
