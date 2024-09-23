@@ -37,6 +37,9 @@ jobs:
         uses: ./.github/actions/workflow-info
         with:
           title: '${{ github.ref_name }}'
+          arguments: '${{ toJson(inputs) }}'
+          variables: '${{ toJson(vars) }}'
+          environment: '${{ toJson(env) }}'
 
   ci:
     needs: run_when
