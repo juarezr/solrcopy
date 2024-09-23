@@ -1,9 +1,10 @@
-use crate::helpers::{CapturesHelpers, RegexHelpers, StringHelpers, EMPTY_STR, EMPTY_STRING};
+use super::helpers::{CapturesHelpers, RegexHelpers, StringHelpers, EMPTY_STR, EMPTY_STRING};
 use clap::builder::styling::{AnsiColor as Ansi, Styles};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
+use log::LevelFilter;
 use regex::Regex;
-use simplelog::{LevelFilter, TerminalMode};
+use simplelog::TerminalMode;
 use std::{fmt, path::Path, path::PathBuf, str::FromStr};
 use url::Url;
 
@@ -70,7 +71,7 @@ pub(crate) struct Backup {
     pub order: Vec<SortField>,
 
     /// Skip this quantity of documents in the Solr Query
-    #[arg(short = 'k', long, display_order = 42, value_parser = parse_quantity, default_value = "0", value_name = "quantity")]
+    #[arg(short = 'k', long, display_order = 42, value_parser = parse_quantity, default_value_t = 0, value_name = "quantity")]
     pub skip: u64,
 
     /// Maximum quantity of documents for retrieving from the core (like 100M)
@@ -114,7 +115,7 @@ pub(crate) struct Backup {
     pub num_docs: u64,
 
     /// Max number of files of documents stored in each zip file
-    #[arg(long, display_order = 71, default_value = "40", value_parser = parse_quantity, value_name = "quantity")]
+    #[arg(long, display_order = 71, default_value_t = 40, value_parser = parse_quantity, value_name = "quantity")]
     pub archive_files: u64,
 
     /// Optional prefix for naming the zip backup files when storing documents
@@ -128,10 +129,9 @@ pub(crate) struct Backup {
     #[arg(
         long,
         display_order = 73,
-        default_value = "0",
+        default_value_t = 0,
         value_name = "count",
-        // value_parser = clap::value_parser!(u64).range(0..99),
-        hide_default_value = true
+        value_parser = clap::value_parser!(u64).range(0..99),
     )]
     pub workaround_shards: u64,
 
@@ -162,14 +162,7 @@ pub(crate) struct Restore {
     pub search: Option<String>,
 
     /// Optional order for searching the zip archives
-    #[arg(
-        long,
-        display_order = 71,
-        default_value = "none",
-        hide_possible_values = true,
-        hide_default_value = true,
-        value_name = "asc | desc"
-    )]
+    #[arg(long, display_order = 71, default_value = "none", value_name = "asc | desc")]
     pub order: SortOrder,
 
     #[command(flatten)]
@@ -242,7 +235,7 @@ pub(crate) struct CommonArgs {
 #[derive(Parser, Clone, Debug)]
 pub(crate) struct LoggingArgs {
     /// What level of detail should print messages
-    #[arg(long, display_order = 90, value_name = "level", default_value = "info", value_enum)]
+    #[arg(long, display_order = 90, value_name = "level", default_value_t = LevelFilter::Info)]
     pub log_level: LevelFilter,
 
     /// Terminal output to print messages
@@ -254,14 +247,7 @@ pub(crate) struct LoggingArgs {
     pub log_file_path: Option<PathBuf>,
 
     /// What level of detail should write messages to the file
-    #[arg(
-        long,
-        display_order = 93,
-        value_name = "level",
-        default_value = "debug",
-        value_enum,
-        hide_possible_values = true
-    )]
+    #[arg(long, display_order = 93, value_name = "level", default_value_t = LevelFilter::Debug)]
     pub log_file_level: LevelFilter,
 }
 
@@ -278,19 +264,19 @@ pub(crate) struct ParallelArgs {
     pub params: Option<String>,
 
     /// How many times should continue on source document errors
-    #[arg(short, long, display_order = 61, default_value = "0", value_name = "count", value_parser = parse_quantity_max)]
+    #[arg(short, long, display_order = 61, default_value_t = 0, value_name = "count", value_parser = parse_quantity_max)]
     pub max_errors: u64,
 
     /// Delay before any processing in solr server. Format as: 30s, 15min, 1h
-    #[arg(long, display_order = 62, default_value = "0", value_name = "time", value_parser = parse_millis, hide_default_value = true)]
+    #[arg(long, display_order = 62, default_value_t = 0, value_name = "time", value_parser = parse_millis, hide_default_value = true)]
     pub delay_before: u64,
 
     /// Delay between each http operations in solr server. Format as: 3s, 500ms, 1min
-    #[arg(long, display_order = 63, default_value = "0", value_name = "time", value_parser = parse_millis, hide_default_value = true)]
+    #[arg(long, display_order = 63, default_value_t = 0, value_name = "time", value_parser = parse_millis, hide_default_value = true)]
     pub delay_per_request: u64,
 
     /// Delay after all processing. Usefull for letting Solr breath.
-    #[arg(long, display_order = 64, default_value = "0", value_name = "time", value_parser = parse_millis, hide_default_value = true)]
+    #[arg(long, display_order = 64, default_value_t = 0, value_name = "time", value_parser = parse_millis, hide_default_value = true)]
     pub delay_after: u64,
 
     /// Number parallel threads exchanging documents with the solr core
@@ -298,7 +284,7 @@ pub(crate) struct ParallelArgs {
         short,
         long,
         display_order = 80,
-        default_value = "1",
+        default_value_t = 1,
         value_name = "count",
         // value_parser = clap::value_parser!(u64).range(1..128),
     )]
@@ -309,7 +295,7 @@ pub(crate) struct ParallelArgs {
         short,
         long,
         display_order = 80,
-        default_value = "1",
+        default_value_t = 1,
         value_name = "count",
         // value_parser = clap::value_parser!(u64).range(1..=128),
     )]
