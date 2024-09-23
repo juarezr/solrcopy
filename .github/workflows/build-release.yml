@@ -60,7 +60,7 @@ jobs:
           parameters: '${{ toJson(inputs) }}'
           content: |
             ```json
-            ${{ toJson(job) }}'
+            ${{ toJson(job) }}
             ```
 
             ### Release information
