@@ -38,17 +38,17 @@ runs:
 
         printf '# Workflow Information on ${{ inputs.title }}\n\n' >> "${GITHUB_STEP_SUMMARY}";
         printf '\n## Event Information\n\n' >> "${GITHUB_STEP_SUMMARY}";
-        echo "- github.ref_name: ${{ github.ref_name }}" >> "${GITHUB_STEP_SUMMARY}";
-        echo "- github.sha: ${{ github.sha }}" >> "${GITHUB_STEP_SUMMARY}";
+        echo '- github.ref_name: ${{ github.ref_name }}' >> "${GITHUB_STEP_SUMMARY}";
+        echo '- github.sha: ${{ github.sha }}' >> "${GITHUB_STEP_SUMMARY}";
 
         printf '\n## Context Information\n\n' >> "${GITHUB_STEP_SUMMARY}";
-        echo "${{ toJson(github) }}" | dump_ctx "GitHub";
-        echo "${{ toJson(job) }}" | dump_ctx "Job";
-        echo "${{ toJson(runner) }}" | dump_ctx "Runner";
-        echo "${{ inputs.arguments }}" | dump_ctx "Inputs";
-        echo "${{ inputs.environment }}" | dump_ctx "Environment";
-        echo "${{ inputs.variables }}" | dump_ctx "Variables";
-        echo "${{ toJson(inputs) }}" | dump_ctx "Composite Inputs";
+        echo '${{ toJson(github) }}' | dump_ctx "GitHub";
+        echo '${{ toJson(job) }}' | dump_ctx "Job";
+        echo '${{ toJson(runner) }}' | dump_ctx "Runner";
+        echo '${{ inputs.arguments }}' | dump_ctx "Inputs";
+        echo '${{ inputs.environment }}' | dump_ctx "Environment";
+        echo '${{ inputs.variables }}' | dump_ctx "Variables";
+        echo '${{ toJson(inputs) }}' | dump_ctx "Composite Inputs";
 
         echo "status=finished" >> "${GITHUB_OUTPUT}";
 
