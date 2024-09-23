@@ -34,7 +34,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Report Workflow Information
         id: workflow_report
-        uses: ./.github/actions/workflow-info@fix/release-v0.6.5
+        uses: ./.github/actions/workflow-info
         with:
           title: '${{ github.ref_name }}'
 
