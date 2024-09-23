@@ -29,8 +29,8 @@ jobs:
     if: (!github.event.pull_request.draft) && (!contains( github.event.pull_request.labels.*.name, 'prevent-ci'))
     steps:
       - name: Report Workflow Information
-        id: report_workflow_info
-        uses: ./.github/actions/report-action.yaml
+        id: workflow_report
+        uses: ./.github/actions/workflow-info
         with:
           title: '${{ github.ref_name }}'
 
