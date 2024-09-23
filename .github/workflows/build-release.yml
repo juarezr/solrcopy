@@ -4,7 +4,18 @@ name: build-release
 
 on:
   release:
-    types: [published]
+    types: [released]
+  workflow_dispatch:
+    inputs:
+      release_version_tag:
+        description: 'Run the workflow with what release tag?'
+        required: true
+        type: string
+      branch_commit_or_ref:
+        description: 'Run the release workflow in what branch/commit?'
+        required: true
+        type: string
+        default: master
 
 jobs:
   releasing:
@@ -28,11 +39,10 @@ jobs:
           channel: stable
 
     env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      RELEASE_VERSION: ${{ github.event.release.tag_name }}
+      RELEASE_VERSION: ${{ inputs.release_version_tag || github.event.release.tag_name }}
       TARGET_DIR: target/release
       ARTIFACT_DIR: target/artifacts
-      ARTIFACT_NAME: solrcopy-${{ github.event.release.tag_name }}-${{ matrix.target }}
+      ARTIFACT_NAME: solrcopy-${{ inputs.release_version_tag || github.event.release.tag_name }}-${{ matrix.target }}
     
     steps:
       # region Workflow information
