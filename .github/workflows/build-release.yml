@@ -122,13 +122,6 @@ jobs:
         shell: bash
         run: tar --directory=${{ env.TARGET_DIR }} -czvf ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.tar.gz solrcopy
 
-      - name: Make a Windows zip package
-        if: matrix.platform == 'windows'
-        shell: bash
-        run: |
-          ls -lshFGHL ${{ env.TARGET_DIR }}
-          zip -j ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.zip ${{ env.TARGET_DIR }}/solrcopy.exe
-
       - name: Make the debian package
         if: matrix.platform == 'linux'
         shell: bash
@@ -138,6 +131,14 @@ jobs:
         if: matrix.platform == 'linux'
         shell: bash
         run: cargo generate-rpm --profile release --output ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.rpm
+
+      - name: Make a Windows zip package
+        if: matrix.platform == 'windows'
+        shell: bash
+        run: |
+          ls -lshFGHL ${{ env.TARGET_DIR }}
+          # zip -j ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.zip ${{ env.TARGET_DIR }}/solrcopy.exe
+          7z a -y -tzip ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.zip ${{ env.TARGET_DIR }}/solrcopy.exe
 
       # endregion
       
