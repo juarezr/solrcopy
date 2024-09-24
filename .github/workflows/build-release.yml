@@ -96,7 +96,10 @@ jobs:
       # region Compiling
 
       - name: Create local artifact folders
-        run: mkdir -p ${{ env.ARTIFACT_DIR }} target/assets
+        shell: bash
+        run: |
+          mkdir -p ${{ env.ARTIFACT_DIR }}
+          mkdir -p target/assets
 
       - name: Generate Assets
         run: cargo run -- generate --all --output-dir target/assets
