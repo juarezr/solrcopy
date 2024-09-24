@@ -28,12 +28,14 @@ jobs:
           ref: ${{ inputs.branch_commit_or_ref || '' }}
 
       - name: Update Rust toolchain from channel ${{ matrix.channel }} 
+        shell: bash
         run: |
           rustup self update
           rustup update ${{ matrix.channel }}
           rustup default ${{ matrix.channel }}
 
       - name: Check Rust ${{ matrix.channel }} toolchain versions
+        shell: bash
         run: |
           rustup --version
           cargo --version
@@ -45,12 +47,15 @@ jobs:
       # region Run security audit
 
       - name: Intall cargo-audit from channel ${{ matrix.channel }}
+        shell: bash
         run: cargo install cargo-auditable cargo-audit
 
       - name: Build with dependency lists embedded in the binaries
+        shell: bash
         run: cargo auditable build --release
 
       - name: Run security audit
+        shell: bash
         run: cargo audit bin target/release/solrcopy
 
       # endregion

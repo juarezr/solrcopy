@@ -63,16 +63,19 @@ jobs:
 
       - name: Rustup Self Update
         if: matrix.os != 'macos-latest'
+        shell: bash
         run: |
           rustup self update
 
       - name: Update Rust toolchain from channel ${{ matrix.channel }}
+        shell: bash
         run: |
           rustup update ${{ matrix.channel }}
           rustup default ${{ matrix.channel }}
           rustup component add llvm-tools
 
       - name: Check Rust ${{ matrix.channel }} toolchain versions
+        shell: bash
         run: |
           printf '# Rust Information\n\n' >> "${GITHUB_STEP_SUMMARY}";
 
@@ -94,6 +97,7 @@ jobs:
       # region Testing
       
       - name: Run cargo check
+        shell: bash
         run: cargo check --all-features
 
       - name: Run Solr for testing
@@ -104,6 +108,7 @@ jobs:
           up-flags: "-d"
 
       - name: Run cargo test
+        shell: bash
         run: cargo test
 
       # endregion
@@ -113,11 +118,13 @@ jobs:
       - name: Run cargo clippy
         if: matrix.os == 'ubuntu-latest'
         continue-on-error: true   # show all errors
+        shell: bash
         run: cargo clippy --all-features
 
       - name: Check source code for future incompatibilities
         id: report_future_incompatibilities
         if: matrix.os == 'ubuntu-latest'
+        shell: bash
         run: |
           echo '::group::Checking Future Incompatibilities';
 
@@ -143,10 +150,12 @@ jobs:
           
       - name: Run cargo fmt
         if: matrix.os == 'ubuntu-latest'
+        shell: bash
         run: cargo fmt --check
           
       - name: Run cargo doc
         if: matrix.os == 'ubuntu-latest'
+        shell: bash
         run: cargo doc --no-deps --document-private-items --all-features
 
       # endregion
@@ -159,6 +168,7 @@ jobs:
 
       - name: Run coverage report
         if: matrix.os == 'ubuntu-latest'
+        shell: bash
         run: cargo llvm-cov --all-features --workspace --lcov --no-cfg-coverage-nightly --output-path lcov.info
 
       - name: Coveralls
@@ -186,6 +196,7 @@ jobs:
           ref: ${{ inputs.branch_commit_or_ref || '' }}
 
       - name: Update Rust toolchain from channel ${{ matrix.channel }} 
+        shell: bash
         run: |
           rustup self update
           rustup update ${{ matrix.channel }}
@@ -193,6 +204,7 @@ jobs:
           rustup default ${{ matrix.channel }}
 
       - name: Check Rust ${{ matrix.channel }} toolchain versions
+        shell: bash
         run: |
           rustup --version
           cargo --version
@@ -205,12 +217,15 @@ jobs:
       # region Run security audit
 
       - name: Intall cargo-audit from channel ${{ matrix.channel }}
+        shell: bash
         run: cargo install cargo-auditable cargo-audit cargo-udeps
 
       - name: Build with dependency lists embedded in the binaries
+        shell: bash
         run: cargo auditable build --release
 
       - name: Run security audit
+        shell: bash
         run: cargo audit bin target/release/solrcopy
 
       # endregion
@@ -218,12 +233,15 @@ jobs:
       # region Checking unused dependencies
 
       - name: Print dependency tree
+        shell: bash
         run: cargo tree --verbose --color never
 
       - name: Intall cargo-udeps from channel ${{ matrix.channel }}
+        shell: bash
         run: cargo install cargo-udeps
 
       - name: Find unused dependencies in Cargo.toml
+        shell: bash
         run: cargo +nightly udeps --release
 
       # endregion
