@@ -72,15 +72,18 @@ jobs:
 
       - name: Rustup Self Update
         if: matrix.platform != 'macos'
+        shell: bash
         run: |
           rustup self update
 
       - name: Update Rust toolchain from channel ${{ matrix.channel }} 
+        shell: bash
         run: |
           rustup update ${{ matrix.channel }}
           rustup default ${{ matrix.channel }}
 
       - name: Check Rust ${{ matrix.channel }} toolchain versions
+        shell: bash
         run: |
           rustup --version
           cargo --version
@@ -89,6 +92,7 @@ jobs:
 
       - name: Install cargo plugins
         if: matrix.platform == 'linux'
+        shell: bash
         run: cargo install cargo-deb cargo-generate-rpm
 
       # endregion
@@ -102,9 +106,11 @@ jobs:
           mkdir -p target/assets
 
       - name: Generate Assets
+        shell: bash
         run: cargo run -- generate --all --output-dir target/assets
 
       - name: Compiling the application for further packaging
+        shell: bash
         run: cargo build --release
 
       # endregion
@@ -113,20 +119,24 @@ jobs:
       
       - name: Make a tar package for release (linux and macos)
         if: matrix.platform == 'linux' || matrix.platform == 'macos'
+        shell: bash
         run: tar --directory=${{ env.TARGET_DIR }} -czvf ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.tar.gz solrcopy
 
       - name: Make a Windows zip package
         if: matrix.platform == 'windows'
+        shell: bash
         run: |
           ls -lshFGHL ${{ env.TARGET_DIR }}
           zip -j ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.zip ${{ env.TARGET_DIR }}/solrcopy.exe
 
       - name: Make the debian package
         if: matrix.platform == 'linux'
+        shell: bash
         run: cargo deb --profile release --verbose --no-build --output ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.deb
         
       - name: Make a rpm package
         if: matrix.platform == 'linux'
+        shell: bash
         run: cargo generate-rpm --profile release --output ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.rpm
 
       # endregion
@@ -139,6 +149,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OWNER: ${{ github.repository_owner }}
           REPO: ${{ github.event.repository.name }}
+        shell: bash
         run: |
           gh release upload --clobber ${{ env.RELEASE_VERSION }} ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.rpm
           gh release upload --clobber ${{ env.RELEASE_VERSION }} ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.deb
@@ -150,11 +161,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OWNER: ${{ github.repository_owner }}
           REPO: ${{ github.event.repository.name }}
+        shell: bash
         run: |
           gh release upload --clobber ${{ env.RELEASE_VERSION }} ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.tar.gz
 
       - name: Upload Windows Zip package
         if: matrix.platform == 'windows'
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OWNER: ${{ github.repository_owner }}
