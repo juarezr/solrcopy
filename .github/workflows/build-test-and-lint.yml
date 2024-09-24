@@ -42,9 +42,7 @@ jobs:
           title: '${{ github.ref_name }}'
           parameters: '${{ toJson(inputs) }}'
           content: |
-            ```json
-            ${{ toJson(job) }}
-            ```
+            - Ref: ${{ github.head_ref }}
 
   ci:
     needs: run_when

@@ -60,10 +60,6 @@ jobs:
           title: '${{ github.ref_name }}'
           parameters: '${{ toJson(inputs) }}'
           content: |
-            ```json
-            ${{ toJson(job) }}
-            ```
-
             ### Release information
             - Tag Name: ${{ github.event.release.tag_name }}
             - Commit SHA: ${{ github.sha }}
@@ -146,49 +142,34 @@ jobs:
       
       # region Upload Artifact
       
-      - name: Upload Debian Package
-        uses: actions/upload-release-asset@v1
+      - name: Upload Debian, RPM and tar.gz Packages
         if: matrix.platform == 'linux'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.deb
-          asset_name: ${{ env.ARTIFACT_NAME }}.deb
-          asset_content_type: application/vnd.debian.binary-package
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+        run: |
+          gh release upload --clobber ${{ env.RELEASE_VERSION }} ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.rpm
+          gh release upload --clobber ${{ env.RELEASE_VERSION }} ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.deb
+          gh release upload --clobber ${{ env.RELEASE_VERSION }} ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.tar.gz
 
-      - name: Upload RPM Package
-        uses: actions/upload-release-asset@v1
-        if: matrix.platform == 'linux'
+      - name: Upload MacOS Tar package
+        if: matrix.platform == 'macos'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.rpm
-          asset_name: ${{ env.ARTIFACT_NAME }}.rpm
-          asset_content_type: application/x-rpm
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+        run: |
+          gh release upload --clobber ${{ env.RELEASE_VERSION }} ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.tar.gz
 
-      - name: Upload linux binary package
-        uses: actions/upload-release-asset@v1
-        if: matrix.platform == 'linux' || matrix.platform == 'macos'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.tar.gz
-          asset_name: ${{ env.ARTIFACT_NAME }}.tar.gz
-          asset_content_type: application/octet-stream
-
-      - name: Upload windows binary package
-        uses: actions/upload-release-asset@v1
+      - name: Upload Windows Zip package
         if: matrix.platform == 'windows'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.zip
-          asset_name: ${{ env.ARTIFACT_NAME }}.zip
-          asset_content_type: application/octet-stream
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+        run: |
+          gh release upload --clobber ${{ env.RELEASE_VERSION }} ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.zip
 
       # endregion
 
