@@ -1,12 +1,12 @@
 use super::{
     args::Restore, bars::*, connection::SolrClient, fails::*, helpers::*, ingest::*, state::*,
 };
-use crossbeam_channel::{bounded, Receiver, Sender};
+use crossbeam_channel::{Receiver, Sender, bounded};
 use crossbeam_utils::thread;
 use log::{debug, error, info, trace};
 use std::sync::{
-    atomic::{AtomicBool, AtomicU64, Ordering},
     Arc,
+    atomic::{AtomicBool, AtomicU64, Ordering},
 };
 use std::{path::Path, path::PathBuf, time::Instant};
 
@@ -277,7 +277,7 @@ fn send_to_solr(
 mod tests {
     use crate::{
         args::{Cli, Commands, Restore},
-        fails::{raise, BoxedResult},
+        fails::{BoxedResult, raise},
     };
     use pretty_assertions::assert_eq;
 

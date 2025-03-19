@@ -4,7 +4,7 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
 };
-use zip::{result::ZipResult, write::SimpleFileOptions, ZipWriter};
+use zip::{ZipWriter, result::ZipResult, write::SimpleFileOptions};
 
 // TODO: split in multiple files of constant size
 // TODO: limit file size based on zip.stats.bytes_written

@@ -1,7 +1,7 @@
-use super::fails::{raise, BoxedError, BoxedResult};
+use super::fails::{BoxedError, BoxedResult, raise};
 use super::{args::Cli, args::Generate};
 use clap::CommandFactory;
-use clap_complete::{generate, Generator, Shell};
+use clap_complete::{Generator, Shell, generate};
 use std::{fs::File, io, io::Write, path::PathBuf};
 
 pub(crate) fn gen_assets(params: &Generate) -> BoxedError {

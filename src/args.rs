@@ -1,4 +1,4 @@
-use super::helpers::{CapturesHelpers, RegexHelpers, StringHelpers, EMPTY_STR, EMPTY_STRING};
+use super::helpers::{CapturesHelpers, EMPTY_STR, EMPTY_STRING, RegexHelpers, StringHelpers};
 use clap::builder::styling::{AnsiColor as Ansi, Styles};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
@@ -758,7 +758,7 @@ pub(crate) mod tests {
     // #region Mockup
 
     use super::shared::TEST_SELECT_FIELDS;
-    use super::{parse_millis, parse_quantity, Cli, Commands, CommitMode};
+    use super::{Cli, Commands, CommitMode, parse_millis, parse_quantity};
     use clap::Parser;
     use clap_complete::Shell::Bash;
     use log::LevelFilter;

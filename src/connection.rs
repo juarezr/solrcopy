@@ -1,4 +1,4 @@
-use super::helpers::{env_value, wait, IntegerHelpers};
+use super::helpers::{IntegerHelpers, env_value, wait};
 use log::{debug, trace};
 use std::time::Duration;
 use std::{error::Error, fmt};
