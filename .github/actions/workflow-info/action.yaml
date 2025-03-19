@@ -58,9 +58,9 @@ runs:
         fi
 
         printf '\n## Context Information\n' >> "${GITHUB_STEP_SUMMARY}";
-        echo '${{ toJson(runner).replace("'","") }}' | dump_ctx "Runner";
+        echo '${{ toJson(runner) }}' | dump_ctx "Runner";
         if test -n "${{ inputs.verbose }}"; then
-          echo '${{ toJson(github).replace("'","") }}' | dump_ctx "GitHub";
+          echo "${{ toJson(github).replace(\"'\",\"\") }}" | dump_ctx "GitHub";
         fi
 
         echo "status=finished" >> "${GITHUB_OUTPUT}";
