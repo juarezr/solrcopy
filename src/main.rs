@@ -70,7 +70,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 mod wrangle {
 
     use crate::args::{Cli, Commands};
-    use crate::fails::{throw, BoxedResult};
+    use crate::fails::{BoxedResult, throw};
     use crate::{assets, backup, commit, create, delete, restore};
     use clap::Parser;
 

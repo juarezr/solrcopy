@@ -1,8 +1,8 @@
 use super::{
     args::{Backup, IterateMode},
-    fails::{throw, BoxedResult},
-    helpers::{replace_solr_date, solr_query, IntegerHelpers, StringHelpers},
+    fails::{BoxedResult, throw},
     helpers::{BRACKETS, COMMA, EMPTY_STR, EMPTY_STRING},
+    helpers::{IntegerHelpers, StringHelpers, replace_solr_date, solr_query},
 };
 use chrono::{DateTime, Duration, NaiveDate, NaiveDateTime, Utc};
 
@@ -75,11 +75,7 @@ impl Slices<String> {
             _ => self.get_period_slices()?.len(),
         };
         let rem = num % self.increment;
-        if rem > 0 {
-            Ok(num + 1)
-        } else {
-            Ok(num)
-        }
+        if rem > 0 { Ok(num + 1) } else { Ok(num) }
     }
 
     fn get_slice_of(num: u64, incr: u64) -> Slices<u64> {
@@ -183,11 +179,7 @@ impl Iterator for Slices<u64> {
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         let num_steps = self.len();
-        if num_steps == 0 {
-            (0, None)
-        } else {
-            (0, Some(num_steps.to_usize()))
-        }
+        if num_steps == 0 { (0, None) } else { (0, Some(num_steps.to_usize())) }
     }
 }
 
@@ -209,11 +201,7 @@ impl Iterator for Slices<NaiveDateTime> {
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         let num_steps = self.len();
-        if num_steps == 0 {
-            (0, None)
-        } else {
-            (0, Some(num_steps.to_usize()))
-        }
+        if num_steps == 0 { (0, None) } else { (0, Some(num_steps.to_usize())) }
     }
 }
 
@@ -232,11 +220,7 @@ impl SliceItem {
 impl Requests {
     pub(crate) fn len(&self) -> u64 {
         let res = self.limit / self.num_docs;
-        if self.limit % self.num_docs == 0 {
-            res
-        } else {
-            res + 1
-        }
+        if self.limit % self.num_docs == 0 { res } else { res + 1 }
     }
 }
 
@@ -389,8 +373,8 @@ mod tests {
     // region mockup
 
     use crate::{
-        args::{shared::TEST_SELECT_FIELDS, Backup, Cli, Commands, IterateMode},
-        fails::{raise, BoxedResult},
+        args::{Backup, Cli, Commands, IterateMode, shared::TEST_SELECT_FIELDS},
+        fails::{BoxedResult, raise},
         helpers::{COMMA, EMPTY_STR},
         steps::{Slices, SolrCore},
     };

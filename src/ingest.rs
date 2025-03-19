@@ -3,7 +3,7 @@ use super::{
     fails::BoxedResult,
     helpers::IntegerHelpers,
 };
-use glob::{glob, PatternError};
+use glob::{PatternError, glob};
 use log::error;
 use std::{fmt, fs::File, io::prelude::*, path::Path, path::PathBuf};
 use zip::ZipArchive;
