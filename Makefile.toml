@@ -1,19 +1,131 @@
-# Testing Solrcopy using a container with Solr
+#!/usr/bin/env -S bash -x -c 'cargo make lint'
+
+# Testing Solrcopy using a container with Solr --------------------------------------- #
+
+#region Usage
+
+#1 Intall Dependencies:
 
 #$ cargo install --force cargo-make
+#$ sudo apt install docker-ce
 
+#2 Run any of the following commands:
+
+#$ cargo make upgrade
+#$ cargo make lint
+#$ cargo make test-docker
 #$ cargo make all
 
-[tasks.before]
-command = "docker"
-args = ["compose", "-f", "./docker/docker-compose.yml", "up", "-d"]
+#endregion
 
-[tasks.after]
+#region Test
+
+[tasks.compose-up]
+command = "docker"
+args = [
+    "compose",
+    "-f",
+    "./docker/docker-compose.yml",
+    "up",
+    "--no-recreate",
+    "--wait",
+    "--detach",
+]
+
+[tasks.compose-down]
 command = "docker"
 args = ["compose", "-f", "./docker/docker-compose.yml", "down", "-v"]
 
+[tasks.compose-ingest]
+command = "docker"
+args = ["compose", "-f", "./docker/docker-compose.yml", "exec", "solr", "solr-ingest-all"]
+
+[tasks.clean]
+command = "cargo"
+args = ["clean"]
+
+[tasks.test-solr]
+command = "cargo"
+args = ["test", "--features", "testsolr"]
+
+[tasks.test-docker]
+dependencies = ["clean"]
+run_task = { name = [
+    "compose-up",
+    "compose-ingest",
+    "test-solr",
+], fork = true, cleanup_task = "compose-down" }
+
+#endregion Test
+
+#region Lint
+
+[tasks.check-compilation]
+command = "cargo"
+args = ["check", "--all-features"]
+
+[tasks.check-lint]
+command = "cargo"
+args = ["clippy", "--all-features"]
+
+[tasks.check-fmt]
+command = "cargo"
+args = ["clippy", "--all-features"]
+
+[tasks.check-doc]
+command = "cargo"
+args = ["doc", "--no-deps", "--document-private-items", "--all-features"]
+
+[tasks.check-future]
+command = "cargo"
+args = ["check", "--future-incompat-report"]
+
+[tasks.lint]
+dependencies = [
+    "check-compilation",
+    "check-lint",
+    "check-fmt",
+    "check-doc",
+    "check-future",
+]
+
+#endregion Lint
+
+#region Upgrade
+
+[tasks.show]
+command = "rustup"
+args = ["show"]
+
+[tasks.set-stable]
+command = "rustup"
+args = ["default", "stable"]
+
+[tasks.upgrade-check]
+command = "rustup"
+args = ["check"]
+
+[tasks.upgrade-rustup]
+command = "rustup"
+args = ["self", "update"]
+
+[tasks.upgrade-toolchain]
+command = "rustup"
+args = ["update", "stable"]
+
+[tasks.upgrade]
+run_task = { name = ["upgrade-check", "upgrade-rustup", "upgrade-toolchain"] }
+
+#endregion Upgrade
+
+#region Main
+
 [tasks.all]
-dependencies = ["after", "before"]
+dependencies = ["set-stable", "lint", "test-docker"]
+
+#endregion Test
+
+#region Others
 
 [tasks.example]
 script_runner = "@rust"
@@ -27,3 +139,5 @@ fn main() {
     println!("Path Value: {}", &value);
 }
 '''
+
+#endregion Others
