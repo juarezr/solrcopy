@@ -101,6 +101,7 @@ jobs:
         run: cargo check --all-features
       
       - name: Start Solr server for testing
+        if: matrix.os == 'ubuntu-latest'
         shell: bash
         run: |
           docker compose -f docker/docker-compose.yml up -d
@@ -178,6 +179,7 @@ jobs:
           path-to-lcov: './lcov.info'
       
       - name: Stop Solr server after tests
+        if: matrix.os == 'ubuntu-latest'
         shell: bash
         run: |
           docker compose -f docker/docker-compose.yml down -v
