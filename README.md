@@ -293,6 +293,8 @@ For setting up a testing environment you will need:
 
 ### Install a server in a docker container
 
+Check the Solr docker [documentation](https://solr.apache.org/guide/solr/latest/deployment-guide/solr-in-docker.html) for help in how to create a Solr container.
+
 #### Using docker compose
 
 1. Install [docker stable](https://docs.docker.com/get-started/get-docker/) for your platform
@@ -302,6 +304,8 @@ For setting up a testing environment you will need:
 ``` bash
 # This command creates the container with a solr server with two cores: 'demo' and 'target'
 $ docker compose -f docker/docker-compose.yml up -d
+# Run this command to insert some data into the cores
+$ docker compose exec solr solr-ingest-all
 # Run this command to test backup
 $ cargo run -- backup --url http://localhost:8983/solr --core demo --dir $PWD
 # Run this command to test restoring the backukp data into a existing empty core
