@@ -9,55 +9,116 @@ services:
     volumes:
       - data:/var/solr
     configs:
-      - source: solr-test-setup.sh
-        target: /opt/solr/docker/scripts/solr-test-setup
+      - source: solr-setup-start.sh
+        target: /opt/solr/docker/scripts/solr-setup-start
+        mode: 0755
+      - source: solr-ingest-demo.sh
+        target: /opt/solr/docker/scripts/solr-ingest-demo
+        mode: 0755
+      - source: solr-ingest-films.sh
+        target: /opt/solr/docker/scripts/solr-ingest-films
+        mode: 0755
+      - source: solr-ingest-all.sh
+        target: /opt/solr/docker/scripts/solr-ingest-all
+        mode: 0755
+      - source: solr-commit.sh
+        target: /opt/solr/docker/scripts/solr-commit
+        mode: 0755
+      - source: solr-start-server.sh
+        target: /opt/solr/docker/scripts/solr-start-server
         mode: 0755
     healthcheck:
-      test: solr status || exit 1
+      test: solr status || exit 121
       interval: 60s
       retries: 5
       start_period: 20s
       timeout: 10s
     command:
+      # - solr-precreate gettingstarted
       # - solr-demo
-      - solr-test-setup
+      - solr-start-server
+
 volumes:
   data:
 
 configs:
-  solr-test-setup.sh:
+  solr-setup-start.sh:
     content: |
       #!/bin/bash
-
-      # Configure a Solr demo and then run solr in the foreground
-
-      set -euo pipefail
-
-      if test -n "${VERBOSE:-}"; then set -x; fi
-
-      source run-initdb
-
+      set -eu -o pipefail
+      echo 'Checking if it needs to create Solr cores before starting up'
       if [ -d /var/solr/data/demo ]; then
-        echo "Solr cores already exists; skipping demo creation"
+        echo 'Solr core named demo already exists; skipping core creation'
       else
-        start-local-solr
+        # start-local-solr
+        # /opt/solr/bin/solr create -c demo
+        # /opt/solr/bin/solr create -c target
+        # stop-local-solr
+        precreate-core demo
+        precreate-core films
+        precreate-core films2
+        precreate-core target
+        echo 'Initializind solr db'
+        source run-initdb
+      fi
+      echo 'Finished Solr cores creation'
+      # END OF SCRIPT #
 
-        /opt/solr/bin/solr create -c demo
-        /opt/solr/bin/solr post -c demo /opt/solr/example/exampledocs/*.xml
+  solr-ingest-demo.sh:
+    content: |
+      #!/bin/bash
+      set -eu -o pipefail
+      echo 'Ingest data into a Solr core named demo'
+      if [ ! -d /var/solr/data/demo ]; then
+        echo 'Solr core named demo does not exists; skipping core ingestion'
+      else
         /opt/solr/bin/solr post -c demo /opt/solr/example/exampledocs/books.json
         /opt/solr/bin/solr post -c demo /opt/solr/example/exampledocs/books.csv
-
-        /opt/solr/bin/solr create -c target
-
-        /opt/solr/bin/solr create -c films
-        /opt/solr/bin/solr post -c films /opt/solr/example/films/films.xml
-
-        /opt/solr/bin/solr create -c films2
-        /opt/solr/bin/solr post -c films2 /opt/solr/example/films/films.json
-
-        stop-local-solr
+        /opt/solr/bin/solr post -c demo /opt/solr/example/exampledocs/*.xml
       fi
+      echo 'Finished Solr demo core ingestion'
+      # END OF SCRIPT #
 
+  solr-ingest-films.sh:
+    content: |
+      #!/bin/bash
+      set -eu -o pipefail
+      echo 'Ingest data into a Solr core named films'
+      if [ ! -d /var/solr/data/films ]; then
+        echo 'Solr core named films does not exists; skipping core ingestion'
+      else
+        /opt/solr/bin/solr post -c films /opt/solr/example/films/films.xml
+        /opt/solr/bin/solr post -c films2 /opt/solr/example/films/films.json
+      fi
+      echo 'Finished Solr films core ingestion'
+      # END OF SCRIPT #
+
+  solr-ingest-all.sh:
+    content: |
+      #!/bin/bash
+      set -eu -o pipefail
+      echo 'Starting solr core data ingestion. Wait some seconds...'
+      solr-ingest-demo
+      solr-ingest-films
+      echo 'Solr cores created and data ingested.'
+      # END OF SCRIPT #
+
+  solr-commit.sh:
+    content: |
+      #!/bin/bash
+      # Sends a commit to the Solr Core
+      set -eu -o pipefail
+      echo '{"commit": {}}' | post -c "$${1:demo}" -type application/json --out yes -d
+      # END OF SCRIPT #
+
+  solr-start-server.sh:
+    content: |
+      #!/bin/bash
+      set -eu -o pipefail
+      if test -n "${VERBOSE:-}"; then set -x; fi
+      echo 'Configuring Solr cores...'
+      solr-setup-start
+      echo 'Starting Solr Server...'
       exec solr-fg
-
+      echo 'Solr Server Finished.'
       # END OF SCRIPT #
