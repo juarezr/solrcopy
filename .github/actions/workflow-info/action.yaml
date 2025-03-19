@@ -15,9 +15,6 @@ inputs:
   content:
     description: 'Content to put in the report'
     required: false
-  verbose:
-    description: 'Output debug information in the job step'
-    required: false
 outputs:
   status:
     description: "Return report status"
@@ -59,9 +56,7 @@ runs:
 
         printf '\n## Context Information\n' >> "${GITHUB_STEP_SUMMARY}";
         echo '${{ toJson(runner) }}' | dump_ctx "Runner";
-        if test -n "${{ inputs.verbose }}"; then
-          echo "${{ toJson(github).replace("\'","") }}" | dump_ctx "GitHub";
-        fi
+        echo '${{ toJson(job) }}' | dump_ctx "Job";
 
         echo "status=finished" >> "${GITHUB_OUTPUT}";
         echo "::endgroup::"
