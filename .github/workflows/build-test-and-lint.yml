@@ -110,7 +110,7 @@ jobs:
         shell: bash
         run: |
           sleep 10
-          docker compose exec solr solr-ingest-all
+          docker compose -f docker/docker-compose.yml exec solr solr-ingest-all
 
       - name: Run cargo test
         shell: bash
