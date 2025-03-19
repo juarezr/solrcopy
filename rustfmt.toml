@@ -4,7 +4,7 @@
 ## Checking of formatting is configured in github CI at file:
 ##   - ./github/workflows/build-test-and-lint.yml
 
-edition = "2018"
+edition = "2024"
 newline_style = "Unix"
 # max_width = 100       # default 100
 # tab_spaces = 4        # default 4
