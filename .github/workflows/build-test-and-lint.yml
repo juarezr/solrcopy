@@ -103,8 +103,13 @@ jobs:
       - name: Start Solr server for testing
         if: matrix.os == 'ubuntu-latest'
         shell: bash
+        run: docker compose -f docker/docker-compose.yml up --wait --detach
+      
+      - name: Ingesting sample data in the Solr server cores
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
         run: |
-          docker compose -f docker/docker-compose.yml up -d
+          sleep 10
           docker compose exec solr solr-ingest-all
 
       - name: Run cargo test
