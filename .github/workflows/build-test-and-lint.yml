@@ -99,13 +99,12 @@ jobs:
       - name: Run cargo check
         shell: bash
         run: cargo check --all-features
-
-      - name: Run Solr for testing
-        uses: hoverkraft-tech/compose-action@v2.0.1
-        if: matrix.os == 'ubuntu-latest'
-        with:
-          compose-file: "./docker/docker-compose.yml"
-          up-flags: "-d"
+      
+      - name: Start Solr server for testing
+        shell: bash
+        run: |
+          docker compose -f docker/docker-compose.yml up -d
+          docker compose exec solr solr-ingest-all
 
       - name: Run cargo test
         shell: bash
@@ -177,6 +176,11 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: './lcov.info'
+      
+      - name: Stop Solr server after tests
+        shell: bash
+        run: |
+          docker compose -f docker/docker-compose.yml down -v
 
       # endregion
 
