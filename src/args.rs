@@ -60,26 +60,30 @@ pub(crate) struct Backup {
     #[arg(short, long, display_order = 40, value_name = "'f1:vl1 AND f2:vl2'")]
     pub query: Option<String>,
 
+    /// Solr Filter Query param 'fq' for filtering which documents are retrieved
+    #[arg(short = 'f', long, display_order = 41, value_name = "'f1:vl1 AND f2:vl2'")]
+    pub fq: Option<String>,
+
     /// Solr core fields names for sorting documents for retrieval
     #[arg(
         short,
         long,
-        display_order = 41,
+        display_order = 42,
         value_name = "f1:asc,f2:desc,...",
         value_delimiter = ','
     )]
     pub order: Vec<SortField>,
 
     /// Skip this quantity of documents in the Solr Query
-    #[arg(short = 'k', long, display_order = 42, value_parser = parse_quantity, default_value_t = 0, value_name = "quantity")]
+    #[arg(short = 'k', long, display_order = 43, value_parser = parse_quantity, default_value_t = 0, value_name = "quantity")]
     pub skip: u64,
 
     /// Maximum quantity of documents for retrieving from the core (like 100M)
-    #[arg(short, long, display_order = 43, value_parser = parse_quantity, value_name = "quantity")]
+    #[arg(short, long, display_order = 44, value_parser = parse_quantity, value_name = "quantity")]
     pub limit: Option<u64>,
 
     /// Names of core fields retrieved in each document [default: all but _*]
-    #[arg(short, long, display_order = 44, value_name = "field1,field2,...")]
+    #[arg(short, long, display_order = 45, value_name = "field1,field2,...")]
     pub select: Vec<String>,
 
     /// Slice the queries by using the variables {begin} and {end} for iterating in `--query`
