@@ -88,6 +88,9 @@ Options:
   -q, --query <'f1:vl1 AND f2:vl2'>
           Solr Query param 'q' for filtering which documents are retrieved See: https://lucene.apache.org/solr/guide/6_6/the-standard-query-parser.html
 
+  -f, --fq <'f1:vl1 AND f2:vl2'>
+          Solr Filter Query param 'fq' for filtering which documents are retrieved See: https://solr.apache.org/guide/solr/latest/query-guide/common-query-parameters.html#fq-filter-query-parameter
+
   -o, --order <f1:asc,f2:desc,...>
           Solr core fields names for sorting documents for retrieval
 
