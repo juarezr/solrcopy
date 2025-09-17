@@ -17,6 +17,14 @@ Command line tool for backup and restore of documents stored in cores of [Apache
 <!-- markdownlint <!-- markdownlint-disable-next-line no-inline-html --> -->
 [<img alt="Send some cookies" src="http://img.shields.io/liberapay/receives/juarezr.svg?label=Send%20some%20cookies&logo=liberapay">](https://liberapay.com/juarezr/donate)
 
+## Config
+
+The following environment variables can be used for common parameters:
+- `SOLR_COPY_URL` for the url pointing to the Solr cluster
+- `SOLR_COPY_DIR` for the existing folder where the zip backup files containing the extracted documents are stored
+
+These variables can also be stored in a `.env` file alongside the `solrcopy` binary. See `.env.example`
+
 ## Usage
 
 1. Use the command `solrcopy backup` for dumping documents from a Solr core into local zip files.
