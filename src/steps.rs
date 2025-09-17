@@ -327,6 +327,8 @@ impl Backup {
         let qparam = self.query.as_deref().unwrap_or("*:*");
         let qfixed = self.replace_vars(qparam, raw);
         let filter = solr_query(&qfixed);
+        let fqparam = self.fq.as_deref().unwrap_or("*:*");
+        let fqparam = solr_query(&fqparam);
 
         let sort: String = if self.order.is_empty() {
             EMPTY_STRING
@@ -340,6 +342,7 @@ impl Backup {
             self.options.core.clone(),
             "/select?wt=json&indent=off&omitHeader=true".to_string(),
             format!("&q={}", filter),
+            format!("&fq={}", fqparam),
             sort,
             self.transfer.get_param("&"),
             selected.to_string(),
