@@ -20,7 +20,7 @@ clap_mangen = "0.2.*"
 regex = "1.10.*"
 url = "2.5.*"
 lazy_static = "1.5.*"
-ureq = { version = "2.10.*", features = ["tls", "charset", "cookies", "brotli"] }
+ureq = { version = "3.1.*", features = ["rustls", "charset", "cookies", "brotli", "socks-proxy"] }
 zip = { version = "2.3.*",  features = ["deflate", "time"] }
 indicatif = "0.17.*"
 chrono = "^0.4.20"
