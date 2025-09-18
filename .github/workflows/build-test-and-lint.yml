@@ -107,18 +107,26 @@ jobs:
       - name: Start Solr server for testing
         if: matrix.os == 'ubuntu-latest'
         shell: bash
-        run: docker compose -f docker/docker-compose.yml up --wait --detach
+        run: |
+          echo '::group::Deploying Solr inside a docker container';
+          docker compose -f docker/docker-compose.yml up --wait --detach 2>&1
+          echo '::endgroup::';
 
       - name: Ingesting sample data in the Solr server cores
         if: matrix.os == 'ubuntu-latest'
         shell: bash
         run: |
           sleep 10
-          docker compose -f docker/docker-compose.yml exec solr solr-ingest-all
+          echo '::group::Executing a script inside the docker container';
+          docker compose -f docker/docker-compose.yml exec solr solr-ingest-all 2>&1
+          echo '::endgroup::';
 
       - name: Run cargo test
         shell: bash
-        run: cargo test
+        run: |
+          echo '::group::Deploying Solr inside a docker container';
+          cargo test --all-features 2>&1
+          echo '::endgroup::';
 
       # endregion
 
