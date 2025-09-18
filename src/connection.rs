@@ -2,6 +2,7 @@ use super::helpers::{IntegerHelpers, env_value, wait};
 use log::{debug, trace};
 use std::time::Duration;
 use std::{error::Error, fmt};
+use ureq::Agent;
 
 // region SolrError
 
@@ -76,13 +77,10 @@ impl SolrClient {
     pub(crate) fn new() -> Self {
         let retries = env_value(SOLR_COPY_RETRIES, SOLR_DEF_RETRIES);
         let timeout = Self::get_timeout();
-        let duration = Duration::from_secs(timeout);
+        let duration = Option::from(Duration::from_secs(timeout));
 
-        let builder = ureq::AgentBuilder::new();
-        let client = builder
-            .timeout(duration)
-            // .basic_auth("admin", Some("good password"))
-            .build();
+        let builder = Agent::config_builder().timeout_global(duration).build();
+        let client = builder.into();
 
         SolrClient { http: client, max_retries: retries.to_usize(), retry_count: 0 }
     }
@@ -120,8 +118,8 @@ impl SolrClient {
         trace!("POST as {} {}", content_type, url);
         loop {
             let req = self.http.post(url);
-            let request = req.set("Content-Type", content_type);
-            let answer = request.send_string(content);
+            let request = req.header("Content-Type", content_type);
+            let answer = request.send(content);
             let result = self.handle_response(answer);
             match result {
                 None => continue,
@@ -131,7 +129,7 @@ impl SolrClient {
     }
 
     fn handle_response(
-        &mut self, answer: Result<ureq::Response, ureq::Error>,
+        &mut self, answer: Result<ureq::http::Response<ureq::Body>, ureq::Error>,
     ) -> Option<Result<String, SolrError>> {
         let result = self.decode_response(answer);
         match result {
@@ -159,26 +157,21 @@ impl SolrClient {
     }
 
     fn decode_response(
-        &mut self, answer: Result<ureq::Response, ureq::Error>,
+        &mut self, answer: Result<ureq::http::Response<ureq::Body>, ureq::Error>,
     ) -> Result<String, SolrError> {
         match answer {
-            Ok(content) => {
-                let status = content.status();
-                let body = content.into_string();
-                match body {
+            Ok(mut response) => {
+                let body = response.body_mut();
+                let content = body.read_to_string();
+                let status = response.status();
+                match content {
                     Ok(content) => Ok(content),
-                    Err(failed) => Err(SolrError::new(failed.to_string(), status)),
+                    Err(failed) => Err(SolrError::new(failed.to_string(), status.as_u16())),
                 }
             }
             Err(failure) => match failure {
-                ureq::Error::Status(code, response) => {
-                    let msg = response.status_text();
-                    Err(SolrError::new(msg.to_string(), code))
-                }
-                ureq::Error::Transport(transport) => {
-                    let cause = transport.message().unwrap_or("Network failure.");
-                    Err(SolrError::from(cause.to_string()))
-                }
+                ureq::Error::StatusCode(code) => Err(SolrError::new(failure.to_string(), code)),
+                _ => Err(SolrError::from(failure.to_string())),
             },
         }
     }
