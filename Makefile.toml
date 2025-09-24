@@ -38,27 +38,46 @@ args = ["compose", "-f", "./docker/docker-compose.yml", "down", "-v"]
 
 [tasks.compose-ingest]
 command = "docker"
-args = ["compose", "-f", "./docker/docker-compose.yml", "exec", "solr", "solr-ingest-all"]
+args = [
+    "compose",
+    "-f",
+    "./docker/docker-compose.yml",
+    "exec",
+    "solr",
+    "solr-ingest-all",
+]
 
-[tasks.clean]
+[tasks.test-basic]
 command = "cargo"
-args = ["clean"]
+args = ["test"]
+
+[tasks.test-start]
+dependencies = ["compose-up", "compose-ingest"]
+
+[tasks.test-cleanup]
+dependencies = ["compose-down"]
 
 [tasks.test-solr]
 command = "cargo"
 args = ["test", "--features", "testsolr"]
 
 [tasks.test-docker]
-dependencies = ["clean"]
 run_task = { name = [
     "compose-up",
     "compose-ingest",
     "test-solr",
 ], fork = true, cleanup_task = "compose-down" }
 
+[tasks.test]
+dependencies = ["test-basic", "test-docker"]
+
 #endregion Test
 
 #region Lint
+
+[tasks.clean]
+command = "cargo"
+args = ["clean"]
 
 [tasks.check-compilation]
 command = "cargo"
@@ -80,6 +99,14 @@ args = ["doc", "--no-deps", "--document-private-items", "--all-features"]
 command = "cargo"
 args = ["check", "--future-incompat-report"]
 
+[tasks.check-msrv]
+command = "cargo"
+args = ["msrv", "verify", "--all-features"]
+
+[tasks.check-unused]
+command = "sh"
+args = ["-c", "cargo +nightly udeps --release"]
+
 [tasks.lint]
 dependencies = [
     "check-compilation",
@@ -87,9 +114,27 @@ dependencies = [
     "check-fmt",
     "check-doc",
     "check-future",
+    "check-msrv",
+    "check-unused",
 ]
 
 #endregion Lint
+
+#region audit
+
+[tasks.auditable-build]
+command = "cargo"
+args = ["auditable", "build", "--release"]
+
+[tasks.audit-release]
+dependencies = ["auditable-build"]
+command = "cargo"
+args = ["audit", "bin", "target/release/solrcopy"]
+
+[tasks.audit]
+dependencies = ["audit-release", "clean"]
+
+#endregion audit
 
 #region Upgrade
 

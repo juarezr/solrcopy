@@ -34,7 +34,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch_commit_or_ref || '' }}
-      
+
       - name: Report Workflow Information
         id: workflow_report
         uses: ./.github/actions/workflow-info
@@ -92,34 +92,52 @@ jobs:
           cargo --list >> "${GITHUB_STEP_SUMMARY}";
           printf '\n```\n\n' >> "${GITHUB_STEP_SUMMARY}";
 
+          printf '\n\n## Cargo Tools\n\n```sh\n$ cargo install --list\n' >> "${GITHUB_STEP_SUMMARY}";
+          cargo install --list >> "${GITHUB_STEP_SUMMARY}";
+          printf '\n```\n\n' >> "${GITHUB_STEP_SUMMARY}";
+
       # endregion
-      
+
       # region Testing
-      
+
       - name: Run cargo check
         shell: bash
         run: cargo check --all-features
-      
+
       - name: Start Solr server for testing
         if: matrix.os == 'ubuntu-latest'
         shell: bash
-        run: docker compose -f docker/docker-compose.yml up --wait --detach
-      
+        run: |
+          echo '::group::Deploying Solr inside a docker container';
+          docker compose -f docker/docker-compose.yml up --wait --detach 2>&1
+          echo '::endgroup::';
+
       - name: Ingesting sample data in the Solr server cores
         if: matrix.os == 'ubuntu-latest'
         shell: bash
         run: |
           sleep 10
-          docker compose -f docker/docker-compose.yml exec solr solr-ingest-all
+          echo '::group::Executing a script inside the docker container';
+          docker compose -f docker/docker-compose.yml exec solr solr-ingest-all 2>&1
+          echo '::endgroup::';
 
       - name: Run cargo test
+        if: matrix.os != 'ubuntu-latest'
         shell: bash
         run: cargo test
 
+      - name: Run cargo test all features
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          echo '::group::Deploying Solr inside a docker container';
+          cargo test --all-features 2>&1
+          echo '::endgroup::';
+
       # endregion
-      
+
       # region Linting
-      
+
       - name: Run cargo clippy
         if: matrix.os == 'ubuntu-latest'
         continue-on-error: true   # show all errors
@@ -152,21 +170,21 @@ jobs:
             printf 'No future incompatibilities found in this build.\n' >> "${GITHUB_STEP_SUMMARY}";
           fi
           echo '::endgroup::';
-          
+
       - name: Run cargo fmt
         if: matrix.os == 'ubuntu-latest'
         shell: bash
         run: cargo fmt --check
-          
+
       - name: Run cargo doc
         if: matrix.os == 'ubuntu-latest'
         shell: bash
         run: cargo doc --no-deps --document-private-items --all-features
 
       # endregion
-      
+
       # region Test Coverage
-      
+
       - name: Install cargo-llvm-cov
         if: matrix.os == 'ubuntu-latest'
         uses: taiki-e/install-action@cargo-llvm-cov
@@ -182,7 +200,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: './lcov.info'
-      
+
       - name: Stop Solr server after tests
         if: matrix.os == 'ubuntu-latest'
         shell: bash
@@ -224,12 +242,12 @@ jobs:
           rustup default
 
       # endregion
-      
+
       # region Run security audit
 
       - name: Intall cargo-audit from channel ${{ matrix.channel }}
         shell: bash
-        run: cargo install cargo-auditable cargo-audit cargo-udeps
+        run: cargo install cargo-auditable cargo-audit
 
       - name: Build with dependency lists embedded in the binaries
         shell: bash
@@ -240,7 +258,30 @@ jobs:
         run: cargo audit bin target/release/solrcopy
 
       # endregion
-      
+
+      # region Checking MSRV version
+
+      - name: Intall cargo-msrv from channel ${{ matrix.channel }}
+        shell: bash
+        run: cargo install cargo-msrv
+
+      - name: Show MSRV version
+        shell: bash
+        run: |
+          printf '## Minimum Supported Rust Version on Channel ${{ matrix.channel }}\n\n' >> "${GITHUB_STEP_SUMMARY}";
+          cargo msrv show --output-format human >> "${GITHUB_STEP_SUMMARY}";
+
+          printf '## Crates MSRV\n\n```sh\n$ rustup show\n' >> "${GITHUB_STEP_SUMMARY}";
+          cargo msrv list --output-format human >> "${GITHUB_STEP_SUMMARY}";
+          printf '\n```\n\n' >> "${GITHUB_STEP_SUMMARY}";
+
+      - name: Check MSRV version
+        shell: bash
+        run: |
+          cargo msrv verify
+
+      # endregion
+
       # region Checking unused dependencies
 
       - name: Print dependency tree

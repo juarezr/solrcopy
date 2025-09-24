@@ -58,9 +58,9 @@ mod testsolr;
 
 use crate::args::Cli;
 use dotenvy::dotenv;
+use dotenvy::dotenv;
 
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
-
     dotenv().ok();
 
     let parsed = Cli::parse_from_args()?;
