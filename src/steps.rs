@@ -5,9 +5,9 @@ use super::{
     helpers::{IntegerHelpers, StringHelpers, replace_solr_date, solr_query},
 };
 use chrono::{DateTime, Duration, NaiveDate, NaiveDateTime, Utc};
+use log::debug;
 use std::collections::HashSet;
 use std::iter::FromIterator;
-use log::debug;
 
 // region Struct
 
@@ -295,7 +295,6 @@ impl Backup {
     }
 
     pub(crate) fn get_steps(&self, schema: &SolrCore) -> Requests {
-
         let include_hash: HashSet<String> = HashSet::from_iter(schema.fields.clone());
         let exclude_hash: HashSet<String> = HashSet::from_iter(self.exclude.clone());
         let diff: Vec<String> = include_hash.difference(&exclude_hash).map(String::from).collect();
