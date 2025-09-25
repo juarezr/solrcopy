@@ -22,6 +22,7 @@
 // #![allow(unused_variables)]
 // #![allow(unused_imports)]
 // #![allow(dead_code)]
+// #![allow(unreachable_code)]
 
 // endregion
 

@@ -111,6 +111,9 @@ Options:
   -s, --select <field1,field2,...>
           Names of core fields retrieved in each document [default: all but _*]
 
+  -e, --exclude <field1,field2,...>
+          Names of core fields excluded in each document
+
   -i, --iterate-by <mode>
           Slice the queries by using the variables {begin} and {end} for iterating in `--query` Used in bigger solr cores with huge number of docs because querying the end of docs is expensive and fails frequently [default: day]
 
