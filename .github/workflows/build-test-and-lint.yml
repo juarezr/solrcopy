@@ -73,6 +73,7 @@ jobs:
           rustup update ${{ matrix.channel }}
           rustup default ${{ matrix.channel }}
           rustup component add llvm-tools
+          rustup component add rustfmt
 
       - name: Check Rust ${{ matrix.channel }} toolchain versions
         shell: bash
