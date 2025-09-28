@@ -83,8 +83,12 @@ pub(crate) struct Backup {
     pub limit: Option<u64>,
 
     /// Names of core fields retrieved in each document [default: all but _*]
-    #[arg(short, long, display_order = 45, value_name = "field1,field2,...")]
+    #[arg(short, long, display_order = 45, value_name = "field1,field2,...", value_parser = parse_trim, value_delimiter = ',')]
     pub select: Vec<String>,
+
+    /// Names of core fields excluded in each document [default: none]
+    #[arg(short, long, display_order = 46, value_name = "field1,field2,...", value_parser = parse_trim, value_delimiter = ',')]
+    pub exclude: Vec<String>,
 
     /// Slice the queries by using the variables {begin} and {end} for iterating in `--query`
     /// Used in bigger solr cores with huge number of docs because querying the end of docs is expensive and fails frequently
@@ -345,6 +349,10 @@ pub(crate) const SOLR_COPY_URL: &str = "SOLR_COPY_URL";
 // #endregion
 
 // #region Param parsing
+
+fn parse_trim(src: &str) -> Result<String, String> {
+    Ok(src.trim().to_string())
+}
 
 fn parse_quantity(src: &str) -> Result<u64, String> {
     lazy_static! {

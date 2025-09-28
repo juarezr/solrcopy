@@ -5,6 +5,9 @@ use super::{
     helpers::{IntegerHelpers, StringHelpers, replace_solr_date, solr_query},
 };
 use chrono::{DateTime, Duration, NaiveDate, NaiveDateTime, Utc};
+use log::debug;
+use std::collections::HashSet;
+use std::iter::FromIterator;
 
 // region Struct
 
@@ -292,19 +295,25 @@ impl Backup {
     }
 
     pub(crate) fn get_steps(&self, schema: &SolrCore) -> Requests {
-        let core_fields: &[String] = &schema.fields;
-        let fl = self.get_query_fields(core_fields);
+        let include_hash: HashSet<String> = HashSet::from_iter(schema.fields.clone());
+        let exclude_hash: HashSet<String> = HashSet::from_iter(self.exclude.clone());
+        let diff: Vec<String> = include_hash.difference(&exclude_hash).map(String::from).collect();
+
+        debug!("Include fields {:?}", include_hash);
+        debug!("Exclude fields {:?}", exclude_hash);
+        debug!("Actual fields  {:?}", diff);
+
+        let fl = self.get_query_fields(diff);
         let query = self.get_query_url(&fl, true);
         let end_limit = self.get_docs_to_retrieve(schema);
         Requests { curr: self.skip, limit: end_limit, num_docs: self.num_docs, url: query }
     }
 
-    pub(crate) fn get_query_fields(&self, core_fields: &[String]) -> String {
-        let fields = if self.select.is_empty() { core_fields } else { &self.select };
-        if fields.is_empty() {
+    pub(crate) fn get_query_fields(&self, core_fields: Vec<String>) -> String {
+        if core_fields.is_empty() {
             EMPTY_STRING
         } else {
-            let all = fields.join(COMMA);
+            let all = core_fields.join(COMMA);
             "&fl=".append(&all)
         }
     }
