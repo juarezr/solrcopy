@@ -19,7 +19,7 @@
 
 #endregion
 
-#region Main
+#region Basic
 
 [tasks.default]
 category = "Basic"
@@ -41,14 +41,14 @@ category = "Basic"
 description = "Runs all lint checks and runs all tests against a local Solr container"
 dependencies = ["set-stable", "lint", "test-docker"]
 
-#endregion Basic
-
-#region Test
-
 [tasks.test]
 category = "Basic"
 description = "Runs tests against a local solr server created using docker compose"
 dependencies = ["test-basic", "test-docker"]
+
+#endregion Basic
+
+#region Docker
 
 [tasks.compose-up]
 category = "Test"
@@ -86,6 +86,10 @@ args = [
     "solr-ingest-all",
 ]
 
+#endregion Docker
+
+#region Test
+
 [tasks.test-basic]
 category = "Test"
 description = "Runs tests that do not require a Solr container"
@@ -118,6 +122,53 @@ run_task = { name = [
 ], fork = true, cleanup_task = "compose-down" }
 
 #endregion Test
+
+#region Coverage
+
+[tasks.coverage-basic]
+category = "Test Coverage"
+description = "Generate coverage for the source code test that does not require Solr"
+command = "cargo"
+args = [
+    "llvm-cov",
+    "--lcov",
+    "--output-path",
+    "coverage/lcov.info",
+]
+
+[tasks.coverage-full]
+category = "Test Coverage"
+description = "Generate coverage for the source code while testing Solr"
+command = "cargo"
+args = [
+    "llvm-cov",
+    "--all-features",
+    "--lcov",
+    "--output-path",
+    "coverage/lcov.info",
+]
+
+[tasks.coverage-report]
+category = "Test Coverage"
+description = "Generate a coverage report while testing Solr"
+command = "cargo"
+args = [
+    "llvm-cov",
+    "--all-features",
+    "--html",
+    "--output-dir",
+    "coverage",
+]
+
+[tasks.coverage]
+category = "Test Coverage"
+description = "Setu Solr container, generate a coverage report, and cleanup"
+run_task = { name = [
+    "test-start",
+    "coverage-full",
+], fork = true, cleanup_task = "compose-down" }
+
+#endregion Coverage
 
 #region Lint
 
@@ -178,11 +229,7 @@ args = ["fmt"]
 [tasks.pre-commit]
 category = "Lint"
 description = "Verify the source code before committing"
-dependencies = [
-    "format",
-    "check-compile",
-    "check-lint",
-]
+dependencies = ["format", "check-compile", "check-lint"]
 
 [tasks.lint]
 category = "Basic"
