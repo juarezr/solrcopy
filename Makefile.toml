@@ -169,12 +169,18 @@ description = "Check if the source code has any unused dependencies"
 command = "sh"
 args = ["-c", "cargo +nightly udeps --release"]
 
+[tasks.format]
+category = "Lint"
+description = "Format the source code"
+command = "cargo"
+args = ["fmt"]
+
 [tasks.pre-commit]
 category = "Lint"
 description = "Verify the source code before committing"
 dependencies = [
+    "format",
     "check-compile",
-    "check-fmt",
     "check-lint",
 ]
 
