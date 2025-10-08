@@ -1,0 +1,20 @@
+{
+    "recommendations": [
+        //
+        //-- Used for IDE, Workbench, Tools --------------------------------------------
+        //
+        "rust-lang.rust-analyzer",
+        "vadimcn.vscode-lldb",
+        "Wequick.coverage-gutters",
+        "tamasfe.even-better-toml",
+        //
+        //-- Used for: launch.json, tasks.json, launch/debug -----------------------
+        //
+        "rioj7.command-variable", //? Add files/pickers/commands variables for launch.json and tasks.json
+        "augustocdias.tasks-shell-input", //? Use shell commands as input for your tasks
+        //
+    ],
+    "unwantedRecommendations": [
+        "serayuzgur.crates",
+    ]
+}
