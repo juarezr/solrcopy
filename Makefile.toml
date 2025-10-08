@@ -11,16 +11,49 @@
 
 #2 Run any of the following commands:
 
-#$ cargo make upgrade
+#$ cargo make list
 #$ cargo make lint
-#$ cargo make test-docker
+#$ cargo make check
+#$ cargo make test
 #$ cargo make all
 
 #endregion
 
+#region Main
+
+[tasks.default]
+category = "Basic"
+alias = "list"
+
+[tasks.list]
+category = "Basic"
+description = "List all available tasks"
+command = "cargo"
+args = ["make", "--list-all-steps"]
+
+[tasks.check]
+category = "Basic"
+description = "Runs all lint checks and runs all basic tests possible without a Solr Server"
+dependencies = ["lint", "test-basic"]
+
+[tasks.all]
+category = "Basic"
+description = "Runs all lint checks and runs all tests against a local Solr container"
+dependencies = ["set-stable", "lint", "test-docker"]
+
+#endregion Basic
+
 #region Test
 
+[tasks.test]
+category = "Basic"
+description = "Runs tests against a local solr server created using docker compose"
+dependencies = ["test-basic", "test-docker"]
+
 [tasks.compose-up]
+category = "Test"
+description = "Runs the command `docker compose up` to create a container running Solr for use in testing"
+private = true
 command = "docker"
 args = [
     "compose",
@@ -33,10 +66,16 @@ args = [
 ]
 
 [tasks.compose-down]
+category = "Test"
+description = "Runs the command `docker compose down` to remove and cleanup the container running Solr after testing"
+private = true
 command = "docker"
 args = ["compose", "-f", "./docker/docker-compose.yml", "down", "-v"]
 
 [tasks.compose-ingest]
+category = "Test"
+description = "Ingest some documents into an existing local Solr container"
+private = true
 command = "docker"
 args = [
     "compose",
@@ -48,68 +87,102 @@ args = [
 ]
 
 [tasks.test-basic]
+category = "Test"
+description = "Runs tests that do not require a Solr container"
 command = "cargo"
 args = ["test"]
 
 [tasks.test-start]
+category = "Test"
+description = "Setup a local Solr container and ingest some documents allowing to run tests manually after"
 dependencies = ["compose-up", "compose-ingest"]
 
 [tasks.test-cleanup]
+category = "Test"
+description = "Cleanup the local Solr container after testing"
 dependencies = ["compose-down"]
 
 [tasks.test-solr]
+category = "Test"
+description = "Runs tests against an existing local solr server"
 command = "cargo"
 args = ["test", "--features", "testsolr"]
 
 [tasks.test-docker]
+category = "Test"
+description = "Setup a local Solr container, ingest some documents, run all tests, and cleanup the container"
+private = true
 run_task = { name = [
-    "compose-up",
-    "compose-ingest",
+    "test-start",
     "test-solr",
 ], fork = true, cleanup_task = "compose-down" }
-
-[tasks.test]
-dependencies = ["test-basic", "test-docker"]
 
 #endregion Test
 
 #region Lint
 
 [tasks.clean]
+category = "Lint"
+description = "Clean all compiled artifacts"
 command = "cargo"
 args = ["clean"]
 
-[tasks.check-compilation]
+[tasks.check-compile]
+category = "Lint"
+description = "Check if the source code compiles"
 command = "cargo"
 args = ["check", "--all-features"]
 
 [tasks.check-lint]
+category = "Lint"
+description = "Check if the source code has any language issues"
 command = "cargo"
 args = ["clippy", "--all-features"]
 
 [tasks.check-fmt]
+category = "Lint"
+description = "Check if the source code follows the formatting rules"
 command = "cargo"
-args = ["clippy", "--all-features"]
+args = ["fmt", "--check"]
 
 [tasks.check-doc]
+category = "Lint"
+description = "Check if the source code has any documentation issues"
 command = "cargo"
 args = ["doc", "--no-deps", "--document-private-items", "--all-features"]
 
 [tasks.check-future]
+category = "Lint"
+description = "Check if the source code has any future incompatibilities"
 command = "cargo"
 args = ["check", "--future-incompat-report"]
 
 [tasks.check-msrv]
+category = "Lint"
+description = "Verify the minimum supported rust version"
 command = "cargo"
 args = ["msrv", "verify", "--all-features"]
 
 [tasks.check-unused]
+category = "Lint"
+description = "Check if the source code has any unused dependencies"
 command = "sh"
 args = ["-c", "cargo +nightly udeps --release"]
 
-[tasks.lint]
+[tasks.pre-commit]
+category = "Lint"
+description = "Verify the source code before committing"
 dependencies = [
-    "check-compilation",
+    "check-compile",
+    "check-fmt",
+    "check-lint",
+]
+
+[tasks.lint]
+category = "Basic"
+description = "Verify the source code using all the checks configured"
+dependencies = [
+    "check-compile",
     "check-lint",
     "check-fmt",
     "check-doc",
@@ -120,59 +193,74 @@ dependencies = [
 
 #endregion Lint
 
-#region audit
+#region Security
 
 [tasks.auditable-build]
+category = "Security"
+description = "Build the source code using the auditable feature"
+private = true
 command = "cargo"
 args = ["auditable", "build", "--release"]
 
 [tasks.audit-release]
+category = "Security"
+description = "Check if the release build has any security issues"
 dependencies = ["auditable-build"]
 command = "cargo"
 args = ["audit", "bin", "target/release/solrcopy"]
 
 [tasks.audit]
+category = "Security"
+description = "Check if the release build has any security issues and clean the compiled artifacts after"
 dependencies = ["audit-release", "clean"]
 
-#endregion audit
+#endregion Security
 
 #region Upgrade
 
 [tasks.show]
+category = "Upgrade"
+description = "Show the installed and current rust toolchains"
 command = "rustup"
 args = ["show"]
 
 [tasks.set-stable]
+category = "Upgrade"
+description = "Set the stable rust toolchain as the default"
+private = true
 command = "rustup"
 args = ["default", "stable"]
 
 [tasks.upgrade-check]
+category = "Upgrade"
+description = "Check if the rust toolchain is up to date"
 command = "rustup"
 args = ["check"]
 
 [tasks.upgrade-rustup]
+category = "Upgrade"
+description = "Upgrade the rustup tool"
 command = "rustup"
 args = ["self", "update"]
 
 [tasks.upgrade-toolchain]
+category = "Upgrade"
+description = "Upgrade the stable rust toolchain"
 command = "rustup"
 args = ["update", "stable"]
 
 [tasks.upgrade]
+category = "Upgrade"
+description = "Upgrade rustup, rust andthe rust toolchain"
 run_task = { name = ["upgrade-check", "upgrade-rustup", "upgrade-toolchain"] }
 
 #endregion Upgrade
 
-#region Main
-
-[tasks.all]
-dependencies = ["set-stable", "lint", "test-docker"]
-
-#endregion Test
-
 #region Others
 
 [tasks.example]
+category = "Others"
+private = true
 script_runner = "@rust"
 script = '''
 //! ```cargo
@@ -186,3 +274,16 @@ fn main() {
 '''
 
 #endregion Others
+
+#region Settings
+
+[config]
+# In order to prevent loading of internal core tasks and flows, simply add the following
+#configuration property in your external Makefile.toml:
+skip_core_tasks = true
+
+[tasks.empty]
+category = "Settings"
+private = true
+
+#endregion Settings
