@@ -1,6 +1,6 @@
 # solrcopy
 
-Command line tool for backup and restore of documents stored in cores of [Apache Solr](https://lucene.apache.org/solr/).
+Command line tool useful for migration, transformations, backup, and restore of documents stored inside cores of [Apache Solr](https://lucene.apache.org/solr/).
 
 ## Status
 
@@ -8,22 +8,12 @@ Command line tool for backup and restore of documents stored in cores of [Apache
 
 [![Coverage Status](https://coveralls.io/repos/github/juarezr/solrcopy/badge.svg?branch=master)](https://coveralls.io/github/juarezr/solrcopy?branch=master)
 
-- solrcopy backup/restore
-  - Should work well in most common cases.
-  - Works for me... :)
-- Check the issues in github
+- Should work well in most common cases.
+- If you find a bug or need a new feature, please check the issues in github and create one if it doesn't exists yet.
 - Patches welcome!
 
-<!-- markdownlint <!-- markdownlint-disable-next-line no-inline-html --> -->
+<!-- markdownlint-disable-next-line no-inline-html -->
 [<img alt="Send some cookies" src="http://img.shields.io/liberapay/receives/juarezr.svg?label=Send%20some%20cookies&logo=liberapay">](https://liberapay.com/juarezr/donate)
-
-## Config
-
-The following environment variables can be used for common parameters:
-- `SOLR_COPY_URL` for the url pointing to the Solr cluster
-- `SOLR_COPY_DIR` for the existing folder where the zip backup files containing the extracted documents are stored
-
-These variables can also be stored in a `.env` file alongside the `solrcopy` binary. See `.env.example`
 
 ## Usage
 
@@ -31,13 +21,22 @@ These variables can also be stored in a `.env` file alongside the `solrcopy` bin
    1. Use the switch `--query` for filtering the documents extracted by using a [Solr](https://lucene.apache.org/solr/guide/8_4/the-standard-query-parser.html) [Query](https://lucene.apache.org/solr/guide/8_4/the-standard-query-parser.html)
    2. Use the switch `--order` for specifying the sorting of documents extracted.
    3. Use the switches `--limit` and `--skip` for restricting the number of documents extracted.
-   4. Use the switch `--select` for restricting the columns extracted.
+   4. Use the switches `--select` and `--exclude` for restricting the columns extracted.
 2. Use the command `solrcopy restore` for uploading the extracted documents from local zip files into the same Solr core or another with same field names as extracted.
    1. The documents are updated in the target core in the same format that they were extracted.
    2. The documents are inserted/updated based on their `uniqueKey` field defined in core.
    3. If you want to change the documents/columns use the switches in `solrcopy backup` for extracting more than one slice of documents to be updated.
 
-### Huge cores
+### Environment Variables
+
+The following environment variables can be used for common parameters:
+
+- `SOLR_COPY_URL` for the url pointing to the Solr cluster
+- `SOLR_COPY_DIR` for the existing folder where the zip backup files containing the extracted documents are stored
+
+These variables can also be stored in a `.env` file alongside the `solrcopy` binary. See `.env.example`
+
+### Huge Cores Handling
 
 Extracting and updating documents in huge cores can be challenging. It can take too much time and can fail any time.
 
@@ -51,7 +50,9 @@ Bellow some tricks for dealing with such cores:
 3. Use the parameter `--param shards=shard1` for copying by each shard by name in `backkup`subcommand.
 4. Use the parameter `--delay` for avoiding to overload the Solr server.
 
-## Invocation
+### Command Line Arguments
+
+#### solrcopy commands
 
 ``` text
 $ solrcopy --help
@@ -76,6 +77,8 @@ Options:
   -V, --version
           Print version
 ```
+
+#### solrcopy backup
 
 ``` text
 $ solrcopy backup --help
@@ -182,6 +185,8 @@ Options:
 $ solrcopy backup --url http://localhost:8983/solr --core demo --query 'price:[1 TO 400] AND NOT popularity:10' --order price:desc,weight:asc --limit 10000 --select id,date,name,price,weight,popularity,manu,cat,store,features --dir ./tmp
 ```
 
+#### solrcopy restore
+
 ``` text
 $ solrcopy restore --help
 Restore documents from local backup files into a Apache Solr core
@@ -213,6 +218,8 @@ Options:
 $ solrcopy restore --url http://localhost:8983/solr  --dir ./tmp --core demo
 ```
 
+#### solrcopy delete
+
 ``` text
 $ solrcopy delete --help
 Removes documents from the Solr core definitively
@@ -235,6 +242,8 @@ Options:
 $ solrcopy delete --url http://localhost:8983/solr --core demo --query '*:*'
 ```
 
+#### solrcopy commit
+
 ``` text
 $ solrcopy commit --help
 Perform a commit in the Solr core index for persisting documents in disk/memory
@@ -253,22 +262,18 @@ Options:
 $ solrcopy commit --url http://localhost:8983/solr --core demo
 ```
 
-## Known Issues
+### Known Issues
 
 - Error extracting documents from a Solr cloud cluster with corrupted shards or unreplicated replicas:
   - Cause: In this case Cause: Solr reports diferent document count each time is answering the query.
   - Fix: extract data pointing directly to the shard instance address, not for the cloud address.
   - Also can use custom params to solr as `--params timeAllowed=15000&segmentTerminatedEarly=false&cache=false&shards=shard1`
 
-## Related
-
-1. [solrbulk](https://github.com/miku/solrbulk)
-2. [solrdump](https://github.com/ubleipzig/solrdump)
-3. [Solr documentation of backup/restore](https://lucene.apache.org/solr/guide/6_6/making-and-restoring-backups.html)
-
 ---
 
-## Building
+## Development
+
+### Building
 
 For compiling a version from source:
 
@@ -276,7 +281,7 @@ For compiling a version from source:
 2. Build with the command: `cargo build --release`
 3. Install locally with the command: `cargo install`
 
-## Development
+### Development Setup
 
 For setting up a development environment:
 
@@ -291,7 +296,11 @@ For using Visual Studio Code:
 
 You can also use Intellij Idea, vim, emacs or you prefered IDE.
 
+See also the [testing in Visual Studio Code](#testing-in-visual-studio-code) below.
+
 ## Testing
+
+### Requirements
 
 For setting up a testing environment you will need:
 
@@ -300,14 +309,42 @@ For setting up a testing environment you will need:
 3. A **target** core with same schema for testing the `solrcopy restore` command.
 4. Setting the server address and core names for the `solrcopy` parameters in command line or IDE launch configuration.
 
-### Use a existing server
+### Solr setup
+
+#### Using a existing Solr server
 
  1. Select on your Solr server a existing **source** core or create a new one and fill with some documents.
  2. Clone a new **target** core with the same schema as the previous but without documents.
 
-### Install a server in a docker container
+#### Using a Solr server inside a container
 
 Check the Solr docker [documentation](https://solr.apache.org/guide/solr/latest/deployment-guide/solr-in-docker.html) for help in how to create a Solr container.
+
+### Setup Solr inside a local container
+
+#### Using cargo make
+
+You can use [cargo make](#installing-cargo-make) to run all tasks to setup a Solr server, test source code agains the Solr server, and cleanup.
+
+To create a local container using docker run the following cargo make command:
+
+``` bash
+cargo make test-start
+```
+
+After this you can test the source code agains the Solr server by running following cargo command:
+
+``` bash
+cargo test --features testsolr
+```
+
+To create the local container, test source code and cleanup, run the following cargo make command:
+
+``` bash
+cargo make test
+```
+
+Please also [check all available tasks](#available-tasks).
 
 #### Using docker compose
 
@@ -346,7 +383,65 @@ $ docker run -d --name solr4test -p 8983:8983 solr:slim solr-demo
 $ docker exec -it solr4test solr create_core -c target
 ```
 
-### Developing in Visual Studio Code
+### Using cargo make for testing and linting
+
+You can use [Cargo Make](https://github.com/sagiegurari/cargo-make) to execute the most common sequences required for testing, linting, and preparation for commiting.
+
+#### Installing cargo make
+
+In order to use it, you need install it before running the following command:
+
+``` bash
+cargo install --force cargo-make
+```
+
+#### Available Tasks
+
+After installed, you can check all available tasks by running the following command:
+
+``` bash
+$ cargo make --list-all-steps --quiet --hide-uninteresting
+Basic
+----------
+all - Runs all lint checks and runs all tests against a local Solr container
+check - Runs all lint checks and runs all basic tests possible without a Solr Server
+lint - Verify the source code using all the checks configured
+list - List all available tasks [aliases: default]
+test - Runs tests against a local solr server created using docker compose
+
+Lint
+----------
+check-compile - Check if the source code compiles
+check-doc - Check if the source code has any documentation issues
+check-fmt - Check if the source code follows the formatting rules
+check-future - Check if the source code has any future incompatibilities
+check-lint - Check if the source code has any language issues
+check-msrv - Verify the minimum supported rust version
+check-unused - Check if the source code has any unused dependencies
+clean - Clean all compiled artifacts
+
+Security
+----------
+audit - Check if the release build has any security issues and clean the compiled artifacts after
+audit-release - Check if the release build has any security issues
+
+Test
+----------
+test-basic - Runs tests that do not require a Solr container
+test-cleanup - Cleanup the local Solr container after testing
+test-solr - Runs tests against an existing local solr server
+test-start - Setup a local Solr container and ingest some documents allowing to run tests manually after
+
+Upgrade
+----------
+show - Show the installed and current rust toolchains
+upgrade - Upgrade rustup, rust andthe rust toolchain
+upgrade-check - Check if the rust toolchain is up to date
+upgrade-rustup - Upgrade the rustup tool
+upgrade-toolchain - Upgrade the stable rust toolchain
+```
+
+### Testing in Visual Studio Code
 
 There are some pre-configured launch configurations in this repository for debugging
 solrcopy.
@@ -368,3 +463,11 @@ solrcopy.
 4. You can also run any query in [Solr admin UI](http://localhost:8983/solr/#/demo)
 
 ---
+
+## Related
+
+Related projects and documentation:
+
+1. [solrbulk](https://github.com/miku/solrbulk)
+2. [solrdump](https://github.com/ubleipzig/solrdump)
+3. [Solr documentation of backup/restore](https://lucene.apache.org/solr/guide/6_6/making-and-restoring-backups.html)
