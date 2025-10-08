@@ -44,6 +44,7 @@ mod fails;
 mod fetch;
 mod helpers;
 mod ingest;
+mod models;
 mod restore;
 mod save;
 mod state;

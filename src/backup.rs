@@ -4,9 +4,10 @@ use super::{
     connection::SolrClient,
     fails::{BoxedError, raise},
     helpers::{IntegerHelpers, wait, wait_by},
+    models::{Documents, SolrCore, Step},
     save::Archiver,
     state::{UserInterruption, monitor_term_sinal},
-    steps::{Documents, Requests, Slices, SolrCore, Step},
+    steps::{Requests, Slices},
 };
 use crossbeam_channel::{Receiver, Sender, bounded};
 use crossbeam_utils::thread;

@@ -1,4 +1,4 @@
-use super::{args::Backup, connection::SolrClient, fails::*, helpers::*, steps::SolrCore};
+use super::{args::Backup, connection::SolrClient, fails::*, helpers::*, models::SolrCore};
 use log::debug;
 use regex::Regex;
 

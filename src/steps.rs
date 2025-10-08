@@ -3,13 +3,14 @@ use super::{
     fails::{BoxedResult, throw},
     helpers::{BRACKETS, COMMA, EMPTY_STR, EMPTY_STRING},
     helpers::{IntegerHelpers, StringHelpers, replace_solr_date, solr_query},
+    models::{SolrCore, Step},
 };
 use chrono::{DateTime, Duration, NaiveDate, NaiveDateTime, Utc};
 use log::debug;
 use std::collections::HashSet;
 use std::iter::FromIterator;
 
-// region Struct
+// region Data Structures
 
 #[derive(Debug)]
 pub(crate) struct Slices<T> {
@@ -31,24 +32,6 @@ pub(crate) struct Requests {
     pub limit: u64,
     pub num_docs: u64,
     pub url: String,
-}
-
-#[derive(Debug)]
-pub(crate) struct Step {
-    pub curr: u64,
-    pub url: String,
-}
-
-#[derive(Debug)]
-pub(crate) struct Documents {
-    pub step: Step,
-    pub docs: String,
-}
-
-#[derive(Debug)]
-pub(crate) struct SolrCore {
-    pub num_found: u64,
-    pub fields: Vec<String>,
 }
 
 // endregion
