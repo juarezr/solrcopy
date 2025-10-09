@@ -84,29 +84,36 @@ Options:
 $ solrcopy backup --help
 Dumps documents from a Apache Solr core into local backup files
 
-Usage: solrcopy backup [OPTIONS] --url <localhost:8983/solr> --core <core> --dir </path/to/output>
+Usage: solrcopy backup [OPTIONS] --core <core> --dir </path/to/output>
 
 Options:
-  -u, --url <localhost:8983/solr> [env: SOLR_COPY_URL=]
+  -u, --url <URL>
           Url pointing to the Solr cluster
+          
+          [env: SOLR_COPY_URL=]
+          [default: http://localhost:8983/solr]
 
   -c, --core <core>
           Case sensitive name of the core in the Solr server
 
-  -d, --dir </path/to/output> [env: SOLR_COPY_DIR=]
-          Existing folder where the zip backup files containing the extracted documents are stored
+  -d, --dir </path/to/output>
+          Existing folder where the backuped files containing the extracted documents are stored
+          
+          [env: SOLR_COPY_DIR=]
 
   -q, --query <'f1:vl1 AND f2:vl2'>
-          Solr Query param 'q' for filtering which documents are retrieved See: https://lucene.apache.org/solr/guide/6_6/the-standard-query-parser.html
+          Solr Query param 'q' for filtering which documents are retrieved See: <https://lucene.apache.org/solr/guide/6_6/the-standard-query-parser.html>
 
   -f, --fq <'f1:vl1 AND f2:vl2'>
-          Solr Filter Query param 'fq' for filtering which documents are retrieved See: https://solr.apache.org/guide/solr/latest/query-guide/common-query-parameters.html#fq-filter-query-parameter
+          Solr Filter Query param 'fq' for filtering which documents are retrieved
 
   -o, --order <f1:asc,f2:desc,...>
           Solr core fields names for sorting documents for retrieval
 
   -k, --skip <quantity>
-          Skip this quantity of documents in the Solr Query [default: 0]
+          Skip this quantity of documents in the Solr Query
+          
+          [default: 0]
 
   -l, --limit <quantity>
           Maximum quantity of documents for retrieving from the core (like 100M)
@@ -115,10 +122,12 @@ Options:
           Names of core fields retrieved in each document [default: all but _*]
 
   -e, --exclude <field1,field2,...>
-          Names of core fields excluded in each document
+          Names of core fields excluded in each document [default: none]
 
   -i, --iterate-by <mode>
-          Slice the queries by using the variables {begin} and {end} for iterating in `--query` Used in bigger solr cores with huge number of docs because querying the end of docs is expensive and fails frequently [default: day]
+          Slice the queries by using the variables {begin} and {end} for iterating in `--query` Used in bigger solr cores with huge number of docs because querying the end of docs is expensive and fails frequently
+          
+          [default: day]
 
           Possible values:
           - none
@@ -131,13 +140,17 @@ Options:
           The range of dates/numbers for iterating the queries throught slices. Requires that the query parameter contains the variables {begin} and {end} for creating the slices. Use numbers or dates in ISO 8601 format (yyyy-mm-ddTHH:MM:SS)
 
       --step <num>
-          Number to increment each step in iterative mode [default: 1]
+          Number to increment each step in iterative mode
           
+          [default: 1]
+
   -p, --params <useParams=mypars>
-          Extra parameter for Solr Update Handler. See: https://lucene.apache.org/solr/guide/transforming-and-indexing-custom-json.html
+          Extra parameter for Solr Update Handler. See: <https://lucene.apache.org/solr/guide/transforming-and-indexing-custom-json.html>
 
   -m, --max-errors <count>
-          How many times should continue on source document errors [default: 0]
+          How many times should continue on source document errors
+          
+          [default: 0]
 
       --delay-before <time>
           Delay before any processing in solr server. Format as: 30s, 15min, 1h
@@ -149,35 +162,55 @@ Options:
           Delay after all processing. Usefull for letting Solr breath
 
       --num-docs <quantity>
-          Number of documents to retrieve from solr in each reader step [default: 4k]
+          Number of documents to retrieve from solr in each reader step
+          
+          [default: 4k]
 
       --archive-files <quantity>
-          Max number of files of documents stored in each zip file [default: 40]
+          Max number of files of documents stored in each archive file
+          
+          [default: 40]
 
-      --zip-prefix <name>
-          Optional prefix for naming the zip backup files when storing documents
+      --archive-prefix <name>
+          Optional prefix for naming the archive backup files when storing documents
+
+      --archive-compression <compression>
+          Compression method to use for compressing the archive files [possible values: stored, zip, zstd ]
+          
+          [default: zip]
 
       --workaround-shards <count>
           Use only when your Solr Cloud returns a distinct count of docs for some queries in a row. This may be caused by replication problems between cluster nodes of shard replicas of a core. Response with 'num_found' bellow the greatest value are ignored for getting all possible docs. Use with `--params shards=shard_name` for retrieving all docs for each shard of the core
+          
+          [default: 0]
 
   -r, --readers <count>
-          Number parallel threads exchanging documents with the solr core [default: 1]
+          Number parallel threads exchanging documents with the solr core
+          
+          [default: 1]
 
   -w, --writers <count>
-          Number parallel threads syncing documents with the zip archives [default: 1]
+          Number parallel threads syncing documents with the archives files
+          
+          [default: 1]
 
       --log-level <level>
-          What level of detail should print messages [default: info]
+          What level of detail should print messages
+          
+          [default: INFO]
 
       --log-mode <mode>
-          Terminal output to print messages [default: mixed]
+          Terminal output to print messages
           
+          [default: mixed]
 
       --log-file-path <path>
           Write messages to a local file
 
       --log-file-level <level>
-          What level of detail should write messages to the file [default: debug]
+          What level of detail should write messages to the file
+          
+          [default: DEBUG]
 
   -h, --help
           Print help (see a summary with '-h')
