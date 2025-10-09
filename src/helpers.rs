@@ -507,7 +507,10 @@ mod test_utility_helpers {
     #[test]
     fn check_replace_solr_date() {
         let query = "started in {hello}";
-        assert_eq!(replace_solr_date(query, "{hello}", "2025-01-01"), "started in 2025-01-01T00:00:00Z");
+        assert_eq!(
+            replace_solr_date(query, "{hello}", "2025-01-01"),
+            "started in 2025-01-01T00:00:00Z"
+        );
     }
 
     #[test]

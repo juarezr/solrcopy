@@ -1,20 +1,31 @@
 #[cfg(test)]
-#[cfg(feature = "testsolr")]
 /// Test against Solr instance running on localhost:8983 by default
 mod testsolr {
 
     // region Helpers
 
     use crate::args::{Cli, SOLR_COPY_DIR, SOLR_COPY_URL};
-    use crate::wrangle::command_exec;
     use chrono::offset::Local;
     use clap::Parser;
+    use glob::glob;
+    use std::fs::remove_file;
 
     fn test_command_line_args_for(args: &[&str]) {
         // Use the same args as solrcopy binary for testing
         let parsed = Cli::parse_from(args);
+        execute_command_for(args, parsed);
+    }
+
+    #[cfg(not(feature = "testsolr"))]
+    fn execute_command_for(args: &[&str], parsed: Cli) {
+        assert_eq!(args.len() > 0, true);
+        assert_eq!(parsed.arguments.validate(), Ok(()));
+    }
+
+    #[cfg(feature = "testsolr")]
+    fn execute_command_for(args: &[&str], parsed: Cli) {
         // Execute the same way solrcopy would exec
-        let res = command_exec(&parsed.arguments);
+        let res = crate::wrangle::command_exec(&parsed.arguments);
         // Display the error message if it failed
         if let Err(err) = res {
             let res = format!("Command: {}", args.join(" "));
@@ -31,21 +42,48 @@ mod testsolr {
         std::env::var(SOLR_COPY_DIR).unwrap_or_else(|_| "target".into())
     }
 
+    fn cleanup_output_dir() {
+        let listed = glob("target/demo*").unwrap();
+        let found = listed.filter_map(Result::ok).collect::<Vec<_>>();
+        for file in found {
+            remove_file(file).unwrap();
+        }
+    }
+
     // endregion
 
     // region Tests
 
     /// Run this command to test backup from a running Solr instance
-    fn check_exec_backup(url: &str, dir: &str) {
-        let test_args = &["solrcopy", "backup", "--url", url, "--core", "demo", "--dir", dir];
+    fn check_exec_backup(url: &str, dir: &str, core: &str, comp: &str) {
+        let test_args = &[
+            "solrcopy",
+            "backup",
+            "--url",
+            url,
+            "--core",
+            core,
+            "--dir",
+            dir,
+            "--archive-compression",
+            comp,
+        ];
 
         test_command_line_args_for(test_args);
     }
 
     /// Run this command to test backup from a running Solr instance
-    fn check_exec_restore(url: &str, dir: &str) {
+    fn check_exec_restore(url: &str, dir: &str, core: &str) {
         let test_args = &[
-            "solrcopy", "restore", "--url", url, "--core", "target", "--search", "demo", "--dir",
+            "solrcopy",
+            "restore",
+            "--url",
+            url,
+            "--core",
+            core,
+            "--search",
+            "demo*.zip",
+            "--dir",
             dir,
         ];
         test_command_line_args_for(test_args);
@@ -57,11 +95,15 @@ mod testsolr {
         let (uri, out) = (get_solr_url(), get_output_dir());
         let (url, dir) = (uri.as_str(), out.as_str());
 
-        check_exec_backup(url, dir);
+        cleanup_output_dir();
 
-        check_exec_delete(url);
+        check_exec_backup(url, dir, "demo", "zip");
 
-        check_exec_restore(url, dir);
+        check_exec_delete(url, "target");
+
+        check_exec_restore(url, dir, "target");
+
+        check_exec_backup(url, dir, "demo", "zstd");
     }
 
     /// Run this command to test backup from a running Solr instance
@@ -91,14 +133,14 @@ mod testsolr {
     }
 
     /// Run this command to test delete all docs in the from a running Solr instance
-    fn check_exec_delete(url: &str) {
+    fn check_exec_delete(url: &str, core: &str) {
         let test_args = &[
             "solrcopy",
             "delete",
             "--url",
             url,
             "--core",
-            "demo",
+            core,
             "--query",
             "*:*",
             "--flush",
