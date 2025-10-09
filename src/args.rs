@@ -1,4 +1,5 @@
 use super::helpers::{CapturesHelpers, EMPTY_STR, EMPTY_STRING, RegexHelpers, StringHelpers};
+use super::models::Compression;
 use clap::builder::styling::{AnsiColor as Ansi, Styles};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
@@ -25,7 +26,7 @@ const STYLES: Styles = Styles::styled()
 ///
 /// Solrcopy is a command for doing backup and restore of documents stored on Solr cores.
 /// It let you filter docs by using a expression, limit quantity, define order and desired
-/// columns to export. The data is stored as json inside local zip files. It is agnostic
+/// columns to export. The data is stored as json inside local archive files. It is agnostic
 /// to data format, content and storage place. Because of this data is restored exactly
 /// as extracted and your responsible for extracting, storing and updating the correct data
 /// from and into correct cores.
@@ -122,13 +123,18 @@ pub(crate) struct Backup {
     #[arg(long, display_order = 70, default_value = "4k", value_parser = parse_quantity, value_name = "quantity")]
     pub num_docs: u64,
 
-    /// Max number of files of documents stored in each zip file
+    /// Max number of files of documents stored in each archive file
     #[arg(long, display_order = 71, default_value_t = 40, value_parser = parse_quantity, value_name = "quantity")]
     pub archive_files: u64,
 
-    /// Optional prefix for naming the zip backup files when storing documents
+    /// Optional prefix for naming the archive backup files when storing documents
     #[arg(long, display_order = 72, value_parser = parse_file_prefix, value_name = "name")]
-    pub zip_prefix: Option<String>,
+    pub archive_prefix: Option<String>,
+
+    /// Compression method to use for compressing the archive files
+    /// [possible values: stored, zip, zstd ]
+    #[arg(long, display_order = 73, default_value = "zip", value_parser = parse_compression, value_name = "compression")]
+    pub archive_compression: Compression,
 
     /// Use only when your Solr Cloud returns a distinct count of docs for some queries in a row.
     /// This may be caused by replication problems between cluster nodes of shard replicas of a core.
@@ -165,11 +171,11 @@ pub(crate) struct Restore {
     #[arg(long, display_order = 42)]
     pub disable_replication: bool,
 
-    /// Search pattern for matching names of the zip backup files
+    /// Search pattern for matching names of the archive backup files
     #[arg(short, long, display_order = 70, value_name = "core*.zip")]
     pub search: Option<String>,
 
-    /// Optional order for searching the zip archives
+    /// Optional order for searching the archive files
     #[arg(long, display_order = 71, default_value = "none", value_name = "asc | desc")]
     pub order: SortOrder,
 
@@ -262,7 +268,7 @@ pub(crate) struct LoggingArgs {
 #[derive(Args, Debug)]
 /// Dumps and restores documents from a Apache Solr core into local backup files
 pub(crate) struct ParallelArgs {
-    /// Existing folder where the zip backup files containing the extracted documents are stored
+    /// Existing folder where the backuped files containing the extracted documents are stored
     #[arg(short, display_order = 30, long, env = SOLR_COPY_DIR, value_name = "/path/to/output")]
     pub dir: PathBuf,
 
@@ -298,7 +304,7 @@ pub(crate) struct ParallelArgs {
     )]
     pub readers: u64,
 
-    /// Number parallel threads syncing documents with the zip archives
+    /// Number parallel threads syncing documents with the archives files
     #[arg(
         short,
         long,
@@ -468,6 +474,16 @@ fn parse_file_prefix(src: &str) -> Result<String, String> {
             Err(format!("Wrong output filename: '{}'. Considere using letters and numbers.", src))
         }
         Some(group1) => Ok(group1.to_string()),
+    }
+}
+
+fn parse_compression(s: &str) -> Result<Compression, String> {
+    let lower = s.to_ascii_lowercase();
+    match lower.as_str() {
+        "stored" => Ok(Compression::Stored),
+        "zip" => Ok(Compression::Zip),
+        "zstd" => Ok(Compression::Zstd),
+        _ => Err(format!("'{}'. [alowed: stored zip zstd]", s)),
     }
 }
 
@@ -721,7 +737,7 @@ impl Validation for Restore {
 
 fn assert_dir_exists(dir: &Path) -> Result<(), String> {
     if !dir.exists() {
-        Err(format!("Missing folder of zip backup files: {:?}", dir))
+        Err(format!("Missing folder of the backuped archive files: {:?}", dir))
     } else {
         Ok(())
     }
@@ -821,7 +837,7 @@ pub(crate) mod tests {
         "--between",
         "2020-05-01",
         "2020-05-04T11:12:13",
-        "--zip-prefix",
+        "--archive-prefix",
         "zip_filename",
         "--skip",
         "3",

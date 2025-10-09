@@ -4,7 +4,7 @@ use super::{
     connection::SolrClient,
     fails::{BoxedError, raise},
     helpers::{IntegerHelpers, wait, wait_by},
-    models::{Documents, SolrCore, Step},
+    models::{Compression, Documents, SolrCore, Step},
     save::Archiver,
     state::{UserInterruption, monitor_term_sinal},
     steps::{Requests, Slices},
@@ -85,13 +85,14 @@ pub(crate) fn backup_main(params: &Backup) -> BoxedError {
             let dir = params.transfer.dir.clone();
             let name = output_pat.clone();
             let max = params.archive_files;
+            let compression = params.archive_compression.clone();
 
             let writer = iw;
             let thread_name = format!("Writer_{}", writer);
             pool.builder()
                 .name(thread_name)
                 .spawn(move |_| {
-                    start_storing_docs(writer, dir, name, max, consumer, updater);
+                    start_storing_docs(writer, dir, name, compression, max, consumer, updater);
                     debug!("Finished writer #{}", writer);
                 })
                 .unwrap();
@@ -232,10 +233,10 @@ fn fetch_docs_from_solr(
 }
 
 fn start_storing_docs(
-    writer: u64, dir: PathBuf, name: String, max: u64, consumer: Receiver<Documents>,
-    progress: Sender<u64>,
+    writer: u64, dir: PathBuf, name: String, compression: Compression, max: u64,
+    consumer: Receiver<Documents>, progress: Sender<u64>,
 ) {
-    let mut archiver = Archiver::write_on(&dir, &name, max.to_usize());
+    let mut archiver = Archiver::write_on(&dir, &name, compression, max.to_usize());
     loop {
         let received = consumer.recv();
         match received {

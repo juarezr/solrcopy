@@ -252,7 +252,7 @@ fn format_solr_time(date_time: NaiveDateTime) -> String {
 
 impl Backup {
     pub(crate) fn get_archive_pattern(&self, num_found: u64) -> String {
-        let prefix = match &self.zip_prefix {
+        let prefix = match &self.archive_prefix {
             Some(text) => text.to_string(),
             None => {
                 let now: DateTime<Utc> = Utc::now();
@@ -260,7 +260,8 @@ impl Backup {
                 format!("{}_at_{}", &self.options.core, &time)
             }
         };
-        format!("{}_docs_{}_seq_{}.zip", prefix, num_found, BRACKETS)
+        let ext = self.archive_compression.get_ext();
+        format!("{}_docs_{}_seq_{}.{}", prefix, num_found, BRACKETS, ext)
     }
 
     pub(crate) fn estimate_docs_quantity(
