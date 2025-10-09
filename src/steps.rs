@@ -3,13 +3,14 @@ use super::{
     fails::{BoxedResult, throw},
     helpers::{BRACKETS, COMMA, EMPTY_STR, EMPTY_STRING},
     helpers::{IntegerHelpers, StringHelpers, replace_solr_date, solr_query},
+    models::{SolrCore, Step},
 };
 use chrono::{DateTime, Duration, NaiveDate, NaiveDateTime, Utc};
 use log::debug;
 use std::collections::HashSet;
 use std::iter::FromIterator;
 
-// region Struct
+// region Data Structures
 
 #[derive(Debug)]
 pub(crate) struct Slices<T> {
@@ -31,24 +32,6 @@ pub(crate) struct Requests {
     pub limit: u64,
     pub num_docs: u64,
     pub url: String,
-}
-
-#[derive(Debug)]
-pub(crate) struct Step {
-    pub curr: u64,
-    pub url: String,
-}
-
-#[derive(Debug)]
-pub(crate) struct Documents {
-    pub step: Step,
-    pub docs: String,
-}
-
-#[derive(Debug)]
-pub(crate) struct SolrCore {
-    pub num_found: u64,
-    pub fields: Vec<String>,
 }
 
 // endregion
@@ -269,7 +252,7 @@ fn format_solr_time(date_time: NaiveDateTime) -> String {
 
 impl Backup {
     pub(crate) fn get_archive_pattern(&self, num_found: u64) -> String {
-        let prefix = match &self.zip_prefix {
+        let prefix = match &self.archive_prefix {
             Some(text) => text.to_string(),
             None => {
                 let now: DateTime<Utc> = Utc::now();
@@ -277,7 +260,8 @@ impl Backup {
                 format!("{}_at_{}", &self.options.core, &time)
             }
         };
-        format!("{}_docs_{}_seq_{}.zip", prefix, num_found, BRACKETS)
+        let ext = self.archive_compression.get_ext();
+        format!("{}_docs_{}_seq_{}.{}", prefix, num_found, BRACKETS, ext)
     }
 
     pub(crate) fn estimate_docs_quantity(

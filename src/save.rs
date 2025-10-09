@@ -1,4 +1,4 @@
-use super::steps::Documents;
+use super::models::{Compression, Documents};
 use log::error;
 use std::{
     io::Write,
@@ -16,16 +16,20 @@ type Compressor = ZipWriter<std::fs::File>;
 pub(crate) struct Archiver {
     writer: Option<Compressor>,
     folder: PathBuf,
+    compression: Compression,
     file_pattern: String,
     max_files: usize,
     file_count: usize,
 }
 
 impl Archiver {
-    pub(crate) fn write_on(output_dir: &Path, output_pattern: &str, max: usize) -> Self {
+    pub(crate) fn write_on(
+        output_dir: &Path, output_pattern: &str, compression: Compression, max: usize,
+    ) -> Self {
         Archiver {
             writer: None,
             folder: output_dir.to_owned(),
+            compression,
             file_pattern: output_pattern.to_string(),
             max_files: max,
             file_count: 0,
@@ -53,9 +57,13 @@ impl Archiver {
 
         let zip = self.writer.as_mut().unwrap();
 
-        let opts = SimpleFileOptions::default()
-            .compression_method(zip::CompressionMethod::Deflated)
-            .unix_permissions(0o644);
+        let method = match self.compression {
+            Compression::Stored => zip::CompressionMethod::Stored,
+            Compression::Zip => zip::CompressionMethod::Deflated,
+            Compression::Zstd => zip::CompressionMethod::Zstd,
+        };
+
+        let opts = SimpleFileOptions::default().compression_method(method).unix_permissions(0o644);
 
         zip.start_file(filename, opts)?;
         zip.write_all(bytes)?;

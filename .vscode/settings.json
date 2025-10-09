@@ -1,0 +1,37 @@
+{
+    // Editor settings
+    "editor.tabSize": 4,
+    "editor.rulers": [
+        80,
+        88,
+        120
+    ],
+    "editor.renderWhitespace": "trailing",
+    "editor.suggestSelection": "first",
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+    "files.trimTrailingWhitespace": true,
+    // Search settings
+    "search.exclude": {
+        "node_modules/**/*": true,
+        "target/**/*": true,
+        "sketch/**/*": true,
+        "**/sketch*": true,
+        "**/*sketch.*": true,
+        "**/.log": true,
+        "**/.lock": true
+    },
+    // Controls whether the coverage toolbar is shown in the editor.
+    "testing.coverageToolbarEnabled": true,
+    // Show the Test Explorer view.
+    "rust-analyzer.testExplorer": true,
+    "[rust]": {
+        "editor.defaultFormatter": "rust-lang.rust-analyzer"
+    },
+    "[markdown]": {
+        "files.trimTrailingWhitespace": false,
+    },
+    // "coverage-gutters.showLineCoverage": true,
+    // "coverage-gutters.showRulerCoverage": true,
+    "coverage-gutters.watchOnActivate": true,
+}

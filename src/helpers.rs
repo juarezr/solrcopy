@@ -79,7 +79,7 @@ pub(crate) trait StringHelpers {
 
     fn ends_with_any(&self, patterns: &[&str]) -> bool;
 
-    fn find_text_from<'a>(&'a self, text_to_search: &str, last_pos: isize) -> Option<&'a str>;
+    fn find_text_from<'a>(&'a self, text_to_search: &str, num_chars: isize) -> Option<&'a str>;
 
     fn find_text_between<'a>(&'a self, starts_text: &str, ends_text: &str) -> Option<&'a str>;
 
@@ -97,11 +97,11 @@ pub(crate) trait StringHelpers {
 
     fn pad_with(&self, pad: usize, padchar: char) -> String;
 
-    fn pad_left(&self, pad: usize) -> String;
+    fn lpad(&self, pad: usize) -> String;
 
-    fn pad_0_left(&self, pad: usize) -> String;
+    fn lpad_0(&self, pad: usize) -> String;
 
-    fn pad_left_with(&self, pad: usize, padchar: char) -> String;
+    fn lpad_with(&self, pad: usize, padchar: char) -> String;
 
     fn remove_whitespace(&self) -> String;
 }
@@ -138,18 +138,18 @@ impl StringHelpers for str {
     }
 
     #[inline]
-    fn find_text_from<'a>(&'a self, text_to_search: &str, last_pos: isize) -> Option<&'a str> {
+    fn find_text_from<'a>(&'a self, text_to_search: &str, num_chars: isize) -> Option<&'a str> {
         let (found, prefix) = self.match_indices(text_to_search).next()?;
 
         let starts = found + prefix.len();
         let text_len = self.len();
 
-        let ulast_pos = last_pos.unsigned_abs();
-        let positive = last_pos > 0;
+        let ulast_pos = num_chars.unsigned_abs();
+        let positive = num_chars >= 0;
         let smaller = ulast_pos < text_len;
 
         let finish: usize = if positive && smaller {
-            ulast_pos
+            starts + ulast_pos
         } else if !positive && smaller {
             text_len - ulast_pos
         } else {
@@ -214,19 +214,19 @@ impl StringHelpers for str {
 
     #[inline]
     fn pad(&self, pad: usize) -> String {
-        Self::pad_left_with(self, pad, SPACE)
+        Self::pad_with(self, pad, SPACE)
     }
 
     #[inline]
     fn pad_0(&self, pad: usize) -> String {
-        Self::pad_left_with(self, pad, ZERO)
+        Self::pad_with(self, pad, ZERO)
     }
 
     #[inline]
     fn pad_with(&self, pad: usize, padchar: char) -> String {
         let mut out = self.to_string();
         let len = self.len();
-        let pad_len = pad - len;
+        let pad_len = pad as isize - len as isize;
 
         if pad_len > 0 {
             for _ in 0..pad_len {
@@ -237,20 +237,20 @@ impl StringHelpers for str {
     }
 
     #[inline]
-    fn pad_left(&self, pad: usize) -> String {
-        Self::pad_left_with(self, pad, SPACE)
+    fn lpad(&self, pad: usize) -> String {
+        Self::lpad_with(self, pad, SPACE)
     }
 
     #[inline]
-    fn pad_0_left(&self, pad: usize) -> String {
-        Self::pad_left_with(self, pad, ZERO)
+    fn lpad_0(&self, pad: usize) -> String {
+        Self::lpad_with(self, pad, ZERO)
     }
 
     #[inline]
-    fn pad_left_with(&self, pad: usize, padchar: char) -> String {
+    fn lpad_with(&self, pad: usize, padchar: char) -> String {
         let mut out = String::new();
         let len = self.len();
-        let pad_len = pad - len;
+        let pad_len = pad as isize - len as isize;
 
         if pad_len > 0 {
             for _ in 0..pad_len {
@@ -317,6 +317,7 @@ impl RegexHelpers for Regex {
         maps.collect::<Vec<_>>()
     }
 }
+
 pub(crate) trait CapturesHelpers {
     /// Returns the match associated with the capture group at index `i`. If
     /// `i` does not correspond to a capture group, or if the capture group
@@ -489,7 +490,63 @@ pub(crate) fn print_env_vars() {
 // endregion
 
 #[cfg(test)]
-mod tests {
+mod test_utility_helpers {
+    use crate::helpers::{
+        env_value, env_var, get_filename, print_env_vars, replace_solr_date, solr_query, wait,
+        wait_by,
+    };
+    use pretty_assertions::assert_eq;
+    use std::path::Path;
+
+    #[test]
+    fn check_solr_query() {
+        let query = "hello world";
+        assert_eq!(solr_query(query), "hello%20world");
+    }
+
+    #[test]
+    fn check_replace_solr_date() {
+        let query = "started in {hello}";
+        assert_eq!(
+            replace_solr_date(query, "{hello}", "2025-01-01"),
+            "started in 2025-01-01T00:00:00Z"
+        );
+    }
+
+    #[test]
+    fn check_wait() {
+        wait(1);
+    }
+
+    #[test]
+    fn check_wait_by() {
+        wait_by(1000);
+    }
+
+    #[test]
+    fn check_env_var() {
+        assert_eq!(env_var("TEST", "test"), "test");
+    }
+
+    #[test]
+    fn check_env_value() {
+        assert_eq!(env_value("TEST", 1), 1);
+    }
+
+    #[test]
+    fn check_get_filename() {
+        let path = Path::new("test.txt");
+        assert_eq!(get_filename(path), Ok("test.txt".to_string()));
+    }
+
+    #[test]
+    fn check_print_env_vars() {
+        print_env_vars();
+    }
+}
+
+#[cfg(test)]
+mod test_string_helpers {
     use crate::helpers::StringHelpers;
     use pretty_assertions::assert_eq;
 
@@ -500,5 +557,351 @@ mod tests {
         assert_eq!(s1.starts_with_any(ok), true);
         let s2: String = String::from("test");
         assert_eq!(s2.starts_with_any(ok), true);
+    }
+
+    #[test]
+    fn check_contains_any() {
+        let patterns = &["foo", "bar", "baz"];
+        let s1 = "hello foo world";
+        assert_eq!(s1.contains_any(patterns), true);
+
+        let s2 = "hello world";
+        assert_eq!(s2.contains_any(patterns), false);
+
+        let s3 = "barista";
+        assert_eq!(s3.contains_any(patterns), true);
+
+        let s4 = "";
+        assert_eq!(s4.contains_any(patterns), false);
+
+        let s5 = "bazooka";
+        assert_eq!(s5.contains_any(patterns), true);
+    }
+
+    #[test]
+    fn check_ends_with_any() {
+        let patterns = &[".rs", ".txt", ".md"];
+        let s1 = "file.rs";
+        assert_eq!(s1.ends_with_any(patterns), true);
+
+        let s2 = "document.pdf";
+        assert_eq!(s2.ends_with_any(patterns), false);
+
+        let s3 = "notes.md";
+        assert_eq!(s3.ends_with_any(patterns), true);
+
+        let s4 = "";
+        assert_eq!(s4.ends_with_any(patterns), false);
+    }
+
+    #[test]
+    fn check_find_text_from() {
+        let s = "hello world, hello universe";
+        // Find "hello" from after first
+        assert_eq!(s.find_text_from("hello", 6), Some(" world"));
+        // Not found
+        assert_eq!(s.find_text_from("bye", 0), None);
+        // Negative last_pos
+        assert_eq!(s.find_text_from("world", -5), Some(", hello uni"));
+        // last_pos beyond string
+        assert_eq!(s.find_text_from("hello", 100), Some(" world, hello universe"));
+        // Find "hello" from start
+        assert_eq!(s.find_text_from("hello", 1), Some(" "));
+    }
+
+    #[test]
+    fn check_find_text_between() {
+        let s = "foo [bar] baz";
+        assert_eq!(s.find_text_between("[", "]"), Some("bar"));
+        let s2 = "no brackets here";
+        assert_eq!(s2.find_text_between("[", "]"), None);
+        let s3 = "[start] middle [end]";
+        assert_eq!(s3.find_text_between("[", "]"), Some("start] middle [end"));
+        let s4 = "prefix [content]";
+        assert_eq!(s4.find_text_between("[", "]"), Some("content"));
+    }
+
+    #[test]
+    fn check_append() {
+        let s = "abc";
+        assert_eq!(s.append("def"), "abcdef");
+        let s2 = "";
+        assert_eq!(s2.append("xyz"), "xyz");
+        let s3 = "foo";
+        assert_eq!(s3.append(""), "foo");
+    }
+
+    #[test]
+    fn check_append_all() {
+        let s = "x";
+        let arr = &["a", "b", "c"];
+        assert_eq!(s.append_all(arr), "xabc");
+        let arr2: &[&str] = &[];
+        assert_eq!(s.append_all(arr2), "x");
+    }
+
+    #[test]
+    fn check_with_prefix() {
+        let s = "bar";
+        assert_eq!(s.with_prefix("foo"), "foobar");
+        let s2 = "";
+        assert_eq!(s2.with_prefix("pre"), "");
+    }
+
+    #[test]
+    fn check_with_suffix() {
+        let s = "foo";
+        assert_eq!(s.with_suffix("bar"), "foobar");
+        let s2 = "";
+        assert_eq!(s2.with_suffix("suf"), "");
+    }
+
+    #[test]
+    fn check_pad() {
+        let s = "42";
+        assert_eq!(s.pad(5), "42   ");
+        let s2 = "hello";
+        assert_eq!(s2.pad(3), "hello");
+        let s3 = "";
+        assert_eq!(s3.pad(4), "    ");
+    }
+
+    #[test]
+    fn check_pad_0() {
+        let s = "7";
+        assert_eq!(s.pad_0(3), "700");
+        let s2 = "abc";
+        assert_eq!(s2.pad_0(2), "abc");
+        let s3 = "";
+        assert_eq!(s3.pad_0(2), "00");
+    }
+
+    #[test]
+    fn check_pad_with() {
+        let s = "hi";
+        assert_eq!(s.pad_with(4, '_'), "hi__");
+        let s2 = "test";
+        assert_eq!(s2.pad_with(2, 'x'), "test");
+        let s3 = "";
+        assert_eq!(s3.pad_with(3, 'z'), "zzz");
+    }
+
+    #[test]
+    fn check_pad_left() {
+        let s = "42";
+        assert_eq!(s.lpad(5), "   42");
+        let s2 = "hello";
+        assert_eq!(s2.lpad(3), "hello");
+        let s3 = "";
+        assert_eq!(s3.lpad(4), "    ");
+    }
+
+    #[test]
+    fn check_pad_0_left() {
+        let s = "7";
+        assert_eq!(s.lpad_0(3), "007");
+        let s2 = "abc";
+        assert_eq!(s2.lpad_0(2), "abc");
+        let s3 = "";
+        assert_eq!(s3.lpad_0(2), "00");
+    }
+
+    #[test]
+    fn check_pad_left_with() {
+        let s = "hi";
+        assert_eq!(s.lpad_with(4, '_'), "__hi");
+        let s2 = "test";
+        assert_eq!(s2.lpad_with(2, 'x'), "test");
+        let s3 = "";
+        assert_eq!(s3.lpad_with(3, 'z'), "zzz");
+    }
+
+    #[test]
+    fn check_remove_whitespace() {
+        let s = " a b c ";
+        assert_eq!(s.remove_whitespace(), "abc");
+        let s2 = "no_whitespace";
+        assert_eq!(s2.remove_whitespace(), "no_whitespace");
+        let s3 = "   ";
+        assert_eq!(s3.remove_whitespace(), "");
+        let s4 = "";
+        assert_eq!(s4.remove_whitespace(), "");
+        let s5 = "a\tb\nc";
+        assert_eq!(s5.remove_whitespace(), "abc");
+    }
+}
+
+#[cfg(test)]
+mod test_regex_helpers {
+    use crate::helpers::{CapturesHelpers, RegexHelpers};
+    use pretty_assertions::assert_eq;
+    use regex::Regex;
+
+    // region Test RegexHelpers
+
+    #[test]
+    fn check_get_groups() {
+        let re = Regex::new(r"(\d+)-(\d+)").unwrap();
+        let cap = re.get_groups("123-456").unwrap();
+        assert_eq!(cap.get_as_str(1), "123");
+        assert_eq!(cap.get_as_str(2), "456");
+    }
+
+    #[test]
+    fn check_get_group_values() {
+        let re = Regex::new(r"(\d+)-(\d+)").unwrap();
+        assert_eq!(re.get_group_values("123-456", 1), vec!["123"]);
+        assert_eq!(re.get_group_values("123-456", 2), vec!["456"]);
+    }
+
+    #[test]
+    fn check_get_matches() {
+        let re = Regex::new(r"(\d+)-(\d+)").unwrap();
+        assert_eq!(re.get_matches("123-456"), vec!["123-456"]);
+    }
+
+    #[test]
+    fn check_get_match_values_single() {
+        let re = Regex::new(r"(\d+)-(\d+)").unwrap();
+        assert_eq!(re.get_match_values("123-456"), vec!["123-456"]);
+    }
+
+    #[test]
+    fn check_get_match_values_multiple() {
+        let re = Regex::new(r"(\d+)").unwrap();
+        assert_eq!(re.get_match_values("123-456"), vec!["123", "456"]);
+    }
+
+    // endregion Test RegexHelpers
+
+    // region Test CapturesHelpers
+
+    #[test]
+    fn check_get_as_str() {
+        let re = Regex::new(r"(\d+)-(\d+)").unwrap();
+        let caps = re.captures("123-456").unwrap();
+        assert_eq!(caps.get_as_str(1), "123");
+        assert_eq!(caps.get_as_str(2), "456");
+    }
+
+    #[test]
+    fn check_get_as_str_or() {
+        let re = Regex::new(r"(\d+)-(\d+)").unwrap();
+        let caps = re.captures("123-456").unwrap();
+        assert_eq!(caps.get_as_str_or(1, "0"), "123");
+        assert_eq!(caps.get_as_str_or(2, "0"), "456");
+    }
+
+    #[test]
+    fn check_get_as_str_or_empty() {
+        let re = Regex::new(r"(\d+)-(\d+)").unwrap();
+        let caps = re.captures("123-456").unwrap();
+        assert_eq!(caps.get_as_str_or(1, "0"), "123");
+        assert_eq!(caps.get_as_str_or(2, "0"), "456");
+        assert_eq!(caps.get_as_str_or(3, "0"), "0");
+    }
+
+    // endregion Test CapturesHelpers
+}
+
+#[cfg(test)]
+mod test_integer_helpers {
+    use crate::helpers::IntegerHelpers;
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn check_to_u64_from_i64() {
+        let i = 9876543210i64;
+        assert_eq!(i.to_u64(), 9876543210u64);
+    }
+
+    #[test]
+    fn check_to_usize_from_i64() {
+        let i = 9876543210i64;
+        assert_eq!(i.to_usize(), 9876543210usize);
+    }
+
+    #[test]
+    fn check_to_isize_from_i64() {
+        let i = 9876543210i64;
+        assert_eq!(i.to_isize(), 9876543210isize);
+    }
+
+    #[test]
+    fn check_to_i64_from_i64() {
+        let i = 9876543210i64;
+        assert_eq!(i.to_i64(), 9876543210i64);
+    }
+
+    #[test]
+    fn check_to_i64_from_u64() {
+        let i = 9876543210u64;
+        assert_eq!(i.to_i64(), 9876543210i64);
+    }
+
+    #[test]
+    fn check_to_usize_from_u64() {
+        let i = 9876543210u64;
+        assert_eq!(i.to_usize(), 9876543210usize);
+    }
+
+    #[test]
+    fn check_to_isize_from_u64() {
+        let i = 9876543210u64;
+        assert_eq!(i.to_isize(), 9876543210isize);
+    }
+
+    #[test]
+    fn check_to_u64_from_u64() {
+        let i = 9876543210u64;
+        assert_eq!(i.to_u64(), 9876543210u64);
+    }
+
+    #[test]
+    fn check_to_u64_from_isize() {
+        let i = 9876543210isize;
+        assert_eq!(i.to_u64(), 9876543210u64);
+    }
+
+    #[test]
+    fn check_to_i64_from_isize() {
+        let i = 9876543210isize;
+        assert_eq!(i.to_i64(), 9876543210i64);
+    }
+
+    #[test]
+    fn check_to_usize_from_isize() {
+        let i = 9876543210isize;
+        assert_eq!(i.to_usize(), 9876543210usize);
+    }
+
+    #[test]
+    fn check_to_isize_from_isize() {
+        let i = 9876543210isize;
+        assert_eq!(i.to_isize(), 9876543210isize);
+    }
+
+    #[test]
+    fn check_to_u64_from_usize() {
+        let i = 9876543210usize;
+        assert_eq!(i.to_u64(), 9876543210u64);
+    }
+
+    #[test]
+    fn check_to_i64_from_usize() {
+        let i = 9876543210usize;
+        assert_eq!(i.to_i64(), 9876543210i64);
+    }
+
+    #[test]
+    fn check_to_isize_from_usize() {
+        let i = 9876543210usize;
+        assert_eq!(i.to_isize(), 9876543210isize);
+    }
+
+    #[test]
+    fn check_to_usize_from_usize() {
+        let i = 9876543210usize;
+        assert_eq!(i.to_usize(), 9876543210usize);
     }
 }

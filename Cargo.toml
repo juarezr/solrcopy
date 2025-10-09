@@ -5,32 +5,32 @@ edition = "2024"
 rust-version = "1.85.1"
 
 authors = ["Juarez Rudsatz <juarezr@gmail.com>"]
-description = "Tool for backup and restore of documents stored in cores of solr"
+description = "Command line tool useful for migration, transformations, backup, and restore of documents stored inside cores of Apache Solr"
 homepage = "https://github.com/juarezr/solrcopy"
-repository = "github.com:juarezr/solrcopy.git"
+repository = "https://github.com/juarezr/solrcopy"
 license = "gpl-3.0-or-later"
 readme = "README.md"
 categories = ["command-line-utilities"]
-keywords = ["solr", "dataimport", "dih", "fulltext-search", "apache-solr"]
+keywords = ["solr", "dataimport", "dih", "fulltext-search", "apache-solr", "data-engineering"]
 
 [dependencies]
 clap = { version = "4.5.*", features = ["derive", "env", "color"] }
 clap_complete = "4.5.*"
 clap_mangen = "0.2.*"
-regex = "1.10.*"
+regex = "1.11.*"
 url = "2.5.*"
 lazy_static = "1.5.*"
 ureq = { version = "3.1.*", features = ["rustls", "charset", "cookies", "brotli", "socks-proxy"] }
 zip = { version = "5.*",  features = ["deflate", "time"] }
-indicatif = "^0.17"
-chrono = "^0.4.20"
+indicatif = "^0.18"
+chrono = "^0.4.*"
 glob = "0.3.*"
 log = "0.4.*"
 simplelog = "0.12.*"
-crossbeam-channel = "0.5.15"
+crossbeam-channel = "0.5.*"
 crossbeam-utils = "0.8.*"
-ctrlc = { version = "3.4.*", features = ["termination"] }
-dotenvy = "0.15.7"
+ctrlc = { version = "3.5.*", features = ["termination"] }
+dotenvy = "0.15.*"
 
 # standard crate data is left out
 [dev-dependencies]
