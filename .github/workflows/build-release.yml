@@ -44,15 +44,15 @@ jobs:
       TARGET_DIR: target/release
       ARTIFACT_DIR: target/artifacts
       ARTIFACT_NAME: solrcopy-${{ inputs.release_version_tag || github.event.release.tag_name }}-${{ matrix.target }}
-    
+
     steps:
       # region Workflow information
-      
+
       - name: Checkout sources
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch_commit_or_ref || '' }}
-      
+
       - name: Report Workflow Information
         id: workflow_report
         uses: ./.github/actions/workflow-info
@@ -67,7 +67,7 @@ jobs:
             - Upload URL: ${{ github.event.release.upload_url }}
 
       # endregion
-      
+
       # region Compiling
 
       - name: Rustup Self Update
@@ -76,7 +76,7 @@ jobs:
         run: |
           rustup self update
 
-      - name: Update Rust toolchain from channel ${{ matrix.channel }} 
+      - name: Update Rust toolchain from channel ${{ matrix.channel }}
         shell: bash
         run: |
           rustup update ${{ matrix.channel }}
@@ -93,10 +93,10 @@ jobs:
       - name: Install cargo plugins
         if: matrix.platform == 'linux'
         shell: bash
-        run: cargo install cargo-deb cargo-generate-rpm
+        run: cargo install cargo-deb cargo-generate-rpm cargo-get
 
       # endregion
-      
+
       # region Compiling
 
       - name: Create local artifact folders
@@ -114,9 +114,9 @@ jobs:
         run: cargo build --release
 
       # endregion
-      
+
       # region Packaging
-      
+
       - name: Make a tar package for release (linux and macos)
         if: matrix.platform == 'linux' || matrix.platform == 'macos'
         shell: bash
@@ -126,7 +126,7 @@ jobs:
         if: matrix.platform == 'linux'
         shell: bash
         run: cargo deb --profile release --verbose --no-build --output ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.deb
-        
+
       - name: Make a rpm package
         if: matrix.platform == 'linux'
         shell: bash
@@ -141,9 +141,19 @@ jobs:
           7z a -y -tzip ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.zip ${{ env.TARGET_DIR }}/solrcopy.exe
 
       # endregion
-      
-      # region Upload Artifact
-      
+
+      # region Upload Artifacts
+
+      - name: Check release version number before publishing
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+           CARGO_VERSION=$(cargo get package.version --pretty)
+           echo "CARGO_VERSION=$CARGO_VERSION"
+           echo "RELEASE_VERSION=${{ env.RELEASE_VERSION }}"
+
+           test "$CARGO_VERSION" = "${{ env.RELEASE_VERSION }}"
+
       - name: Upload Debian, RPM and tar.gz Packages
         if: matrix.platform == 'linux'
         env:
@@ -175,6 +185,15 @@ jobs:
           REPO: ${{ github.event.repository.name }}
         run: |
           gh release upload --clobber ${{ env.RELEASE_VERSION }} ${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}.zip
+
+      # endregion
+
+      # region Publish
+
+      - name: Publish to crates.io
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: cargo publish --all-features --token "${{ secrets.CRATESIO_GITHUB_SOLRCOPY_PUBLISH }}"
 
       # endregion
 
