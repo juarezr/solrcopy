@@ -162,7 +162,7 @@ jobs:
 
           printf '\n## Future Incompatibilities Report\n\n' >> "${GITHUB_STEP_SUMMARY}";
 
-          if cargo report future-incompatibilities --color never >> "${GITHUB_STEP_SUMMARY}"; then 
+          if cargo report future-incompatibilities --color never >> "${GITHUB_STEP_SUMMARY}"; then
             echo "FUTURE_INCOMPATIBILITIES=1" >> "${GITHUB_OUTPUT}";
             echo "::warning file=Cargo.toml,line=15,col=2,endColumn=24,title=FUTURE-INCOMPATIBILITIES::Future imcompatibilities found in source code or dependencies.";
             false;
@@ -193,7 +193,7 @@ jobs:
       - name: Run coverage report
         if: matrix.os == 'ubuntu-latest'
         shell: bash
-        run: cargo llvm-cov --all-features --workspace --lcov --no-cfg-coverage-nightly --output-path lcov.info
+        run: cargo llvm-cov --all-features --lcov --output-path lcov.info
 
       - name: Coveralls
         if: matrix.os == 'ubuntu-latest'
@@ -207,6 +207,15 @@ jobs:
         shell: bash
         run: |
           docker compose -f docker/docker-compose.yml down -v
+
+      # endregion
+
+      # region Test Publishing
+
+      - name: Verify if source code is ready to publish to crates.io
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: cargo publish --all-features --dry-run
 
       # endregion
 
@@ -225,7 +234,7 @@ jobs:
         with:
           ref: ${{ inputs.branch_commit_or_ref || '' }}
 
-      - name: Update Rust toolchain from channel ${{ matrix.channel }} 
+      - name: Update Rust toolchain from channel ${{ matrix.channel }}
         shell: bash
         run: |
           rustup self update

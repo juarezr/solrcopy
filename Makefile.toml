@@ -129,12 +129,7 @@ run_task = { name = [
 category = "Test Coverage"
 description = "Generate coverage for the source code test that does not require Solr"
 command = "cargo"
-args = [
-    "llvm-cov",
-    "--lcov",
-    "--output-path",
-    "coverage/lcov.info",
-]
+args = ["llvm-cov", "--lcov", "--output-path", "target/lcov.info"]
 
 [tasks.coverage-full]
 category = "Test Coverage"
@@ -145,20 +140,14 @@ args = [
     "--all-features",
     "--lcov",
     "--output-path",
-    "coverage/lcov.info",
+    "target/lcov.info",
 ]
 
 [tasks.coverage-report]
 category = "Test Coverage"
 description = "Generate a coverage report while testing Solr"
 command = "cargo"
-args = [
-    "llvm-cov",
-    "--all-features",
-    "--html",
-    "--output-dir",
-    "coverage",
-]
+args = ["llvm-cov", "--all-features", "--html", "--output-dir", "target/coverage-report"]
 
 [tasks.coverage]
 category = "Test Coverage"
@@ -170,13 +159,29 @@ run_task = { name = [
 
 #endregion Coverage
 
-#region Lint
+#region Publish
 
 [tasks.clean]
-category = "Lint"
+category = "Publish"
 description = "Clean all compiled artifacts"
 command = "cargo"
 args = ["clean"]
+
+[tasks.verify]
+category = "Publish"
+description = "Verify packaging"
+command = "cargo"
+args = ["publish", "--dry-run", "--allow-dirty"]
+
+[tasks.publish]
+category = "Publish"
+description = "Publish to crates.io"
+command = "cargo"
+args = ["publish"]
+
+#endregion Publish
+
+#region Lint
 
 [tasks.check-compile]
 category = "Lint"
