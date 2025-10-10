@@ -1,3 +1,31 @@
+debian (0.8.0) stable; urgency=low
+
+  * improved: added --archive-compression flag to the backup command
+  * improved: added ability to use .env file by @paulheijman
+  * chore: added comprehensive Makefile.toml with organized task categories
+  * chore: added VS Code settings with recommended extensions
+
+-- Juarez Rudsatz <juarezr@gmail.com>  Thu, 8 Oct 2025 00:08:00 -0300
+
+debian (0.7.1) stable; urgency=low
+
+  * improved: add option to exclude fields by @paulheijman
+  * improved: added fq option by @paulheijman
+  * improved: added ability to use .env file by @paulheijman
+  * chore: upgraded rust crates to latest version
+  * chore: added verification of Rust MSRV
+
+-- Juarez Rudsatz <juarezr@gmail.com>  Thu, 18 Set 2025 00:07:01 -0300
+
+debian (0.6.12) stable; urgency=low
+
+  * ci: refactored improved github action workflows
+  * chore: upgraded dependencies to latest version
+  * chore: Upgrade to edition 2024
+  * chore: fix: small errors by @0xflotus
+
+-- Juarez Rudsatz <juarezr@gmail.com>  Wed, 19 Mar 2025 00:06:12 -0300
+
 debian (0.6.0) stable; urgency=low
 
   * improved: upgraded clap to 4.5
