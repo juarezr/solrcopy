@@ -11,15 +11,34 @@
     "files.insertFinalNewline": true,
     "files.trimFinalNewlines": true,
     "files.trimTrailingWhitespace": true,
-    // Search settings
+    // Browse/Watch/Search settings
+    "files.exclude": {
+        "**/node_modules/*": true,
+        "**/.git": true,
+        "**/.ssh": true,
+        "**/*.lock": true
+    },
     "search.exclude": {
-        "node_modules/**/*": true,
-        "target/**/*": true,
-        "sketch/**/*": true,
-        "**/sketch*": true,
-        "**/*sketch.*": true,
-        "**/.log": true,
-        "**/.lock": true
+        "**/node_modules/*": true,
+        "**/target/*": true,
+        "**/tmp": true,
+        "**/temp": true,
+        "**/.git": true,
+        "**/.ssh": true,
+        "**/.tmp": true,
+        "**/*.log": true,
+        "**/*.lock": true
+    },
+    "files.watcherExclude": {
+        "**/node_modules/*": true,
+        "**/target/*": true,
+        "**/tmp": true,
+        "**/temp": true,
+        "**/.git": true,
+        "**/.ssh": true,
+        "**/.tmp": true,
+        "**/*.log": true,
+        "**/*.lock": true
     },
     // Controls whether the coverage toolbar is shown in the editor.
     "testing.coverageToolbarEnabled": true,
