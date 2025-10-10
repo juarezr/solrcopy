@@ -159,13 +159,29 @@ run_task = { name = [
 
 #endregion Coverage
 
-#region Lint
+#region Publish
 
 [tasks.clean]
-category = "Lint"
+category = "Publish"
 description = "Clean all compiled artifacts"
 command = "cargo"
 args = ["clean"]
+
+[tasks.verify]
+category = "Publish"
+description = "Verify packaging"
+command = "cargo"
+args = ["publish", "--dry-run", "--allow-dirty"]
+
+[tasks.publish]
+category = "Publish"
+description = "Publish to crates.io"
+command = "cargo"
+args = ["publish"]
+
+#endregion Publish
+
+#region Lint
 
 [tasks.check-compile]
 category = "Lint"
