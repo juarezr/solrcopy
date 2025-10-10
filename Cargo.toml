@@ -9,11 +9,12 @@ description = "Command line tool useful for migration, transformations, backup, 
 homepage = "https://github.com/juarezr/solrcopy"
 repository = "https://github.com/juarezr/solrcopy"
 documentation = "https://docs.rs/solrcopy"
+license = "GPL-3.0-only"
+# license-file = "LICENSE"
 
-license = "gpl-3.0-or-later"
 readme = "README.md"
 categories = ["command-line-utilities"]
-keywords = ["solr", "dataimport", "dih", "fulltext-search", "apache-solr", "data-engineering"]
+keywords = ["solr", "dataimport", "fulltext-search", "apache-solr", "data-engineering"]
 
 exclude = [
   ".vscode/",
