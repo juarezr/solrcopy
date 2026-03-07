@@ -101,7 +101,7 @@ description = "Runs tests that do not require a Solr container"
 command = "cargo"
 args = ["test"]
 
-[tasks.test-start]
+[tasks.test-begin]
 category = "Test"
 description = "Setup a local Solr container and ingest some documents allowing to run tests manually after"
 dependencies = ["compose-up", "compose-ingest"]
@@ -111,7 +111,7 @@ category = "Test"
 description = "Cleanup the local Solr container after testing"
 dependencies = ["compose-down"]
 
-[tasks.test-solr]
+[tasks.test-full]
 category = "Test"
 description = "Runs tests against an existing local solr server"
 command = "cargo"
@@ -122,8 +122,8 @@ category = "Test"
 description = "Setup a local Solr container, ingest some documents, run all tests, and cleanup the container"
 private = true
 run_task = { name = [
-    "test-start",
-    "test-solr",
+    "test-begin",
+    "test-full",
 ], fork = true, cleanup_task = "compose-down" }
 
 #endregion Test
@@ -156,9 +156,9 @@ args = ["llvm-cov", "--all-features", "--html", "--output-dir", "target/coverage
 
 [tasks.coverage]
 category = "Test Coverage"
-description = "Setu Solr container, generate a coverage report, and cleanup"
+description = "Setup Solr container, generate a coverage report, and cleanup"
 run_task = { name = [
-    "test-start",
+    "test-begin",
     "coverage-full",
 ], fork = true, cleanup_task = "compose-down" }
 
