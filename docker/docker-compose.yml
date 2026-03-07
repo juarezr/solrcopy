@@ -1,5 +1,7 @@
 #!/usr/bin/env -S bash -x -c 'docker compose up -d'
 
+#@ https://solr.apache.org/guide/solr/latest/deployment-guide/solr-in-docker.html#docker-compose
+
 services:
   solr:
     container_name: solr4test
@@ -118,7 +120,8 @@ configs:
       if test -n "${VERBOSE:-}"; then set -x; fi
       echo 'Configuring Solr cores...'
       solr-setup-start
-      echo 'Starting Solr Server...'
-      exec solr-fg
+      # Solr 10+ defaults to SolrCloud; precreated cores require standalone (user-managed) mode.
+      echo "Starting Solr Server in user-managed mode..."
+      exec solr-fg --user-managed
       echo 'Solr Server Finished.'
       # END OF SCRIPT #
