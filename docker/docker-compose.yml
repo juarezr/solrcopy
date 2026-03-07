@@ -5,7 +5,10 @@
 services:
   solr:
     container_name: solr4test
-    image: solr:slim
+    image: "solr:${TAG:-slim}" # Or: latest, 10-slim, 10, 9, ...
+    hostname: solrhost
+    environment:
+      - SOLR_IMAGE_TAG=${TAG:-latest}
     ports:
      - "8983:8983"
     volumes:
@@ -36,8 +39,18 @@ services:
       start_period: 20s
       timeout: 10s
     command:
-      # - solr-precreate gettingstarted
+      #? Solr docs example:
+      # - solr-precreate
+      # - gettingstarted
       # - solr-demo
+      #? Solr cloud pre-create/start/post-ingest example:
+      # - solr-precreate demo
+      # - solr-precreate films
+      # - solr-precreate films2
+      # - solr-precreate target
+      # - solr-foreground
+      # - solr-foreground --user-managed
+      #? Solr standalone-style, precreated cores example:
       - solr-start-server
 
 volumes:
@@ -118,7 +131,7 @@ configs:
       #!/bin/bash
       set -eu -o pipefail
       if test -n "${VERBOSE:-}"; then set -x; fi
-      echo 'Configuring Solr cores...'
+      echo "Configuring Solr cores: ${SOLR_IMAGE_TAG:-}..."
       solr-setup-start
       # Solr 10+ defaults to SolrCloud; precreated cores require standalone (user-managed) mode.
       echo "Starting Solr Server in user-managed mode..."

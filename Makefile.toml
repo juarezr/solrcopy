@@ -50,6 +50,11 @@ dependencies = ["test-basic", "test-docker"]
 
 #region Docker
 
+[env]
+TAG="slim"
+#? Choose the Solr image tag to use in the docker container passing TAG like:
+## cargo make --env TAG=9-slim test
+
 [tasks.compose-up]
 category = "Test"
 description = "Runs the command `docker compose up` to create a container running Solr for use in testing"
