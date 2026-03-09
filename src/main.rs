@@ -43,6 +43,7 @@ mod delete;
 mod fails;
 mod fetch;
 mod helpers;
+mod information;
 mod ingest;
 mod models;
 mod restore;
@@ -76,7 +77,7 @@ mod wrangle {
 
     use crate::args::{Cli, Commands};
     use crate::fails::{BoxedResult, throw};
-    use crate::{assets, backup, commit, create, delete, restore};
+    use crate::{assets, backup, commit, create, delete, information, restore};
     use clap::Parser;
 
     pub(crate) fn command_exec(args: &Commands) -> Result<(), Box<dyn std::error::Error>> {
@@ -86,6 +87,7 @@ mod wrangle {
             Commands::Commit(cmd) => commit::commit_main(cmd),
             Commands::Delete(del) => delete::delete_main(del),
             Commands::Create(cre) => create::create_main(cre),
+            Commands::Info(inf) => information::info_main(inf),
             Commands::Generate(cpl) => assets::gen_assets(cpl),
         }
     }

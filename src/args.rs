@@ -50,6 +50,8 @@ pub(crate) enum Commands {
     Delete(Delete),
     /// Create a new empty core in the Solr instance
     Create(Execute),
+    /// Get information about the Solr instance
+    Info(Execute),
     /// Generates man page and completion scripts for different shells
     Generate(Generate),
 }

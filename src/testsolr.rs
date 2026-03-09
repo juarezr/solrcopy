@@ -106,7 +106,7 @@ mod testsolr {
         check_exec_backup(url, dir, "demo", "zstd");
     }
 
-    /// Run this command to test backup from a running Solr instance
+    /// Run this command to test the command commit with a running Solr instance
     #[test]
     fn check_exec_commit() {
         let uri = get_solr_url();
@@ -118,7 +118,19 @@ mod testsolr {
         test_command_line_args_for(test_args);
     }
 
-    /// Run this command to test backup from a running Solr instance
+    /// Run this command to test the command info with a running Solr instance
+    #[test]
+    fn check_exec_info() {
+        let uri = get_solr_url();
+        let url = uri.as_str();
+
+        let test_args =
+            &["solrcopy", "info", "--url", url, "--core", "demo", "--log-level", "debug"];
+
+        test_command_line_args_for(test_args);
+    }
+
+    /// Run this command to test creating a new core in a running Solr instance
     #[test]
     fn check_exec_create() {
         let uri = get_solr_url();

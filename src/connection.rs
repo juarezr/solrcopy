@@ -1,4 +1,4 @@
-use super::helpers::{IntegerHelpers, env_value, wait};
+use super::helpers::{IntegerHelpers, StringHelpers, env_value, wait};
 use log::{debug, trace};
 use std::time::Duration;
 use std::{error::Error, fmt};
@@ -19,6 +19,10 @@ impl SolrError {
 
     pub(crate) fn new(message: String, error_code: u16) -> Self {
         SolrError { details: message, code: Some(error_code) }
+    }
+
+    pub(crate) fn of(message: &str, error_code: u16) -> Self {
+        SolrError { details: message.to_string(), code: Some(error_code) }
     }
 
     fn say(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -43,6 +47,16 @@ impl Error for SolrError {
     fn description(&self) -> &str {
         &self.details
     }
+}
+
+// endregion
+
+// region SolrInfo
+
+#[derive(Debug)]
+pub(crate) struct SolrInfo {
+    pub version: i64,
+    pub standalone: bool,
 }
 
 // endregion
@@ -102,6 +116,32 @@ impl SolrClient {
                 Some(retrieved) => break retrieved,
             }
         }
+    }
+
+    pub(crate) fn get_solr_info(&mut self, url: &str) -> Result<SolrInfo, SolrError> {
+        let system_url = url.with_suffix("/").append("admin/info/system?wt=json");
+        debug!("GET {}", system_url);
+
+        let system_json = self.get_as_text(&system_url)?;
+
+        let parsed = serde_json::from_str::<serde_json::Value>(&system_json);
+        let info = parsed.map_err(|e| SolrError::new(e.to_string(), 500))?;
+
+        let version = info
+            .get("lucene")
+            .and_then(|lucene| lucene.get("solr-spec-version"))
+            .and_then(|solr_impl_version| solr_impl_version.as_str())
+            .ok_or_else(|| SolrError::of("Solr version not found in system info", 500))?;
+
+        let parts: Vec<&str> = version.split('.').collect();
+        let major = parts[0].parse::<i64>().map_err(|e| SolrError::new(e.to_string(), 500))?;
+
+        let mode = info
+            .get("mode")
+            .and_then(|mode| mode.as_str())
+            .ok_or_else(|| SolrError::of("Solr mode not found in system info", 500))?;
+
+        Ok(SolrInfo { version: major, standalone: mode == "std" })
     }
 
     pub(crate) fn post_as_json(&mut self, url: &str, content: &str) -> Result<String, SolrError> {
@@ -165,7 +205,7 @@ impl SolrClient {
                 let content = body.read_to_string();
                 let status = response.status();
                 match content {
-                    Ok(content) => Ok(content),
+                    Ok(text) => Ok(text),
                     Err(failed) => Err(SolrError::new(failed.to_string(), status.as_u16())),
                 }
             }
