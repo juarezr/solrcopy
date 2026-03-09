@@ -177,6 +177,48 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Solr-tests",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=solrcopy",
+                    "--package=solrcopy",
+                    "--features",
+                    "testsolr",
+                ],
+                "filter": {
+                    "name": "solrcopy",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "testcase",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=solrcopy",
+                    "--package=solrcopy",
+                    "--features",
+                    "testsolr",
+                ],
+                "filter": {
+                    "name": "${input:testcase}",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Launch-help",
             "cargo": {
                 "args": [
@@ -200,6 +242,11 @@
             "id": "arguments",
             "type": "promptString",
             "description": "Enter the arguments to be passed to program running:"
+        },
+        {
+            "id": "testcase",
+            "type": "promptString",
+            "description": "Enter the name of the test case/function to run/debug:"
         },
         {
             "id": "folder",
@@ -227,6 +274,20 @@
             "type": "promptString",
             "description": "Enter the SOLR URL:",
             "default": "http://localhost:8983/solr"
+        },
+        {
+            "id": "core",
+            "type": "pickString",
+            "description": "What Solr core do you want to use?",
+            "options": [
+                "demo",
+                "films",
+                "films2",
+                "target",
+                "testing",
+                "testing2",
+            ],
+            "default": "demo"
         },
         {
             "id": "query",
