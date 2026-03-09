@@ -51,9 +51,12 @@ dependencies = ["test-basic", "test-docker"]
 #region Docker
 
 [env]
-TAG="slim"
 #? Choose the Solr image tag to use in the docker container passing TAG like:
 ## cargo make --env TAG=9-slim test
+TAG="slim"
+#? Choose the Solr run mode: standalone, cloud, precreate, demo, testing
+## cargo make --env MODE=cloud test
+MODE="testing"
 
 [tasks.compose-up]
 category = "Test"

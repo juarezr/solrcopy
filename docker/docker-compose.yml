@@ -1,4 +1,4 @@
-#!/usr/bin/env -S bash -x -c 'docker compose up -d'
+#!/usr/bin/env -S bash -x -c 'docker compose up --no-recreate --wait --detach'
 
 #@ https://solr.apache.org/guide/solr/latest/deployment-guide/solr-in-docker.html#docker-compose
 
@@ -9,8 +9,9 @@ services:
     hostname: solrhost
     environment:
       - SOLR_IMAGE_TAG=${TAG:-latest}
+      - SOLR_RUN_MODE=${MODE:-testing}
     ports:
-     - "8983:8983"
+      - "8983:8983"
     volumes:
       - type: volume
         source: data
@@ -30,43 +31,33 @@ services:
       retries: 1
       interval: 60s
     configs:
-      - source: solr-setup-start.sh
-        target: /opt/solr/docker/scripts/solr-setup-start
+      - source: solr-setup-precreate.sh
+        target: /opt/solr/docker/scripts/solr-setup-precreate
         mode: 0755
-      - source: solr-ingest-demo.sh
-        target: /opt/solr/docker/scripts/solr-ingest-demo
+      - source: solr-ingest-core.sh
+        target: /opt/solr/docker/scripts/solr-ingest-core
         mode: 0755
-      - source: solr-ingest-films.sh
-        target: /opt/solr/docker/scripts/solr-ingest-films
-        mode: 0755
-      - source: solr-ingest-all.sh
-        target: /opt/solr/docker/scripts/solr-ingest-all
+      - source: solr-ingest-examples.sh
+        target: /opt/solr/docker/scripts/solr-ingest-examples
         mode: 0755
       - source: solr-commit.sh
         target: /opt/solr/docker/scripts/solr-commit
         mode: 0755
+      - source: solr-runas-user-managed.sh
+        target: /opt/solr/docker/scripts/solr-runas-user-managed
+        mode: 0755
       - source: solr-start-server.sh
         target: /opt/solr/docker/scripts/solr-start-server
         mode: 0755
-    healthcheck:
-      test: solr status || exit 121
-      interval: 60s
-      retries: 5
-      start_period: 20s
-      timeout: 10s
     command:
       #? Solr docs example:
       # - solr-precreate
       # - gettingstarted
       # - solr-demo
-      #? Solr cloud pre-create/start/post-ingest example:
-      # - solr-precreate demo
-      # - solr-precreate films
-      # - solr-precreate films2
-      # - solr-precreate target
+      #? Solr cloud/standalone startup example:
       # - solr-foreground
-      # - solr-foreground --user-managed
-      #? Solr standalone-style, precreated cores example:
+      # - --user-managed
+      #? Choose Solr run mode from MODE/SOLR_RUN_MODE environment variable:
       - solr-start-server
 
 volumes:
@@ -76,65 +67,70 @@ volumes:
     name: configuration
 
 configs:
-  solr-setup-start.sh:
+  solr-setup-precreate.sh:
     content: |
       #!/bin/bash
       set -eu -o pipefail
-      echo 'Checking if it needs to create Solr cores before starting up'
+      echo 'CREATE: Checking if it needs to create Solr cores before starting up...'
       if [ -d /var/solr/data/demo ]; then
-        echo 'Solr core named demo already exists; skipping core creation'
+        echo 'CREATE: Solr core named demo already exists; skipping core creation.'
       else
-        # start-local-solr
-        # /opt/solr/bin/solr create -c demo
-        # /opt/solr/bin/solr create -c target
-        # stop-local-solr
-        precreate-core demo
-        precreate-core films
-        precreate-core films2
-        precreate-core target
-        echo 'Initializind solr db'
-        source run-initdb
+        for core in demo gettingstarted films films2 target "$$@"; do
+          echo "CREATE: Creating Solr core named [$${core}]..."
+          if ! precreate-core "$${core}"; then
+            echo "ERROR: Failed to create Solr core named $${core}. Exiting container..."
+            exit 21
+          fi
+        done
+        echo 'CREATE: Initializing solr db...'
+        if ! source run-initdb; then
+          echo "ERROR: Failed to initialize solr db. Exiting container..."
+          exit 22
+        fi
       fi
-      echo 'Finished Solr cores creation'
+      echo 'CREATE: Finished Solr cores creation successfully.'
       # END OF SCRIPT #
 
-  solr-ingest-demo.sh:
+  solr-ingest-core.sh:
     content: |
       #!/bin/bash
       set -eu -o pipefail
-      echo 'Ingest data into a Solr core named demo'
-      if [ ! -d /var/solr/data/demo ]; then
-        echo 'Solr core named demo does not exists; skipping core ingestion'
-      else
-        /opt/solr/bin/solr post -c demo /opt/solr/example/exampledocs/books.json
-        /opt/solr/bin/solr post -c demo /opt/solr/example/exampledocs/books.csv
-        /opt/solr/bin/solr post -c demo /opt/solr/example/exampledocs/*.xml
+      export CORE="$${1:-}"; shift;
+      echo "INGEST: Ingesting data into a Solr core named $${CORE:-}..."
+      if test -z "$${CORE:-}"; then
+        echo 'INGEST: No core name provided; aborting container execution...'
+        exit 29
       fi
-      echo 'Finished Solr demo core ingestion'
+      if ! test -d "/var/solr/data/$${CORE}"; then
+        echo "INGEST: Solr core named $${CORE} does not exists; skipping core ingestion."
+      else
+        for docpath in "$$@"; do
+          if ! test -f "$${docpath}"; then
+            echo "INGEST: Source data for '$${docpath}' does not exists; skipping core $${CORE} ingestion."
+            continue
+          fi
+          echo "INGEST: Uploading data from '$${docpath}' into Solr core $${CORE} ingestion..."
+          if ! solr post -c "$${CORE}" "$${docpath}"; then
+            echo "INGEST: Failed to ingest data into core $${CORE} from $${docpath}; skipping data ingestion in core $${CORE}."
+            continue
+          else
+            echo "INGEST: Commiting ingested data in core $${CORE}..."
+            echo '{"commit": {}}' | solr post -c "$${CORE}"
+          fi
+        done
+      fi
+      echo "INGEST: Finished to ingest data into Solr core $${CORE}."
       # END OF SCRIPT #
 
-  solr-ingest-films.sh:
+  solr-ingest-examples.sh:
     content: |
       #!/bin/bash
       set -eu -o pipefail
-      echo 'Ingest data into a Solr core named films'
-      if [ ! -d /var/solr/data/films ]; then
-        echo 'Solr core named films does not exists; skipping core ingestion'
-      else
-        /opt/solr/bin/solr post -c films /opt/solr/example/films/films.xml
-        /opt/solr/bin/solr post -c films2 /opt/solr/example/films/films.json
-      fi
-      echo 'Finished Solr films core ingestion'
-      # END OF SCRIPT #
-
-  solr-ingest-all.sh:
-    content: |
-      #!/bin/bash
-      set -eu -o pipefail
-      echo 'Starting solr core data ingestion. Wait some seconds...'
-      solr-ingest-demo
-      solr-ingest-films
-      echo 'Solr cores created and data ingested.'
+      echo 'INGEST: Starting example data ingestion in Solr cores. Wait some seconds...'
+      solr-ingest-core demo /opt/solr/example/exampledocs/books.json /opt/solr/example/exampledocs/books.csv /opt/solr/example/exampledocs/*.xml
+      solr-ingest-core films /opt/solr/example/films/films.xml
+      solr-ingest-core films2 /opt/solr/example/films/films.json
+      echo 'INGEST: Finished ingestion of Solr example data successfully.'
       # END OF SCRIPT #
 
   solr-commit.sh:
@@ -142,18 +138,59 @@ configs:
       #!/bin/bash
       # Sends a commit to the Solr Core
       set -eu -o pipefail
-      echo '{"commit": {}}' | post -c "$${1:demo}" -type application/json --out yes -d
+      echo '{"commit": {}}' | solr post -c "$${1:-}" -type application/json
+      # END OF SCRIPT #
+
+  solr-runas-user-managed.sh:
+    content: |
+      #!/bin/bash
+      set -eu -o pipefail
+      echo "TEST: Creating Solr cores: $${SOLR_IMAGE_TAG:-}..."
+      if ! solr-setup-precreate; then
+        echo "ERROR: Solr cores creation failed. Exiting container..."
+        exit 21
+      fi
+      echo "TEST: Setting up Solr configsets for Solr cores..."
+      mkdir -p /var/solr/data/configsets
+      cp --recursive /opt/solr/server/solr/configsets/_default /var/solr/data/configsets/
+      # Solr 10+ defaults to SolrCloud; precreated cores require standalone (user-managed) mode.
+      echo "TEST: Starting Solr Server in user-managed mode..."
+      if ! exec solr-fg --user-managed "$$@"; then
+        echo "ERROR: Solr Server in user-managed mode failed. Exiting container..."
+        exit 22
+      fi
+      echo 'TEST: Solr Server in user-managed mode finished successfully.'
       # END OF SCRIPT #
 
   solr-start-server.sh:
     content: |
       #!/bin/bash
       set -eu -o pipefail
-      if test -n "${VERBOSE:-}"; then set -x; fi
-      echo "Configuring Solr cores: ${SOLR_IMAGE_TAG:-}..."
-      solr-setup-start
-      # Solr 10+ defaults to SolrCloud; precreated cores require standalone (user-managed) mode.
-      echo "Starting Solr Server in user-managed mode..."
-      exec solr-fg --user-managed
-      echo 'Solr Server Finished.'
+      if test -n "$${DEBUG:-}"; then set -x; fi
+      echo "RUN: Setting system limits..."
+      if ! ulimit -n 65000; then
+        echo "RUN: Failed to set system limits. Exiting container..."
+        exit 11
+      fi
+      echo "RUN: Starting Solr version $${SOLR_IMAGE_TAG:-} in $${SOLR_RUN_MODE:-} mode..."
+      case "$${SOLR_RUN_MODE:-testing}" in
+        standalone) SOLR_RUN_COMMAND="solr-foreground --user-managed";;
+        cloud)      SOLR_RUN_COMMAND="solr-foreground";;
+        precreate)  SOLR_RUN_COMMAND="solr-precreate";;
+        demo)       SOLR_RUN_COMMAND="solr-demo";;
+        testing)    SOLR_RUN_COMMAND="solr-runas-user-managed";;
+        *) echo "ERROR: Invalid Solr run mode: $${SOLR_RUN_MODE:-}."
+           echo "RUN: Please set the SOLR_RUN_MODE environment variable to one of the allowed values: standalone, cloud, precreate, demo, testing."
+           echo "RUN: For example:"
+           echo "$ cargo make --env SOLR_RUN_MODE=testing test"
+           echo "$ SOLR_RUN_MODE=standalone docker compose up --no-recreate --wait --detach"
+           echo "RUN: Aborting container execution..."
+           exit 99 ;;
+      esac
+      echo "RUN: Running Solr using command: [$${SOLR_RUN_COMMAND} $$*]"
+      if ! exec $${SOLR_RUN_COMMAND} "$$@"; then
+        echo "RUN: Failed to run Solr version $${SOLR_IMAGE_TAG:-} in $${SOLR_RUN_MODE:-} mode. Exiting container..."
+        exit 13
+      fi
+      echo 'RUN: Solr Server execution finished successfully. Exiting container...'
       # END OF SCRIPT #
