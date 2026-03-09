@@ -23,6 +23,12 @@ services:
         soft: 65000
         hard: 65000
     healthcheck:
+      # test: solr status || exit 121
+      test: curl -X GET --fail http://localhost:8983/solr/admin/info/health
+      start_period: 10s
+      timeout: 10s
+      retries: 1
+      interval: 60s
     configs:
       - source: solr-setup-start.sh
         target: /opt/solr/docker/scripts/solr-setup-start
