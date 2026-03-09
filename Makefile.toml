@@ -88,7 +88,7 @@ args = [
     "./docker/docker-compose.yml",
     "exec",
     "solr",
-    "solr-ingest-all",
+    "solr-ingest-examples",
 ]
 
 #endregion Docker
