@@ -119,7 +119,7 @@ jobs:
         run: |
           sleep 10
           echo '::group::Executing a script inside the docker container';
-          docker compose -f docker/docker-compose.yml exec solr solr-ingest-all 2>&1
+          docker compose -f docker/docker-compose.yml exec solr solr-ingest-examples 2>&1
           echo '::endgroup::';
 
       - name: Run cargo test
