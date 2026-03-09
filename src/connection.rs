@@ -1,8 +1,11 @@
-use super::helpers::{IntegerHelpers, StringHelpers, env_value, wait};
+use super::helpers::{IntegerHelpers, StringHelpers, env_value};
 use log::{debug, trace};
 use std::time::Duration;
 use std::{error::Error, fmt};
 use ureq::Agent;
+
+#[cfg(not(any(test, debug_assertions)))]
+use super::helpers::wait;
 
 // region SolrError
 
@@ -82,9 +85,7 @@ const SOLR_DEF_RETRIES: isize = 1;
 #[cfg(not(debug_assertions))]
 const SOLR_DEF_RETRIES: isize = 8;
 
-#[cfg(debug_assertions)]
-const SOLR_WAIT_SECS: usize = 1;
-#[cfg(not(debug_assertions))]
+#[cfg(not(any(test, debug_assertions)))]
 const SOLR_WAIT_SECS: usize = 5;
 
 impl SolrClient {
@@ -187,6 +188,7 @@ impl SolrClient {
                         self.retry_count, self.max_retries, failure
                     );
                     // wait a little for the server recovering before retrying
+                    #[cfg(not(any(test, debug_assertions)))]
                     wait(SOLR_WAIT_SECS * self.retry_count);
                     None
                 } else {
