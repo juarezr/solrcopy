@@ -85,14 +85,14 @@ pub(crate) fn backup_main(params: &Backup) -> BoxedError {
             let dir = params.transfer.dir.clone();
             let name = output_pat.clone();
             let max = params.archive_files;
-            let compression = params.archive_compression.clone();
+            let comp = params.archive_compression;
 
             let writer = iw;
             let thread_name = format!("Writer_{}", writer);
             pool.builder()
                 .name(thread_name)
                 .spawn(move |_| {
-                    start_storing_docs(writer, dir, name, compression, max, consumer, updater);
+                    start_storing_docs(writer, dir, name, comp, max, consumer, updater);
                     debug!("Finished writer #{}", writer);
                 })
                 .unwrap();
