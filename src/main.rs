@@ -66,7 +66,12 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let parsed = Cli::parse_from_args()?;
 
-    wrangle::command_exec(&parsed)
+    let result = wrangle::command_exec(&parsed);
+    if let Err(err) = result {
+        eprintln!("Error: {}", err);
+        return Err(err);
+    }
+    Ok(())
 }
 
 // endregion

@@ -576,15 +576,10 @@ impl CommonArgs {
         self.get_update_url_with(EMPTY_STR)
     }
 
-    pub(crate) fn get_core_admin_v2_url_with(&self, query_string_params: &str) -> String {
+    pub(crate) fn get_url_from(&self, path: &str) -> String {
         let mut solr_uri = Url::parse(&self.url).unwrap();
-        solr_uri.set_path("api/cores");
-        let parts: Vec<String> = vec![solr_uri.to_string(), query_string_params.with_prefix("?")];
-        parts.concat()
-    }
-
-    pub(crate) fn get_core_admin_v2_url(&self) -> String {
-        self.get_core_admin_v2_url_with(EMPTY_STR)
+        solr_uri.set_path(path);
+        solr_uri.to_string()
     }
 
     pub(crate) fn get_logging(&self) -> &LoggingArgs {
