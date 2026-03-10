@@ -117,7 +117,7 @@ pub(crate) struct Backup {
         display_order = 52,
         default_value_t = 1,
         value_name = "num",
-        // value_parser = clap::value_parser!(u64).range(0..366),
+        value_parser = clap::value_parser!(u64).range(0..366),
     )]
     pub iterate_step: u64,
 
@@ -302,7 +302,7 @@ pub(crate) struct ParallelArgs {
         display_order = 80,
         default_value_t = 1,
         value_name = "count",
-        // value_parser = clap::value_parser!(u64).range(1..128),
+        value_parser = clap::value_parser!(u64).range(1..128),
     )]
     pub readers: u64,
 
@@ -313,7 +313,7 @@ pub(crate) struct ParallelArgs {
         display_order = 80,
         default_value_t = 1,
         value_name = "count",
-        // value_parser = clap::value_parser!(u64).range(1..=128),
+        value_parser = clap::value_parser!(u64).range(1..128),
     )]
     pub writers: u64,
 }
