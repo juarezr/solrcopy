@@ -71,6 +71,7 @@ fn unzip_archives_and_send(params: &Restore, found: &[PathBuf]) -> BoxedResult<u
         let (progress, reporter) = bounded::<u64>(transfer.writers.to_usize());
 
         pool.spawn(move |_| {
+            debug!("Started generator thread");
             start_listing_archives(found, generator);
             debug!("Finished generator thread");
         });
@@ -84,6 +85,7 @@ fn unzip_archives_and_send(params: &Restore, found: &[PathBuf]) -> BoxedResult<u
             pool.builder()
                 .name(thread_name)
                 .spawn(move |_| {
+                    debug!("Started reader #{}", reader);
                     start_reading_archive(reader, iterator, producer);
                     debug!("Finished reader #{}", reader);
                 })
@@ -110,6 +112,7 @@ fn unzip_archives_and_send(params: &Restore, found: &[PathBuf]) -> BoxedResult<u
             pool.builder()
                 .name(thread_name)
                 .spawn(move |_| {
+                    debug!("Started writer #{}", writer);
                     start_indexing_docs(writer, &url, consumer, updater, &arcerr, merr, delay);
                     debug!("Finished writer #{}", writer);
                 })
@@ -279,6 +282,7 @@ mod tests {
         args::{Cli, Commands, Restore},
         fails::{BoxedResult, raise},
     };
+    use log::debug;
     use pretty_assertions::assert_eq;
 
     impl Commands {
@@ -304,7 +308,7 @@ mod tests {
         let puts = parsed.put().unwrap();
 
         for zip in puts.find_archives().unwrap() {
-            println!("{:?}", zip);
+            debug!("{:?}", zip);
             let path = zip.to_str().unwrap();
             assert_eq!(path.ends_with(".zip"), true);
         }

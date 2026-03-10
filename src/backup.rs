@@ -53,6 +53,7 @@ pub(crate) fn backup_main(params: &Backup) -> BoxedError {
         let (progress, reporter) = bounded::<u64>(transfer.writers.to_usize());
 
         pool.spawn(|_| {
+            debug!("Started generator thread");
             start_querying_core(requests, slices, generator, &ctrl_c);
             debug!("Finished generator thread");
         });
@@ -68,6 +69,7 @@ pub(crate) fn backup_main(params: &Backup) -> BoxedError {
             pool.builder()
                 .name(thread_name)
                 .spawn(move |_| {
+                    debug!("Started reader #{}", reader);
                     start_retrieving_docs(reader, iterator, producer, must_match, merr, delay);
                     debug!("Finished reader #{}", reader);
                 })
@@ -92,6 +94,7 @@ pub(crate) fn backup_main(params: &Backup) -> BoxedError {
             pool.builder()
                 .name(thread_name)
                 .spawn(move |_| {
+                    debug!("Started writer #{}", writer);
                     start_storing_docs(writer, dir, name, comp, max, consumer, updater);
                     debug!("Finished writer #{}", writer);
                 })
@@ -108,12 +111,8 @@ pub(crate) fn backup_main(params: &Backup) -> BoxedError {
     if ctrl_c.aborted() {
         raise("# Execution aborted by user!")
     } else {
-        info!(
-            "Dowloaded {} of {} documents in {:?}.",
-            retrieved,
-            num_retrieving,
-            started.elapsed()
-        );
+        let (r, n, s) = (retrieved, num_retrieving, started.elapsed());
+        info!("Dowloaded {} of {} documents in {:?}.", r, n, s);
         if retrieved > 0 {
             wait_with_progress(params.transfer.delay_after, "Waiting after all processing...");
         }
