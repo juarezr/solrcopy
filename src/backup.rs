@@ -26,7 +26,6 @@ pub(crate) fn backup_main(params: &Backup) -> BoxedError {
     let end_limit = params.get_docs_to_retrieve(&schema);
     let num_retrieving = params.estimate_docs_quantity(&schema, &slices)?;
     let num_found = schema.num_found.to_u64();
-    let must_match = if params.workaround_shards > 0 { num_found } else { 0 };
     let mut retrieved = 0;
 
     info!(
@@ -58,14 +57,33 @@ pub(crate) fn backup_main(params: &Backup) -> BoxedError {
             debug!("Finished generator thread");
         });
 
-        for ir in 0..transfer.readers {
+        start_solr_readers(pool, params, sender, sequence, num_found);
+
+        start_archive_writers(pool, params, receiver, progress, num_found);
+
+        retrieved =
+            foreach_progress(reporter, num_retrieving, params.num_docs, params.options.is_quiet());
+    })
+    .unwrap();
+
+    finish_writing(ctrl_c, started, num_retrieving, retrieved, params.transfer.delay_after)
+}
+
+fn start_solr_readers(
+    pool: &thread::Scope<'_>, params: &Backup, sender: Sender<Documents>, sequence: Receiver<Step>,
+    num_found: u64,
+) {
+    let merr = params.transfer.max_errors;
+    let delay = params.transfer.delay_per_request;
+    let must_match = if params.workaround_shards > 0 { num_found } else { 0 };
+
+    for ir in 0..params.transfer.readers {
             let producer = sender.clone();
             let iterator = sequence.clone();
-            let reader = ir;
-            let merr = params.transfer.max_errors;
-            let delay = params.transfer.delay_per_request;
 
+            let reader = ir;
             let thread_name = format!("Reader_{}", reader);
+
             pool.builder()
                 .name(thread_name)
                 .spawn(move |_| {
@@ -77,20 +95,25 @@ pub(crate) fn backup_main(params: &Backup) -> BoxedError {
         }
         drop(sequence);
         drop(sender);
+}
 
-        let output_pat = params.get_archive_pattern(schema.num_found);
+fn start_archive_writers(
+    pool: &thread::Scope<'_>, params: &Backup, receiver: Receiver<Documents>,
+    progress: Sender<u64>, num_found: u64,
+) {
+    let output_pat = params.get_archive_pattern(num_found);
+    let max = params.archive_files;
+    let comp = params.archive_compression;
 
-        for iw in 0..transfer.writers {
+    for iw in 0..params.transfer.writers {
             let consumer = receiver.clone();
             let updater = progress.clone();
-
             let dir = params.transfer.dir.clone();
             let name = output_pat.clone();
-            let max = params.archive_files;
-            let comp = params.archive_compression;
 
             let writer = iw;
             let thread_name = format!("Writer_{}", writer);
+
             pool.builder()
                 .name(thread_name)
                 .spawn(move |_| {
@@ -102,19 +125,19 @@ pub(crate) fn backup_main(params: &Backup) -> BoxedError {
         }
         drop(receiver);
         drop(progress);
+}
 
-        retrieved =
-            foreach_progress(reporter, num_retrieving, params.num_docs, params.options.is_quiet());
-    })
-    .unwrap();
-
+fn finish_writing(
+    ctrl_c: Arc<AtomicBool>, started: Instant, num_retrieving: u64, retrieved: u64,
+    delay_after: u64,
+) -> BoxedError {
     if ctrl_c.aborted() {
         raise("# Execution aborted by user!")
     } else {
         let (r, n, s) = (retrieved, num_retrieving, started.elapsed());
         info!("Dowloaded {} of {} documents in {:?}.", r, n, s);
         if retrieved > 0 {
-            wait_with_progress(params.transfer.delay_after, "Waiting after all processing...");
+            wait_with_progress(delay_after, "Waiting after all processing...");
         }
         Ok(())
     }

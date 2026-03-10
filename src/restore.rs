@@ -1,5 +1,11 @@
 use super::{
-    args::Restore, bars::*, connection::SolrClient, fails::*, helpers::*, ingest::*, state::*,
+    args::{ParallelArgs, Restore},
+    bars::*,
+    connection::SolrClient,
+    fails::*,
+    helpers::*,
+    ingest::*,
+    state::*,
 };
 use crossbeam_channel::{Receiver, Sender, bounded};
 use crossbeam_utils::thread;
@@ -76,56 +82,71 @@ fn unzip_archives_and_send(params: &Restore, found: &[PathBuf]) -> BoxedResult<u
             debug!("Finished generator thread");
         });
 
-        for ir in 0..transfer.readers {
-            let producer = sender.clone();
-            let iterator = sequence.clone();
+        start_archive_readers(pool, transfer, sequence, sender);
 
-            let reader = ir;
-            let thread_name = format!("Reader_{}", reader);
-            pool.builder()
-                .name(thread_name)
-                .spawn(move |_| {
-                    debug!("Started reader #{}", reader);
-                    start_reading_archive(reader, iterator, producer);
-                    debug!("Finished reader #{}", reader);
-                })
-                .unwrap();
-        }
-        drop(sequence);
-        drop(sender);
-
-        let update_errors = Arc::new(AtomicU64::new(0));
         let update_hadler_url = params.get_update_url();
         debug!("Solr Update Handler: {}", update_hadler_url);
 
-        for iw in 0..transfer.writers {
-            let consumer = receiver.clone();
-            let updater = progress.clone();
-
-            let url = update_hadler_url.clone();
-            let arcerr = Arc::clone(&update_errors);
-            let merr = params.transfer.max_errors;
-            let delay = params.transfer.delay_per_request;
-
-            let writer = iw;
-            let thread_name = format!("Writer_{}", writer);
-            pool.builder()
-                .name(thread_name)
-                .spawn(move |_| {
-                    debug!("Started writer #{}", writer);
-                    start_indexing_docs(writer, &url, consumer, updater, &arcerr, merr, delay);
-                    debug!("Finished writer #{}", writer);
-                })
-                .unwrap();
-        }
-        drop(receiver);
-        drop(progress);
+        start_solr_writers(pool, transfer, receiver, progress, update_hadler_url);
 
         updated = foreach_progress(reporter, doc_count, 1, params.options.is_quiet());
     })
     .unwrap();
 
     finish_sending(params, updated)
+}
+
+fn start_archive_readers<'scope>(
+    pool: &thread::Scope<'scope>, transfer: &ParallelArgs, sequence: Receiver<&'scope Path>,
+    sender: Sender<Docs>,
+) {
+    for ir in 0..transfer.readers {
+        let producer = sender.clone();
+        let iterator = sequence.clone();
+
+        let reader = ir;
+        let thread_name = format!("Reader_{}", reader);
+
+        pool.builder()
+            .name(thread_name)
+            .spawn(move |_| {
+                debug!("Started reader #{}", reader);
+                start_reading_archive(reader, iterator, producer);
+                debug!("Finished reader #{}", reader);
+            })
+            .unwrap();
+    }
+    drop(sequence);
+    drop(sender);
+}
+
+fn start_solr_writers(
+    pool: &thread::Scope<'_>, transfer: &ParallelArgs, receiver: Receiver<Docs>,
+    progress: Sender<u64>, update_hadler_url: String,
+) {
+    let update_errors = Arc::new(AtomicU64::new(0));
+    let merr = transfer.max_errors;
+    let delay = transfer.delay_per_request;
+
+    for iw in 0..transfer.writers {
+        let consumer = receiver.clone();
+        let updater = progress.clone();
+        let arcerr = Arc::clone(&update_errors);
+        let url = update_hadler_url.clone();
+
+        let writer = iw;
+        let thread_name = format!("Writer_{}", writer);
+        pool.builder()
+            .name(thread_name)
+            .spawn(move |_| {
+                debug!("Started writer #{}", writer);
+                start_indexing_docs(writer, &url, consumer, updater, &arcerr, merr, delay);
+                debug!("Finished writer #{}", writer);
+            })
+            .unwrap();
+    }
+    drop(receiver);
+    drop(progress);
 }
 
 fn finish_sending(params: &Restore, updated: u64) -> BoxedResult<u64> {
