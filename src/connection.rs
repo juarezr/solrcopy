@@ -80,6 +80,10 @@ const SOLR_COPY_RETRIES: &str = "SOLR_COPY_RETRIES";
 
 const SOLR_DEF_TIMEOUT: isize = 60;
 
+const CONTENT_TYPE: &str = "Content-Type";
+const APPLICATION_JSON: &str = "application/json";
+const APPLICATION_XML: &str = "application/xml";
+
 #[cfg(debug_assertions)]
 const SOLR_DEF_RETRIES: isize = 1;
 #[cfg(not(debug_assertions))]
@@ -106,10 +110,17 @@ impl SolrClient {
         timeout.to_u64()
     }
 
-    pub(crate) fn get_as_text(&mut self, url: &str) -> Result<String, SolrError> {
-        trace!("GET {}", url);
+    pub(crate) fn get_as_json(&mut self, url: &str) -> Result<String, SolrError> {
+        self.get_with_content_type(url, APPLICATION_JSON)
+    }
+
+    pub(crate) fn get_with_content_type(
+        &mut self, url: &str, content_type: &str,
+    ) -> Result<String, SolrError> {
+        debug!("# curl --fail --location -X GET {}", url);
         loop {
-            let request = self.http.get(url);
+            let req = self.http.get(url);
+            let request = req.header(CONTENT_TYPE, content_type);
             let answer = request.call();
             let result = self.handle_response(answer);
             match result {
@@ -121,9 +132,8 @@ impl SolrClient {
 
     pub(crate) fn get_solr_info(&mut self, url: &str) -> Result<SolrInfo, SolrError> {
         let system_url = url.with_suffix("/").append("admin/info/system?wt=json");
-        debug!("GET {}", system_url);
 
-        let system_json = self.get_as_text(&system_url)?;
+        let system_json = self.get_as_json(&system_url)?;
 
         let parsed = serde_json::from_str::<serde_json::Value>(&system_json);
         let info = parsed.map_err(|e| SolrError::new(e.to_string(), 500))?;
@@ -146,11 +156,11 @@ impl SolrClient {
     }
 
     pub(crate) fn post_as_json(&mut self, url: &str, content: &str) -> Result<String, SolrError> {
-        self.post_with_content_type(url, "application/json", content)
+        self.post_with_content_type(url, APPLICATION_JSON, content)
     }
 
     pub(crate) fn post_as_xml(&mut self, url: &str, content: &str) -> Result<String, SolrError> {
-        self.post_with_content_type(url, "application/xml", content)
+        self.post_with_content_type(url, APPLICATION_XML, content)
     }
 
     fn post_with_content_type(
@@ -220,9 +230,9 @@ impl SolrClient {
 
     // region Helpers
 
-    pub(crate) fn query_get_as_text(url: &str) -> Result<String, SolrError> {
+    pub(crate) fn send_get_as_json(url: &str) -> Result<String, SolrError> {
         let mut con = SolrClient::new();
-        con.get_as_text(url)
+        con.get_as_json(url)
     }
 
     pub(crate) fn send_post_as_json(url: &str, content: &str) -> Result<String, SolrError> {

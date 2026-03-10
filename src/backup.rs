@@ -203,7 +203,7 @@ fn fetch_docs_from_solr(
 ) -> Result<String, ()> {
     let mut times = 0;
     loop {
-        let response = client.get_as_text(query_url);
+        let response = client.get_as_json(query_url);
         match response {
             Err(cause) => {
                 error!("Error in thread #{} retrieving docs from solr: {}", reader, cause);

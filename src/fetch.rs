@@ -15,7 +15,7 @@ impl Backup {
 
         let mut res = SolrCore { num_found: 0, fields: vec![] };
         for it in 0..times {
-            let json = SolrClient::query_get_as_text(&diagnostics_query_url)?;
+            let json = SolrClient::send_get_as_json(&diagnostics_query_url)?;
             if let Ok(next) = SolrCore::parse_core_schema(self, &json) {
                 debug!("#{} Solr query returned num_found: {}", it, next.num_found);
                 if next.num_found > res.num_found {

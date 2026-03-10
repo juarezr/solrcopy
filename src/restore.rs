@@ -166,7 +166,7 @@ fn pre_post_processing(params: &Restore, enable: bool) -> BoxedResult<()> {
         info!("Now {} replication in {}.", verb, core);
 
         let url = params.options.get_core_handler_url(handler_path);
-        SolrClient::query_get_as_text(&url)?;
+        SolrClient::send_get_as_json(&url)?;
     }
     Ok(())
 }
