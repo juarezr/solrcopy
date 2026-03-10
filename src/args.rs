@@ -539,6 +539,8 @@ impl Commands {
             Self::Restore(put) => Some(&put.options),
             Self::Commit(com) => Some(&com.options),
             Self::Delete(del) => Some(&del.options),
+            Self::Create(cre) => Some(&cre.options),
+            Self::Info(inf) => Some(&inf.options),
             _ => None,
         }
     }
