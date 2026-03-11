@@ -78,11 +78,11 @@ pub(crate) struct Backup {
     pub order: Vec<SortField>,
 
     /// Skip this quantity of documents in the Solr Query
-    #[arg(short = 'k', long, display_order = 43, value_parser = parse_quantity, default_value_t = 0, value_name = "quantity")]
+    #[arg(short = 'k', long, display_order = 43, value_parser = parse_quantity, default_value_t = 0, value_name = "quantity", conflicts_with = "iterate_by")]
     pub skip: u64,
 
     /// Maximum quantity of documents for retrieving from the core (like 100M)
-    #[arg(short, long, display_order = 44, value_parser = parse_quantity, value_name = "quantity")]
+    #[arg(short, long, display_order = 44, value_parser = parse_quantity, value_name = "quantity", conflicts_with = "iterate_by")]
     pub limit: Option<u64>,
 
     /// Names of core fields retrieved in each document [default: all but _*]
@@ -95,7 +95,7 @@ pub(crate) struct Backup {
 
     /// Slice the queries by using the variables {begin} and {end} for iterating in `--query`
     /// Used in bigger solr cores with huge number of docs because querying the end of docs is expensive and fails frequently
-    #[arg(short, long, display_order = 50, default_value_t = IterateMode::Day, value_name = "mode", value_enum)]
+    #[arg(short, long, display_order = 50, default_value_t = IterateMode::Day, value_name = "mode", requires = "iterate_between", value_enum)]
     pub iterate_by: IterateMode,
 
     /// The range of dates/numbers for iterating the queries throught slices.
