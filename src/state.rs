@@ -1,5 +1,7 @@
 use log::{debug, error};
-use simplelog::{ColorChoice, CombinedLogger, Config, SharedLogger, TermLogger, WriteLogger};
+use simplelog::{
+    ColorChoice, CombinedLogger, ConfigBuilder, SharedLogger, TermLogger, WriteLogger,
+};
 use std::fs::File;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -41,18 +43,19 @@ fn start_monitoring_term_sinal() -> Arc<AtomicBool> {
 
 impl LoggingArgs {
     pub(crate) fn start_log(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let cfg = ConfigBuilder::new().add_filter_ignore("ureq".to_string()).build();
         let mut enabled: Vec<Box<dyn SharedLogger>> = Vec::new();
         if !self.is_quiet() {
             enabled.push(TermLogger::new(
                 self.log_level,
-                Config::default(),
+                cfg.clone(),
                 self.log_mode,
                 ColorChoice::Auto,
             ));
         }
         if let Some(filepath) = &self.log_file_path {
             let file_to_log = File::create(filepath).unwrap();
-            enabled.push(WriteLogger::new(self.log_level, Config::default(), file_to_log));
+            enabled.push(WriteLogger::new(self.log_level, cfg, file_to_log));
         }
         CombinedLogger::init(enabled).unwrap();
         Ok(())
