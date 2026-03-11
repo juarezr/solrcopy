@@ -28,6 +28,7 @@ pub(crate) struct SliceItem {
 
 #[derive(Debug, Clone)]
 pub(crate) struct Requests {
+    pub prev: u64,
     pub curr: u64,
     pub limit: u64,
     pub num_docs: u64,
@@ -51,7 +52,8 @@ impl Slices<String> {
         res
     }
 
-    pub(crate) fn estimate_steps(&self) -> BoxedResult<u64> {
+    #[allow(dead_code)]
+    pub(crate) fn estimate_num_slices(&self) -> BoxedResult<u64> {
         if self.curr.is_empty() {
             return Ok(1);
         }
@@ -191,18 +193,6 @@ impl Iterator for Slices<NaiveDateTime> {
     }
 }
 
-impl SliceItem {
-    pub(crate) fn filter(&self, step: Step) -> Step {
-        if self.begin.is_empty() {
-            step
-        } else {
-            let query =
-                replace_solr_vars(step.url.as_str(), self.begin.as_str(), self.end.as_str());
-            Step { url: query, curr: step.curr }
-        }
-    }
-}
-
 impl Requests {
     pub(crate) fn len(&self) -> u64 {
         let res = self.limit / self.num_docs;
@@ -218,7 +208,7 @@ impl Iterator for Requests {
             let remaining = self.limit - self.curr;
             let rows = self.num_docs.min(remaining);
             let query = format!("{}&start={}&rows={}", self.url, self.curr, rows);
-            let res = Step { url: query, curr: self.curr };
+            let res = Step { url: query, curr: self.prev + self.curr };
             self.curr += self.num_docs;
             Some(res)
         } else {
@@ -251,7 +241,7 @@ fn format_solr_time(date_time: NaiveDateTime) -> String {
 // region Solr requests
 
 impl Backup {
-    pub(crate) fn get_archive_pattern(&self, num_found: u64) -> String {
+    pub(crate) fn get_archive_pattern(&self, num_retrieve: u64) -> String {
         let prefix = match &self.archive_prefix {
             Some(text) => text.to_string(),
             None => {
@@ -261,24 +251,15 @@ impl Backup {
             }
         };
         let ext = self.archive_compression.get_ext();
-        format!("{}_docs_{}_seq_{}.{}", prefix, num_found, BRACKETS, ext)
+        format!("{}_docs_{}_seq_{}.{}", prefix, num_retrieve, BRACKETS, ext)
     }
 
-    pub(crate) fn estimate_docs_quantity(
-        &self, schema: &SolrCore, slices: &Slices<String>,
-    ) -> BoxedResult<u64> {
-        let end_limit = self.get_docs_to_retrieve(schema);
-        let num_retrieving = end_limit - self.skip;
-
-        let slice_count = slices.estimate_steps()?;
-        Ok(num_retrieving * slice_count)
+    pub(crate) fn get_docs_to_retrieve(&self, num_found: u64) -> u64 {
+        let num_retrieve = num_found - self.skip;
+        num_retrieve.min(self.limit.unwrap_or(u64::MAX))
     }
 
-    pub(crate) fn get_docs_to_retrieve(&self, schema: &SolrCore) -> u64 {
-        schema.num_found.min(self.limit.unwrap_or(u64::MAX))
-    }
-
-    pub(crate) fn get_steps(&self, schema: &SolrCore) -> Requests {
+    pub(crate) fn merge_core_fields(&self, schema: &SolrCore) -> Vec<String> {
         let include_hash: HashSet<String> = HashSet::from_iter(schema.fields.clone());
         let exclude_hash: HashSet<String> = HashSet::from_iter(self.exclude.clone());
         let diff: Vec<String> = include_hash.difference(&exclude_hash).map(String::from).collect();
@@ -286,14 +267,24 @@ impl Backup {
         debug!("Include fields {:?}", include_hash);
         debug!("Exclude fields {:?}", exclude_hash);
         debug!("Actual fields  {:?}", diff);
-
-        let fl = self.get_query_fields(diff);
-        let query = self.get_query_url(&fl, true);
-        let end_limit = self.get_docs_to_retrieve(schema);
-        Requests { curr: self.skip, limit: end_limit, num_docs: self.num_docs, url: query }
+        diff
     }
 
-    pub(crate) fn get_query_fields(&self, core_fields: Vec<String>) -> String {
+    pub(crate) fn get_requests_for_range(
+        &self, retrieved: u64, num_retrieve: u64, core_fields: &[String], begin: &str, end: &str,
+    ) -> Requests {
+        let selected = self.get_query_fields(core_fields);
+        let query = self.get_query_url(&selected, begin, end);
+        Requests {
+            prev: retrieved,
+            curr: self.skip,
+            limit: num_retrieve,
+            num_docs: self.num_docs,
+            url: query,
+        }
+    }
+
+    pub(crate) fn get_query_fields(&self, core_fields: &[String]) -> String {
         if core_fields.is_empty() {
             EMPTY_STRING
         } else {
@@ -303,23 +294,22 @@ impl Backup {
     }
 
     pub(crate) fn get_query_for_diagnostics(&self) -> String {
-        let url = self.get_query_url(EMPTY_STR, false);
-        format!("{}&start=0&rows=1", url)
+        let (begin, end) = self.get_between();
+        self.get_query_num_found(begin, end)
     }
 
-    pub(crate) fn replace_vars(&self, query: &str, raw: bool) -> String {
-        if raw || self.iterate_between.is_empty() {
-            query.to_string()
-        } else {
-            let (begin, end) = self.get_between();
-            replace_solr_vars(query, begin, end)
-        }
+    pub(crate) fn get_query_num_found(&self, begin: &str, end: &str) -> String {
+        self.get_query_url("&start=0&rows=1", begin, end)
     }
 
-    pub(crate) fn get_query_url(&self, selected: &str, raw: bool) -> String {
+    pub(crate) fn get_query_url(&self, selected: &str, begin: &str, end: &str) -> String {
         let qparam = self.query.as_deref().unwrap_or("*:*");
-        let qfixed = self.replace_vars(qparam, raw);
-        let filterq = solr_query(&qfixed);
+        let qfixed = if begin.is_empty() || end.is_empty() {
+            qparam
+        } else {
+            &replace_solr_vars(qparam, begin, end)
+        };
+        let filterq = solr_query(qfixed);
         let fqparam = self.fq.as_deref().unwrap_or("*:*");
         let filterfq = solr_query(fqparam);
 
@@ -353,7 +343,7 @@ impl Backup {
         }
     }
 
-    fn get_between(&self) -> (&str, &str) {
+    pub(crate) fn get_between(&self) -> (&str, &str) {
         if self.iterate_between.is_empty() {
             (EMPTY_STR, EMPTY_STR)
         } else {
@@ -400,10 +390,13 @@ mod tests {
         let parsed = Cli::mockup_args_backup();
         let gets = parsed.get().unwrap();
         let core_info = SolrCore::mockup();
-        let query = gets.get_query_url(EMPTY_STR, true);
+        let query = gets.get_query_url(EMPTY_STR, EMPTY_STR, EMPTY_STR);
+        let num_retrieve = gets.get_docs_to_retrieve(core_info.num_found);
 
         let mut i = 0;
-        for step in gets.get_steps(&core_info) {
+        for step in
+            gets.get_requests_for_range(0, num_retrieve, &core_info.fields, EMPTY_STR, EMPTY_STR)
+        {
             let url = step.url;
             assert_eq!(url.is_empty(), false);
             assert_eq!(url.starts_with(&query), true);
