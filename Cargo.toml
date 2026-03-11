@@ -2,7 +2,7 @@
 name = "solrcopy"
 version = "0.8.1"
 edition = "2024"
-rust-version = "1.85.1"
+rust-version = "1.88"
 
 authors = ["Juarez Rudsatz <juarezr@gmail.com>"]
 description = "Command line tool useful for migration, transformations, backup, and restore of documents stored inside cores of Apache Solr"
