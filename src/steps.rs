@@ -206,7 +206,7 @@ impl SliceItem {
 impl Requests {
     pub(crate) fn len(&self) -> u64 {
         let res = self.limit / self.num_docs;
-        if self.limit % self.num_docs == 0 { res } else { res + 1 }
+        if self.limit.is_multiple_of(self.num_docs) { res } else { res + 1 }
     }
 }
 

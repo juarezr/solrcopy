@@ -14,6 +14,7 @@
 #![deny(unused_extern_crates)]
 #![deny(unused_must_use)]
 #![deny(unused_import_braces)]
+#![deny(unused_imports)]
 
 // endregion
 
@@ -21,8 +22,10 @@
 
 // #![allow(unused_variables)]
 // #![allow(unused_imports)]
+// #![allow(unused_import_braces)]
 // #![allow(dead_code)]
 // #![allow(unreachable_code)]
+// #![allow(unused)]
 
 // endregion
 
