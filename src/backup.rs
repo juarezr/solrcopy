@@ -1,6 +1,6 @@
 use super::{
     args::Backup,
-    bars::{foreach_progress, wait_with_progress},
+    bars::{forall_progress, wait_with_progress},
     connection::SolrClient,
     fails::{BoxedError, raise},
     helpers::{IntegerHelpers, wait, wait_by},
@@ -61,8 +61,7 @@ pub(crate) fn backup_main(params: &Backup) -> BoxedError {
 
         start_archive_writers(pool, params, receiver, progress, num_found);
 
-        retrieved =
-            foreach_progress(reporter, num_retrieving, params.num_docs, params.options.is_quiet());
+        retrieved = forall_progress(reporter, num_retrieving, params.options.is_quiet());
     })
     .unwrap();
 
@@ -137,7 +136,7 @@ fn finish_writing(
         let (r, n, s) = (retrieved, num_retrieving, started.elapsed());
         info!("Dowloaded {} of {} documents in {:?}.", r, n, s);
         if retrieved > 0 {
-            wait_with_progress(delay_after, "Waiting after all processing...");
+            wait_with_progress(delay_after, "Exporting documents to archives...");
         }
         Ok(())
     }
@@ -268,7 +267,8 @@ fn start_storing_docs(
                     error!("Error in thread #{} writing file into archive: {}", writer, cause);
                     break;
                 }
-                let status = progress.send(0);
+                let num_docs = docs.step.curr;
+                let status = progress.send(num_docs);
                 if status.is_err() {
                     break;
                 }

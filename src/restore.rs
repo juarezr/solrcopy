@@ -39,7 +39,7 @@ pub(crate) fn restore_main(params: &Restore) -> BoxedError {
 
     wait_with_progress(
         params.transfer.delay_before,
-        &format!("Waiting before processing {}...", core),
+        &format!("Starting restore for core {}...", core),
     );
 
     pre_post_processing(params, false)?;
@@ -53,7 +53,7 @@ pub(crate) fn restore_main(params: &Restore) -> BoxedError {
     pre_post_processing(params, true)?;
 
     if updated > 0 {
-        wait_with_progress(params.transfer.delay_after, "Waiting after all processing...");
+        wait_with_progress(params.transfer.delay_after, "Restoring documents...");
     }
     Ok(())
 }
@@ -89,7 +89,7 @@ fn unzip_archives_and_send(params: &Restore, found: &[PathBuf]) -> BoxedResult<u
 
         start_solr_writers(pool, transfer, receiver, progress, update_hadler_url);
 
-        updated = foreach_progress(reporter, doc_count, 1, params.options.is_quiet());
+        updated = foreach_progress(reporter, doc_count, params.options.is_quiet());
     })
     .unwrap();
 
@@ -290,7 +290,7 @@ fn send_to_solr(
         );
         current > max_errors
     } else {
-        let status = progress.send(0);
+        let status = progress.send(1);
         status.is_err()
     }
 }

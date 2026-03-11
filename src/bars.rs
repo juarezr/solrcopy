@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 
-use super::helpers::IntegerHelpers;
 use crossbeam_channel::Receiver;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::time::{Duration, Instant};
@@ -31,15 +30,31 @@ fn new_time_bar(len: u64) -> ProgressBar {
 
 // region implementarion
 
-pub(crate) fn foreach_progress(
-    reporter: Receiver<u64>, num_retrieving: u64, num_increment: u64, quiet: bool,
-) -> u64 {
+pub(crate) fn foreach_progress(reporter: Receiver<u64>, total: u64, quiet: bool) -> u64 {
     let mut updated = 0;
-    let perc_bar = if quiet { None } else { Some(new_wide_bar(num_retrieving.to_u64())) };
-    for _ in reporter.iter() {
+    let perc_bar = if quiet { None } else { Some(new_wide_bar(total)) };
+    for num_increment in reporter.iter() {
         if let Some(prog) = &perc_bar {
-            prog.inc(num_increment.to_u64());
+            prog.inc(num_increment);
             updated += num_increment;
+        }
+    }
+    if let Some(pg) = perc_bar {
+        pg.finish_and_clear();
+    }
+    drop(reporter);
+    updated
+}
+
+pub(crate) fn forall_progress(reporter: Receiver<u64>, total: u64, quiet: bool) -> u64 {
+    let mut updated = 0;
+    let perc_bar = if quiet { None } else { Some(new_wide_bar(total)) };
+    for position in reporter.iter() {
+        if position > updated
+            && let Some(prog) = &perc_bar
+        {
+            prog.set_position(position);
+            updated = position;
         }
     }
     if let Some(pg) = perc_bar {
@@ -51,13 +66,13 @@ pub(crate) fn foreach_progress(
 
 pub(crate) fn wait_with_progress(millis: u64, message: &str) {
     if millis > 10 {
-        let delta = millis.min(500).to_u64();
+        let delta = millis.min(500);
         let delay = Duration::from_millis(delta);
 
         let started = Instant::now();
-        let deadline = started + Duration::from_millis(millis.to_u64());
+        let deadline = started + Duration::from_millis(millis);
 
-        let time_bar = new_time_bar(millis.to_u64());
+        let time_bar = new_time_bar(millis);
         if !message.is_empty() {
             // time_bar.println(message);
             time_bar.set_message(message.to_owned());
