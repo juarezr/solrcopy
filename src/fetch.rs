@@ -17,7 +17,7 @@ impl Backup {
         for it in 0..times {
             let json = SolrClient::send_get_as_json(&diagnostics_query_url)?;
             if let Ok(next) = SolrCore::parse_core_schema(self, &json) {
-                debug!("#{} Solr query returned num_found: {}", it, next.num_found);
+                trace!("#{} Solr query returned num_found: {}", it, next.num_found);
                 if next.num_found > res.num_found {
                     res = next;
                 }

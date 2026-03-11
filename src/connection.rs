@@ -117,7 +117,7 @@ impl SolrClient {
     pub(crate) fn get_with_content_type(
         &mut self, url: &str, content_type: &str,
     ) -> Result<String, SolrError> {
-        debug!("# curl --fail --location -X GET {}", url);
+        trace!("# curl --fail --location -X GET {}", url);
         loop {
             let req = self.http.get(url);
             let request = req.header(CONTENT_TYPE, content_type);
@@ -166,7 +166,7 @@ impl SolrClient {
     fn post_with_content_type(
         &mut self, url: &str, content_type: &str, content: &str,
     ) -> Result<String, SolrError> {
-        debug!("# curl --fail --location -X POST -H 'Content-Type: {}' {}", content_type, url);
+        trace!("# curl --fail --location -X POST -H 'Content-Type: {}' {}", content_type, url);
         loop {
             let req = self.http.post(url);
             let request = req.header(CONTENT_TYPE, content_type);
@@ -188,7 +188,7 @@ impl SolrClient {
                 if self.retry_count > 0 {
                     self.retry_count -= 1;
                 }
-                trace!("# Response: {}", content);
+                // trace!("# Response: {}", content);
                 Some(Ok(content))
             }
             Err(failure) => {
@@ -203,7 +203,7 @@ impl SolrClient {
                     wait(SOLR_WAIT_SECS * self.retry_count);
                     None
                 } else {
-                    trace!("# Failure: {}", failure);
+                    debug!("# Failure: {}", failure);
                     Some(Err(failure))
                 }
             }
