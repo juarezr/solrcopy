@@ -32,6 +32,7 @@ pub(crate) struct Requests {
     pub curr: u64,
     pub limit: u64,
     pub num_docs: u64,
+    pub expected: u64,
     pub url: String,
 }
 
@@ -208,7 +209,7 @@ impl Iterator for Requests {
             let remaining = self.limit - self.curr;
             let rows = self.num_docs.min(remaining);
             let query = format!("{}&start={}&rows={}", self.url, self.curr, rows);
-            let res = Step { url: query, curr: self.prev + self.curr };
+            let res = Step { url: query, curr: self.prev + self.curr, expected: self.expected };
             self.curr += self.num_docs;
             Some(res)
         } else {
@@ -271,7 +272,8 @@ impl Backup {
     }
 
     pub(crate) fn get_requests_for_range(
-        &self, retrieved: u64, num_retrieve: u64, core_fields: &[String], begin: &str, end: &str,
+        &self, retrieved: u64, num_retrieve: u64, core_fields: &[String], expected: u64,
+        begin: &str, end: &str,
     ) -> Requests {
         let selected = self.get_query_fields(core_fields);
         let query = self.get_query_url(&selected, begin, end);
@@ -280,6 +282,7 @@ impl Backup {
             curr: self.skip,
             limit: num_retrieve,
             num_docs: self.num_docs,
+            expected,
             url: query,
         }
     }
@@ -395,7 +398,7 @@ mod tests {
 
         let mut i = 0;
         for step in
-            gets.get_requests_for_range(0, num_retrieve, &core_info.fields, EMPTY_STR, EMPTY_STR)
+            gets.get_requests_for_range(0, num_retrieve, &core_info.fields, 0, EMPTY_STR, EMPTY_STR)
         {
             let url = step.url;
             assert_eq!(url.is_empty(), false);

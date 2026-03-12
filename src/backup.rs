@@ -54,7 +54,7 @@ pub(crate) fn backup_main(params: &Backup) -> BoxedError {
             })
             .unwrap();
 
-        let reader_handles = start_solr_readers(pool, params, sender, sequence, num_found);
+        let reader_handles = start_solr_readers(pool, params, sender, sequence);
 
         let writer_handles = start_archive_writers(pool, params, receiver, progress, num_retrieve);
 
@@ -80,11 +80,10 @@ pub(crate) fn backup_main(params: &Backup) -> BoxedError {
 
 fn start_solr_readers<'scope>(
     pool: &'scope thread::Scope<'scope, '_>, params: &Backup, sender: Sender<Documents>,
-    sequence: Receiver<Step>, num_found: u64,
+    sequence: Receiver<Step>,
 ) -> Vec<thread::ScopedJoinHandle<'scope, ()>> {
     let merr = params.transfer.max_errors;
     let delay = params.transfer.delay_per_request;
-    let must_match = if params.workaround_shards > 0 { num_found } else { 0 };
 
     let mut handles = vec![];
 
@@ -99,7 +98,7 @@ fn start_solr_readers<'scope>(
             .name(thread_name)
             .spawn_scoped(pool, move || {
                 debug!("Started reader #{}", reader);
-                start_retrieving_docs(reader, iterator, producer, must_match, merr, delay);
+                start_retrieving_docs(reader, iterator, producer, merr, delay);
                 debug!("Finished reader #{}", reader);
             })
             .unwrap();
@@ -175,11 +174,13 @@ fn start_querying_core(params: &Backup, schema: &SolrCore, generator: Sender<Ste
         if num_found == 0 {
             continue;
         }
+        let expected = if params.workaround_shards > 0 { num_found } else { 0 };
         let num_retrieve = params.get_docs_to_retrieve(num_found);
         let requests: Requests = params.get_requests_for_range(
             retrieved,
             num_retrieve,
             &core_fields,
+            expected,
             &range.begin,
             &range.end,
         );
@@ -195,8 +196,7 @@ fn start_querying_core(params: &Backup, schema: &SolrCore, generator: Sender<Ste
 }
 
 fn start_retrieving_docs(
-    reader: u64, iterator: Receiver<Step>, producer: Sender<Documents>, must_match: u64,
-    max_errors: u64, delay: u64,
+    reader: u64, iterator: Receiver<Step>, producer: Sender<Documents>, max_errors: u64, delay: u64,
 ) {
     let ctrl_c = monitor_term_sinal();
     let mut error_count = 0;
@@ -208,7 +208,7 @@ fn start_retrieving_docs(
             break;
         }
         let failed = match received {
-            Ok(step) => retrieve_docs_from_solr(reader, &producer, step, &mut client, must_match),
+            Ok(step) => retrieve_docs_from_solr(reader, &producer, step, &mut client),
             Err(_) => true,
         };
         if failed {
@@ -228,10 +228,10 @@ fn start_retrieving_docs(
 }
 
 fn retrieve_docs_from_solr(
-    reader: u64, producer: &Sender<Documents>, step: Step, client: &mut SolrClient, must_match: u64,
+    reader: u64, producer: &Sender<Documents>, step: Step, client: &mut SolrClient,
 ) -> bool {
     let query_url = step.url.as_str();
-    let response = fetch_docs_from_solr(reader, client, query_url, must_match);
+    let response = fetch_docs_from_solr(reader, client, query_url, step.expected);
     match response {
         Err(_) => true,
         Ok(content) => {
@@ -252,7 +252,7 @@ fn retrieve_docs_from_solr(
 }
 
 fn fetch_docs_from_solr(
-    reader: u64, client: &mut SolrClient, query_url: &str, must_match: u64,
+    reader: u64, client: &mut SolrClient, query_url: &str, expected: u64,
 ) -> Result<String, ()> {
     let mut times = 0;
     loop {
@@ -263,13 +263,13 @@ fn fetch_docs_from_solr(
                 return Err(());
             }
             Ok(content) => {
-                if must_match > 0 {
+                if expected > 0 {
                     match SolrCore::parse_num_found(&content) {
                         Ok(num_found) => {
-                            if must_match != num_found.to_u64() && times < 13 {
+                            if expected != num_found.to_u64() && times < 13 {
                                 debug!(
                                     "#{} got num_found {} but expected {}",
-                                    times, num_found, must_match
+                                    times, num_found, expected
                                 );
                                 times += 1;
                                 wait(times);
