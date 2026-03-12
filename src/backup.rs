@@ -10,9 +10,8 @@ use super::{
     steps::{Requests, Slices},
 };
 use crossbeam_channel::{Receiver, Sender, bounded};
-use crossbeam_utils::thread;
-use log::{debug, error, info, trace};
-use std::sync::{Arc, atomic::AtomicBool};
+use log::{debug, error, info};
+use std::thread;
 use std::{path::PathBuf, time::Instant};
 
 pub(crate) fn backup_main(params: &Backup) -> BoxedError {
@@ -36,7 +35,6 @@ pub(crate) fn backup_main(params: &Backup) -> BoxedError {
         params.options.core
     );
 
-    let ctrl_c = monitor_term_sinal();
     let started = Instant::now();
 
     thread::scope(|pool| {
@@ -49,32 +47,46 @@ pub(crate) fn backup_main(params: &Backup) -> BoxedError {
         let (sender, receiver) = bounded::<Documents>(writers_channel.to_usize());
         let (progress, reporter) = bounded::<u64>(transfer.writers.to_usize());
 
-        pool.spawn(|_| {
-            debug!("Started generator thread");
-            start_querying_core(params, &schema, generator, &ctrl_c);
-            debug!("Finished generator thread");
-        });
+        let gen_handle = thread::Builder::new()
+            .name("Generator".to_string())
+            .spawn_scoped(pool, || {
+                start_querying_core(params, &schema, generator);
+            })
+            .unwrap();
 
-        start_solr_readers(pool, params, sender, sequence, num_found);
+        let reader_handles = start_solr_readers(pool, params, sender, sequence, num_found);
 
-        start_archive_writers(pool, params, receiver, progress, num_retrieve);
+        let writer_handles = start_archive_writers(pool, params, receiver, progress, num_retrieve);
 
-        retrieved = forall_progress(reporter, num_retrieve, params.options.is_quiet());
-    })
-    .unwrap();
+        let bar_handle = thread::Builder::new()
+            .name("Generator".to_string())
+            .spawn_scoped(pool, || {
+                retrieved = forall_progress(reporter, num_retrieve, params.options.is_quiet());
+            })
+            .unwrap();
 
-    // TODO: handle the finished thread with join
+        let mut handles = vec![];
+        handles.push(gen_handle);
+        handles.extend(reader_handles);
+        handles.extend(writer_handles);
+        handles.push(bar_handle);
+        for handle in handles {
+            handle.join().unwrap();
+        }
+    });
 
-    finish_writing(ctrl_c, started, num_retrieve, retrieved, params.transfer.delay_after)
+    finish_progress(started, num_retrieve, retrieved, params.transfer.delay_after)
 }
 
-fn start_solr_readers(
-    pool: &thread::Scope<'_>, params: &Backup, sender: Sender<Documents>, sequence: Receiver<Step>,
-    num_found: u64,
-) {
+fn start_solr_readers<'scope>(
+    pool: &'scope thread::Scope<'scope, '_>, params: &Backup, sender: Sender<Documents>,
+    sequence: Receiver<Step>, num_found: u64,
+) -> Vec<thread::ScopedJoinHandle<'scope, ()>> {
     let merr = params.transfer.max_errors;
     let delay = params.transfer.delay_per_request;
     let must_match = if params.workaround_shards > 0 { num_found } else { 0 };
+
+    let mut handles = vec![];
 
     for ir in 0..params.transfer.readers {
         let producer = sender.clone();
@@ -83,26 +95,30 @@ fn start_solr_readers(
         let reader = ir;
         let thread_name = format!("Reader_{}", reader);
 
-        pool.builder()
+        let handle = thread::Builder::new()
             .name(thread_name)
-            .spawn(move |_| {
+            .spawn_scoped(pool, move || {
                 debug!("Started reader #{}", reader);
                 start_retrieving_docs(reader, iterator, producer, must_match, merr, delay);
                 debug!("Finished reader #{}", reader);
             })
             .unwrap();
+        handles.push(handle);
     }
     drop(sequence);
     drop(sender);
+    handles
 }
 
-fn start_archive_writers(
-    pool: &thread::Scope<'_>, params: &Backup, receiver: Receiver<Documents>,
+fn start_archive_writers<'scope>(
+    pool: &'scope thread::Scope<'scope, '_>, params: &Backup, receiver: Receiver<Documents>,
     progress: Sender<u64>, num_retrieve: u64,
-) {
+) -> Vec<thread::ScopedJoinHandle<'scope, ()>> {
     let output_pat = params.get_archive_pattern(num_retrieve);
     let max = params.archive_files;
     let comp = params.archive_compression;
+
+    let mut handles = vec![];
 
     for iw in 0..params.transfer.writers {
         let consumer = receiver.clone();
@@ -113,39 +129,41 @@ fn start_archive_writers(
         let writer = iw;
         let thread_name = format!("Writer_{}", writer);
 
-        pool.builder()
+        let handle = thread::Builder::new()
             .name(thread_name)
-            .spawn(move |_| {
+            .spawn_scoped(pool, move || {
                 debug!("Started writer #{}", writer);
                 start_storing_docs(writer, dir, name, comp, max, consumer, updater);
                 debug!("Finished writer #{}", writer);
             })
             .unwrap();
+        handles.push(handle);
     }
     drop(receiver);
     drop(progress);
+    handles
 }
 
-fn finish_writing(
-    ctrl_c: Arc<AtomicBool>, started: Instant, num_retrieve: u64, retrieved: u64, delay_after: u64,
+fn finish_progress(
+    started: Instant, num_retrieve: u64, retrieved: u64, delay_after: u64,
 ) -> BoxedError {
+    let ctrl_c = monitor_term_sinal();
     if ctrl_c.aborted() {
         raise("# Execution aborted by user!")
     } else {
+        if retrieved > 0 {
+            wait_with_progress(delay_after, "Finished exporting documents to archives...");
+        }
         let (r, n, s) = (retrieved, num_retrieve, started.elapsed());
         info!("Downloaded {} of {} documents in {:?}.", r, n, s);
-        if retrieved > 0 {
-            wait_with_progress(delay_after, "Exporting documents to archives...");
-        }
         Ok(())
     }
 }
 
 // region Channels
 
-fn start_querying_core(
-    params: &Backup, schema: &SolrCore, generator: Sender<Step>, ctrl_c: &Arc<AtomicBool>,
-) {
+fn start_querying_core(params: &Backup, schema: &SolrCore, generator: Sender<Step>) {
+    let ctrl_c = monitor_term_sinal();
     let core_fields = params.merge_core_fields(schema);
 
     let slices: Slices<String> = params.get_slices();
@@ -248,8 +266,11 @@ fn fetch_docs_from_solr(
                 if must_match > 0 {
                     match SolrCore::parse_num_found(&content) {
                         Ok(num_found) => {
-                            trace!("#{} got num_found {} not {}", times, num_found, must_match);
                             if must_match != num_found.to_u64() && times < 13 {
+                                debug!(
+                                    "#{} got num_found {} but expected {}",
+                                    times, num_found, must_match
+                                );
                                 times += 1;
                                 wait(times);
                                 continue;
