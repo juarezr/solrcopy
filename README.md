@@ -42,13 +42,20 @@ Extracting and updating documents in huge cores can be challenging. It can take 
 
 Bellow some tricks for dealing with such cores:
 
-1. For reducing time, you can use the switches `--readers`  and `--writers` for executing operations in parallel.
+1. For reducing time, you can use the switches `--readers`  and `--writers` for executing operations in parallel. Make sure the sum of this parameters fits the number of threads that your processor cores can handle.
 2. When the number of docs to extract is huge, `backup` subcommand tend to slow as times goes and eventually fails. This is because Solr is suffers to get docs batches with hight skip/start parameters. For dealing with this:
    1. Use the parameters `--iterate-by`n `between` and `--step`for iterating through parameter `--query` with variables `{begin}` and `{end}`.
    2. This way it will iterate and restrict by hour, day, range the docs being downloaded.
    3. For example: `--query 'date:[{begin} TO {end}]' --iterate-by day --between '2020-04-01' '2020-04-30T23:59:59'`
+   4. Keep the number of iterations low by specifying the parameters `--step` and `--num-docs` to adequated values. As the process will run in two nested loops, the amount of time/effort will raise if the number of iterations increases.
 3. Use the parameter `--param shards=shard1` for copying by each shard by name in `backkup`subcommand.
 4. Use the parameter `--delay` for avoiding to overload the Solr server.
+
+### Non-Stored Fields
+
+ When you're backing up the index with `solrcopy`, this can result in a lossy process. In many cases, a core doesn't store fields that are only going to use for searching - and not for displaying. When backuping  with `solrcopy`, you'll lose ths information. You will not be able to restore the index so that it works the same as before and the data will be lost for good if the index disappears.
+
+In this case, if you need the value of the non-stored fields the proper way is to use the replication handler or the built-in backup feature in cloud mode.
 
 ### Command Line Arguments
 
