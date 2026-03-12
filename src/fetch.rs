@@ -1,5 +1,5 @@
 use super::{args::Backup, connection::SolrClient, fails::*, helpers::*, models::SolrCore};
-use log::debug;
+use log::{debug, trace};
 use regex::Regex;
 
 // region Solr Core
@@ -15,9 +15,9 @@ impl Backup {
 
         let mut res = SolrCore { num_found: 0, fields: vec![] };
         for it in 0..times {
-            let json = SolrClient::query_get_as_text(&diagnostics_query_url)?;
+            let json = SolrClient::send_get_as_json(&diagnostics_query_url)?;
             if let Ok(next) = SolrCore::parse_core_schema(self, &json) {
-                debug!("#{} Solr query returned num_found: {}", it, next.num_found);
+                trace!("#{} Solr query returned num_found: {}", it, next.num_found);
                 if next.num_found > res.num_found {
                     res = next;
                 }
@@ -31,6 +31,27 @@ impl Backup {
         }
         debug!("Core schema: {:?}", res);
         Ok(res)
+    }
+
+    pub(crate) fn query_num_found(&self, begin: &str, end: &str) -> BoxedResult<u64> {
+        // try sometimes for finding the greatest num_found of docs answered by the core
+        // Used for fixing problems with corrupted replicas of cores with more than 1 shard
+        let times = (self.workaround_shards * 5) + 1;
+        let mut prev_num_found = 0;
+        let query_url = self.get_query_num_found(begin, end);
+        for it in 0..times {
+            let json = SolrClient::send_get_as_json(&query_url)?;
+            if let Ok(num_found) = SolrCore::parse_num_found(&json) {
+                debug!(
+                    "#{} Solr query returned num_found={} for range {} to {}",
+                    it, num_found, begin, end
+                );
+                if num_found > prev_num_found {
+                    prev_num_found = num_found;
+                }
+            }
+        }
+        Ok(prev_num_found)
     }
 }
 

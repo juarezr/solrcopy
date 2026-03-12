@@ -389,7 +389,7 @@ Please also [check all available tasks](#available-tasks).
 # This command creates the container with a solr server with two cores: 'demo' and 'target'
 $ docker compose -f docker/docker-compose.yml up -d
 # Run this command to insert some data into the cores
-$ docker compose exec solr solr-ingest-all
+$ docker compose exec solr solr-ingest-examples
 # Run this command to test backup
 $ cargo run -- backup --url http://localhost:8983/solr --core demo --dir $PWD
 # Run this command to test restoring the backukp data into a existing empty core

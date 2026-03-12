@@ -1,5 +1,11 @@
 use super::{
-    args::Restore, bars::*, connection::SolrClient, fails::*, helpers::*, ingest::*, state::*,
+    args::{ParallelArgs, Restore},
+    bars::*,
+    connection::SolrClient,
+    fails::*,
+    helpers::*,
+    ingest::*,
+    state::*,
 };
 use crossbeam_channel::{Receiver, Sender, bounded};
 use crossbeam_utils::thread;
@@ -33,7 +39,7 @@ pub(crate) fn restore_main(params: &Restore) -> BoxedError {
 
     wait_with_progress(
         params.transfer.delay_before,
-        &format!("Waiting before processing {}...", core),
+        &format!("Starting restore for core {}...", core),
     );
 
     pre_post_processing(params, false)?;
@@ -47,7 +53,7 @@ pub(crate) fn restore_main(params: &Restore) -> BoxedError {
     pre_post_processing(params, true)?;
 
     if updated > 0 {
-        wait_with_progress(params.transfer.delay_after, "Waiting after all processing...");
+        wait_with_progress(params.transfer.delay_after, "Restoring documents...");
     }
     Ok(())
 }
@@ -71,58 +77,76 @@ fn unzip_archives_and_send(params: &Restore, found: &[PathBuf]) -> BoxedResult<u
         let (progress, reporter) = bounded::<u64>(transfer.writers.to_usize());
 
         pool.spawn(move |_| {
+            debug!("Started generator thread");
             start_listing_archives(found, generator);
             debug!("Finished generator thread");
         });
 
-        for ir in 0..transfer.readers {
-            let producer = sender.clone();
-            let iterator = sequence.clone();
+        start_archive_readers(pool, transfer, sequence, sender);
 
-            let reader = ir;
-            let thread_name = format!("Reader_{}", reader);
-            pool.builder()
-                .name(thread_name)
-                .spawn(move |_| {
-                    start_reading_archive(reader, iterator, producer);
-                    debug!("Finished reader #{}", reader);
-                })
-                .unwrap();
-        }
-        drop(sequence);
-        drop(sender);
-
-        let update_errors = Arc::new(AtomicU64::new(0));
         let update_hadler_url = params.get_update_url();
         debug!("Solr Update Handler: {}", update_hadler_url);
 
-        for iw in 0..transfer.writers {
-            let consumer = receiver.clone();
-            let updater = progress.clone();
+        start_solr_writers(pool, transfer, receiver, progress, update_hadler_url);
 
-            let url = update_hadler_url.clone();
-            let arcerr = Arc::clone(&update_errors);
-            let merr = params.transfer.max_errors;
-            let delay = params.transfer.delay_per_request;
-
-            let writer = iw;
-            let thread_name = format!("Writer_{}", writer);
-            pool.builder()
-                .name(thread_name)
-                .spawn(move |_| {
-                    start_indexing_docs(writer, &url, consumer, updater, &arcerr, merr, delay);
-                    debug!("Finished writer #{}", writer);
-                })
-                .unwrap();
-        }
-        drop(receiver);
-        drop(progress);
-
-        updated = foreach_progress(reporter, doc_count, 1, params.options.is_quiet());
+        updated = foreach_progress(reporter, doc_count, params.options.is_quiet());
     })
     .unwrap();
 
     finish_sending(params, updated)
+}
+
+fn start_archive_readers<'scope>(
+    pool: &thread::Scope<'scope>, transfer: &ParallelArgs, sequence: Receiver<&'scope Path>,
+    sender: Sender<Docs>,
+) {
+    for ir in 0..transfer.readers {
+        let producer = sender.clone();
+        let iterator = sequence.clone();
+
+        let reader = ir;
+        let thread_name = format!("Reader_{}", reader);
+
+        pool.builder()
+            .name(thread_name)
+            .spawn(move |_| {
+                debug!("Started reader #{}", reader);
+                start_reading_archive(reader, iterator, producer);
+                debug!("Finished reader #{}", reader);
+            })
+            .unwrap();
+    }
+    drop(sequence);
+    drop(sender);
+}
+
+fn start_solr_writers(
+    pool: &thread::Scope<'_>, transfer: &ParallelArgs, receiver: Receiver<Docs>,
+    progress: Sender<u64>, update_hadler_url: String,
+) {
+    let update_errors = Arc::new(AtomicU64::new(0));
+    let merr = transfer.max_errors;
+    let delay = transfer.delay_per_request;
+
+    for iw in 0..transfer.writers {
+        let consumer = receiver.clone();
+        let updater = progress.clone();
+        let arcerr = Arc::clone(&update_errors);
+        let url = update_hadler_url.clone();
+
+        let writer = iw;
+        let thread_name = format!("Writer_{}", writer);
+        pool.builder()
+            .name(thread_name)
+            .spawn(move |_| {
+                debug!("Started writer #{}", writer);
+                start_indexing_docs(writer, &url, consumer, updater, &arcerr, merr, delay);
+                debug!("Finished writer #{}", writer);
+            })
+            .unwrap();
+    }
+    drop(receiver);
+    drop(progress);
 }
 
 fn finish_sending(params: &Restore, updated: u64) -> BoxedResult<u64> {
@@ -166,7 +190,7 @@ fn pre_post_processing(params: &Restore, enable: bool) -> BoxedResult<()> {
         info!("Now {} replication in {}.", verb, core);
 
         let url = params.options.get_core_handler_url(handler_path);
-        SolrClient::query_get_as_text(&url)?;
+        SolrClient::send_get_as_json(&url)?;
     }
     Ok(())
 }
@@ -266,7 +290,7 @@ fn send_to_solr(
         );
         current > max_errors
     } else {
-        let status = progress.send(0);
+        let status = progress.send(1);
         status.is_err()
     }
 }
@@ -279,6 +303,7 @@ mod tests {
         args::{Cli, Commands, Restore},
         fails::{BoxedResult, raise},
     };
+    use log::debug;
     use pretty_assertions::assert_eq;
 
     impl Commands {
@@ -304,7 +329,7 @@ mod tests {
         let puts = parsed.put().unwrap();
 
         for zip in puts.find_archives().unwrap() {
-            println!("{:?}", zip);
+            debug!("{:?}", zip);
             let path = zip.to_str().unwrap();
             assert_eq!(path.ends_with(".zip"), true);
         }

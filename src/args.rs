@@ -50,6 +50,8 @@ pub(crate) enum Commands {
     Delete(Delete),
     /// Create a new empty core in the Solr instance
     Create(Execute),
+    /// Get information about the Solr instance
+    Info(Execute),
     /// Generates man page and completion scripts for different shells
     Generate(Generate),
 }
@@ -76,11 +78,11 @@ pub(crate) struct Backup {
     pub order: Vec<SortField>,
 
     /// Skip this quantity of documents in the Solr Query
-    #[arg(short = 'k', long, display_order = 43, value_parser = parse_quantity, default_value_t = 0, value_name = "quantity")]
+    #[arg(short = 'k', long, display_order = 43, value_parser = parse_quantity, default_value_t = 0, value_name = "quantity", conflicts_with = "iterate_by")]
     pub skip: u64,
 
     /// Maximum quantity of documents for retrieving from the core (like 100M)
-    #[arg(short, long, display_order = 44, value_parser = parse_quantity, value_name = "quantity")]
+    #[arg(short, long, display_order = 44, value_parser = parse_quantity, value_name = "quantity", conflicts_with = "iterate_by")]
     pub limit: Option<u64>,
 
     /// Names of core fields retrieved in each document [default: all but _*]
@@ -93,7 +95,7 @@ pub(crate) struct Backup {
 
     /// Slice the queries by using the variables {begin} and {end} for iterating in `--query`
     /// Used in bigger solr cores with huge number of docs because querying the end of docs is expensive and fails frequently
-    #[arg(short, long, display_order = 50, default_value_t = IterateMode::Day, value_name = "mode", value_enum)]
+    #[arg(short, long, display_order = 50, default_value_t = IterateMode::Day, value_name = "mode", requires = "iterate_between", value_enum)]
     pub iterate_by: IterateMode,
 
     /// The range of dates/numbers for iterating the queries throught slices.
@@ -115,7 +117,7 @@ pub(crate) struct Backup {
         display_order = 52,
         default_value_t = 1,
         value_name = "num",
-        // value_parser = clap::value_parser!(u64).range(0..366),
+        value_parser = clap::value_parser!(u64).range(0..366),
     )]
     pub iterate_step: u64,
 
@@ -300,7 +302,7 @@ pub(crate) struct ParallelArgs {
         display_order = 80,
         default_value_t = 1,
         value_name = "count",
-        // value_parser = clap::value_parser!(u64).range(1..128),
+        value_parser = clap::value_parser!(u64).range(1..128),
     )]
     pub readers: u64,
 
@@ -311,7 +313,7 @@ pub(crate) struct ParallelArgs {
         display_order = 80,
         default_value_t = 1,
         value_name = "count",
-        // value_parser = clap::value_parser!(u64).range(1..=128),
+        value_parser = clap::value_parser!(u64).range(1..128),
     )]
     pub writers: u64,
 }
@@ -537,6 +539,8 @@ impl Commands {
             Self::Restore(put) => Some(&put.options),
             Self::Commit(com) => Some(&com.options),
             Self::Delete(del) => Some(&del.options),
+            Self::Create(cre) => Some(&cre.options),
+            Self::Info(inf) => Some(&inf.options),
             _ => None,
         }
     }
@@ -574,15 +578,10 @@ impl CommonArgs {
         self.get_update_url_with(EMPTY_STR)
     }
 
-    pub(crate) fn get_core_admin_v2_url_with(&self, query_string_params: &str) -> String {
+    pub(crate) fn get_url_from(&self, path: &str) -> String {
         let mut solr_uri = Url::parse(&self.url).unwrap();
-        solr_uri.set_path("api/cores");
-        let parts: Vec<String> = vec![solr_uri.to_string(), query_string_params.with_prefix("?")];
-        parts.concat()
-    }
-
-    pub(crate) fn get_core_admin_v2_url(&self) -> String {
-        self.get_core_admin_v2_url_with(EMPTY_STR)
+        solr_uri.set_path(path);
+        solr_uri.to_string()
     }
 
     pub(crate) fn get_logging(&self) -> &LoggingArgs {

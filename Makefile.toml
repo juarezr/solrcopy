@@ -50,6 +50,14 @@ dependencies = ["test-basic", "test-docker"]
 
 #region Docker
 
+[env]
+#? Choose the Solr image tag to use in the docker container passing TAG like:
+## cargo make --env TAG=9-slim test
+TAG="slim"
+#? Choose the Solr run mode: standalone, cloud, precreate, demo, testing
+## cargo make --env MODE=cloud test
+MODE="testing"
+
 [tasks.compose-up]
 category = "Test"
 description = "Runs the command `docker compose up` to create a container running Solr for use in testing"
@@ -83,7 +91,7 @@ args = [
     "./docker/docker-compose.yml",
     "exec",
     "solr",
-    "solr-ingest-all",
+    "solr-ingest-examples",
 ]
 
 #endregion Docker
@@ -96,7 +104,7 @@ description = "Runs tests that do not require a Solr container"
 command = "cargo"
 args = ["test"]
 
-[tasks.test-start]
+[tasks.test-begin]
 category = "Test"
 description = "Setup a local Solr container and ingest some documents allowing to run tests manually after"
 dependencies = ["compose-up", "compose-ingest"]
@@ -106,7 +114,7 @@ category = "Test"
 description = "Cleanup the local Solr container after testing"
 dependencies = ["compose-down"]
 
-[tasks.test-solr]
+[tasks.test-full]
 category = "Test"
 description = "Runs tests against an existing local solr server"
 command = "cargo"
@@ -117,8 +125,8 @@ category = "Test"
 description = "Setup a local Solr container, ingest some documents, run all tests, and cleanup the container"
 private = true
 run_task = { name = [
-    "test-start",
-    "test-solr",
+    "test-begin",
+    "test-full",
 ], fork = true, cleanup_task = "compose-down" }
 
 #endregion Test
@@ -151,9 +159,9 @@ args = ["llvm-cov", "--all-features", "--html", "--output-dir", "target/coverage
 
 [tasks.coverage]
 category = "Test Coverage"
-description = "Setu Solr container, generate a coverage report, and cleanup"
+description = "Setup Solr container, generate a coverage report, and cleanup"
 run_task = { name = [
-    "test-start",
+    "test-begin",
     "coverage-full",
 ], fork = true, cleanup_task = "compose-down" }
 

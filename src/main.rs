@@ -14,6 +14,7 @@
 #![deny(unused_extern_crates)]
 #![deny(unused_must_use)]
 #![deny(unused_import_braces)]
+#![deny(unused_imports)]
 
 // endregion
 
@@ -21,8 +22,10 @@
 
 // #![allow(unused_variables)]
 // #![allow(unused_imports)]
+// #![allow(unused_import_braces)]
 // #![allow(dead_code)]
 // #![allow(unreachable_code)]
+// #![allow(unused)]
 
 // endregion
 
@@ -43,6 +46,7 @@ mod delete;
 mod fails;
 mod fetch;
 mod helpers;
+mod information;
 mod ingest;
 mod models;
 mod restore;
@@ -65,7 +69,12 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let parsed = Cli::parse_from_args()?;
 
-    wrangle::command_exec(&parsed)
+    let result = wrangle::command_exec(&parsed);
+    if let Err(err) = result {
+        eprintln!("Error: {}", err);
+        return Err(err);
+    }
+    Ok(())
 }
 
 // endregion
@@ -76,7 +85,7 @@ mod wrangle {
 
     use crate::args::{Cli, Commands};
     use crate::fails::{BoxedResult, throw};
-    use crate::{assets, backup, commit, create, delete, restore};
+    use crate::{assets, backup, commit, create, delete, information, restore};
     use clap::Parser;
 
     pub(crate) fn command_exec(args: &Commands) -> Result<(), Box<dyn std::error::Error>> {
@@ -86,6 +95,7 @@ mod wrangle {
             Commands::Commit(cmd) => commit::commit_main(cmd),
             Commands::Delete(del) => delete::delete_main(del),
             Commands::Create(cre) => create::create_main(cre),
+            Commands::Info(inf) => information::info_main(inf),
             Commands::Generate(cpl) => assets::gen_assets(cpl),
         }
     }

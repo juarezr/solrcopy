@@ -81,6 +81,10 @@ impl Archiver {
 
     pub(crate) fn write_documents(&mut self, docs: &Documents) -> ZipResult<()> {
         let json = &docs.docs;
+        let json_size = json.len();
+        if json_size <= 2 {
+            return Ok(());
+        }
         let step = &docs.step;
 
         let filename = format!("docs_at_{:09}.json", step.curr + 1);

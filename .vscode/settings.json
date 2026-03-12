@@ -44,6 +44,8 @@
     "testing.coverageToolbarEnabled": true,
     // Show the Test Explorer view.
     "rust-analyzer.testExplorer": true,
+    "rust-analyzer.cargo.features": [ "testsolr" ],
+    "rust-analyzer.check.features": [ "testsolr" ],
     "[rust]": {
         "editor.defaultFormatter": "rust-lang.rust-analyzer"
     },
