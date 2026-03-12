@@ -8,6 +8,7 @@ mod testsolr {
     use chrono::offset::Local;
     use clap::Parser;
     use glob::glob;
+    use log::error;
     use std::fs::remove_file;
 
     fn test_command_line_args_for(args: &[&str]) {
@@ -46,7 +47,9 @@ mod testsolr {
         let listed = glob("target/demo*").unwrap();
         let found = listed.filter_map(Result::ok).collect::<Vec<_>>();
         for file in found {
-            remove_file(file).unwrap();
+            if let Err(e) = remove_file(&file) {
+                error!("Failed to remove file {}: {}", file.display(), e);
+            }
         }
     }
 
