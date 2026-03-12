@@ -11,6 +11,7 @@ services:
       - SOLR_IMAGE_TAG=${TAG:-latest}
       - SOLR_CREATE_CORE=${CORE:-example}
       - SOLR_RUN_MODE=${MODE:-testing}
+      - JAVA_TOOL_OPTIONS="--sun-misc-unsafe-memory-access=allow"
     ports:
       - "8983:8983"
     volumes:
@@ -32,6 +33,9 @@ services:
       retries: 1
       interval: 60s
     configs:
+      - source: bashrc.sh
+        target: /home/solr/.bashrc
+        mode: 0644
       - source: solr-setup-precreate.sh
         target: /opt/solr/docker/scripts/solr-setup-precreate
         mode: 0755
@@ -68,6 +72,26 @@ volumes:
     name: configuration
 
 configs:
+  bashrc.sh:
+    content: |
+      # ~/.bashrc: executed by bash(1) for non-login shells.
+      # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
+      # for examples
+
+      # If not running interactively, don't do anything
+      case $- in
+          *i*) ;;
+            *) return;;
+      esac
+
+      $ Some useful aliases
+      alias ls='ls --escape --dereference-command-line --human-readable --time-style=iso --no-group --color=auto'
+      alias ll='ls --escape --dereference-command-line --human-readable --time-style=iso --no-group --color=auto --almost-all -l'
+      alias la='ls --escape --dereference-command-line --human-readable --time-style=iso --no-group --color=auto --almost-all'
+      alias l='ls --escape --dereference-command-line --human-readable --time-style=iso --no-group --color=auto -CF'
+      # END OF SCRIPT #
+
+
   solr-setup-precreate.sh:
     content: |
       #!/bin/bash
