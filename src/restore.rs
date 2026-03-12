@@ -8,12 +8,12 @@ use super::{
     state::*,
 };
 use crossbeam_channel::{Receiver, Sender, bounded};
-use crossbeam_utils::thread;
 use log::{debug, error, info, trace};
 use std::sync::{
     Arc,
     atomic::{AtomicBool, AtomicU64, Ordering},
 };
+use std::thread;
 use std::{path::Path, path::PathBuf, time::Instant};
 
 pub(crate) fn restore_main(params: &Restore) -> BoxedError {
@@ -37,11 +37,12 @@ pub(crate) fn restore_main(params: &Restore) -> BoxedError {
         core
     );
 
-    wait_with_progress(
-        params.transfer.delay_before,
-        &format!("Starting restore for core {}...", core),
-    );
-
+    if params.options.is_quiet() {
+        wait_with_progress(
+            params.transfer.delay_before,
+            &format!("Starting restore for core {}...", core),
+        );
+    }
     pre_post_processing(params, false)?;
 
     let started = Instant::now();
@@ -76,30 +77,51 @@ fn unzip_archives_and_send(params: &Restore, found: &[PathBuf]) -> BoxedResult<u
         let (sender, receiver) = bounded::<Docs>(writers_channel.to_usize());
         let (progress, reporter) = bounded::<u64>(transfer.writers.to_usize());
 
-        pool.spawn(move |_| {
-            debug!("Started generator thread");
-            start_listing_archives(found, generator);
-            debug!("Finished generator thread");
-        });
+        let scan_handle = thread::Builder::new()
+            .name("Scanner".to_string())
+            .spawn_scoped(pool, || {
+                start_listing_archives(found, generator);
+            })
+            .unwrap();
 
-        start_archive_readers(pool, transfer, sequence, sender);
+        let reader_handles = start_archive_readers(pool, transfer, sequence, sender);
 
         let update_hadler_url = params.get_update_url();
         debug!("Solr Update Handler: {}", update_hadler_url);
 
-        start_solr_writers(pool, transfer, receiver, progress, update_hadler_url);
+        let writer_handles =
+            start_archive_writers(pool, transfer, receiver, progress, update_hadler_url);
 
-        updated = foreach_progress(reporter, doc_count, params.options.is_quiet());
-    })
-    .unwrap();
+        let bar_handle = thread::Builder::new()
+            .name("Generator".to_string())
+            .spawn_scoped(pool, || {
+                updated = foreach_progress(reporter, doc_count, params.options.is_quiet());
+            })
+            .unwrap();
 
-    finish_sending(params, updated)
+        let mut handles = vec![];
+        handles.push(scan_handle);
+        handles.extend(reader_handles);
+        handles.extend(writer_handles);
+        handles.push(bar_handle);
+
+        for handle in handles {
+            handle.join().unwrap();
+        }
+    });
+    if updated > 0 && !params.no_final_commit {
+        crate::commit::commit_main(&params.options.to_command())?;
+    }
+
+    finish_progress(updated)
 }
 
 fn start_archive_readers<'scope>(
-    pool: &thread::Scope<'scope>, transfer: &ParallelArgs, sequence: Receiver<&'scope Path>,
-    sender: Sender<Docs>,
-) {
+    pool: &'scope thread::Scope<'scope, '_>, transfer: &ParallelArgs,
+    sequence: Receiver<&'scope Path>, sender: Sender<Docs>,
+) -> Vec<thread::ScopedJoinHandle<'scope, ()>> {
+    let mut handles = vec![];
+
     for ir in 0..transfer.readers {
         let producer = sender.clone();
         let iterator = sequence.clone();
@@ -107,26 +129,30 @@ fn start_archive_readers<'scope>(
         let reader = ir;
         let thread_name = format!("Reader_{}", reader);
 
-        pool.builder()
+        let handle = thread::Builder::new()
             .name(thread_name)
-            .spawn(move |_| {
+            .spawn_scoped(pool, move || {
                 debug!("Started reader #{}", reader);
                 start_reading_archive(reader, iterator, producer);
                 debug!("Finished reader #{}", reader);
             })
             .unwrap();
+        handles.push(handle);
     }
     drop(sequence);
     drop(sender);
+    handles
 }
 
-fn start_solr_writers(
-    pool: &thread::Scope<'_>, transfer: &ParallelArgs, receiver: Receiver<Docs>,
+fn start_archive_writers<'scope>(
+    pool: &'scope thread::Scope<'scope, '_>, transfer: &ParallelArgs, receiver: Receiver<Docs>,
     progress: Sender<u64>, update_hadler_url: String,
-) {
+) -> Vec<thread::ScopedJoinHandle<'scope, ()>> {
     let update_errors = Arc::new(AtomicU64::new(0));
     let merr = transfer.max_errors;
     let delay = transfer.delay_per_request;
+
+    let mut handles = vec![];
 
     for iw in 0..transfer.writers {
         let consumer = receiver.clone();
@@ -136,31 +162,26 @@ fn start_solr_writers(
 
         let writer = iw;
         let thread_name = format!("Writer_{}", writer);
-        pool.builder()
+
+        let handle = thread::Builder::new()
             .name(thread_name)
-            .spawn(move |_| {
+            .spawn_scoped(pool, move || {
                 debug!("Started writer #{}", writer);
                 start_indexing_docs(writer, &url, consumer, updater, &arcerr, merr, delay);
                 debug!("Finished writer #{}", writer);
             })
             .unwrap();
+        handles.push(handle);
     }
     drop(receiver);
     drop(progress);
+    handles
 }
 
-fn finish_sending(params: &Restore, updated: u64) -> BoxedResult<u64> {
+fn finish_progress(updated: u64) -> BoxedResult<u64> {
     let ctrl_c = monitor_term_sinal();
 
-    if ctrl_c.aborted() {
-        raise("# Execution aborted by user!")
-    } else {
-        if updated > 0 && !params.no_final_commit {
-            // let params2 = Command { options: params.options };
-            crate::commit::commit_main(&params.options.to_command())?;
-        }
-        Ok(updated)
-    }
+    if ctrl_c.aborted() { raise("# Execution aborted by user!") } else { Ok(updated) }
 }
 
 fn estimate_batch_count(found: &[PathBuf]) -> BoxedResult<u64> {
