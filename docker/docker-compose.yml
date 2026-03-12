@@ -9,6 +9,7 @@ services:
     hostname: solrhost
     environment:
       - SOLR_IMAGE_TAG=${TAG:-latest}
+      - SOLR_CREATE_CORE=${CORE:-example}
       - SOLR_RUN_MODE=${MODE:-testing}
     ports:
       - "8983:8983"
@@ -176,7 +177,7 @@ configs:
       case "$${SOLR_RUN_MODE:-testing}" in
         standalone) SOLR_RUN_COMMAND="solr-foreground --user-managed";;
         cloud)      SOLR_RUN_COMMAND="solr-foreground";;
-        precreate)  SOLR_RUN_COMMAND="solr-precreate";;
+        precreate)  SOLR_RUN_COMMAND="solr-precreate $${SOLR_CREATE_CORE:-}";;
         demo)       SOLR_RUN_COMMAND="solr-demo";;
         testing)    SOLR_RUN_COMMAND="solr-runas-user-managed";;
         *) echo "ERROR: Invalid Solr run mode: $${SOLR_RUN_MODE:-}."
