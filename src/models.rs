@@ -11,6 +11,7 @@ pub(crate) struct Documents {
 #[derive(Debug)]
 pub(crate) struct Step {
     pub curr: u64,
+    pub expected: u64,
     pub url: String,
 }
 

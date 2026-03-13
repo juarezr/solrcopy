@@ -276,7 +276,13 @@ pub(crate) struct ParallelArgs {
 
     /// Extra parameter for Solr Update Handler.
     /// See: <https://lucene.apache.org/solr/guide/transforming-and-indexing-custom-json.html>
-    #[arg(short, long, display_order = 60, value_name = "useParams=mypars")]
+    #[arg(
+        short,
+        long,
+        display_order = 60,
+        value_name = "p1=value1&p2=value2",
+        default_value = "echoParams=none"
+    )]
     pub params: Option<String>,
 
     /// How many times should continue on source document errors
