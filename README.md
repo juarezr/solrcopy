@@ -17,15 +17,66 @@ Command line tool useful for migration, transformations, backup, and restore of 
 
 ## Usage
 
-1. Use the command `solrcopy backup` for dumping documents from a Solr core into local zip files.
+### Process
+
+1. Use the command `solrcopy backup` for dumping documents from a Solr core into local zip files:
    1. Use the switch `--query` for filtering the documents extracted by using a [Solr](https://lucene.apache.org/solr/guide/8_4/the-standard-query-parser.html) [Query](https://lucene.apache.org/solr/guide/8_4/the-standard-query-parser.html)
    2. Use the switch `--order` for specifying the sorting of documents extracted.
    3. Use the switches `--limit` and `--skip` for restricting the number of documents extracted.
    4. Use the switches `--select` and `--exclude` for restricting the columns extracted.
-2. Use the command `solrcopy restore` for uploading the extracted documents from local zip files into the same Solr core or another with same field names as extracted.
+2. Use the command `solrcopy restore` for uploading the extracted documents from local zip files into the same Solr core or another with same field names as extracted:
    1. The documents are updated in the target core in the same format that they were extracted.
    2. The documents are inserted/updated based on their `uniqueKey` field defined in core.
    3. If you want to change the documents/columns use the switches in `solrcopy backup` for extracting more than one slice of documents to be updated.
+
+### Workflow
+
+```mermaid
+flowchart LR
+    A[(Source Solr Core)] --> B(solrcopy backup)
+    B --> F[/Local zip archives/]
+    F --> G(solrcopy restore)
+    G --> M[(Target Solr core)]
+```
+
+#### Backup Workflow
+
+```mermaid
+flowchart TD
+    A[(Source Solr Core)] --> B(solrcopy backup)
+    B --> C{Backup options}
+    C --> C1[Filter: --query / --fq]
+    C --> C2[Select columns: --select / --exclude]
+    C --> C3[Slice and order: --order / --skip / --limit / --iterate-by]
+    C1 --> D@{ shape: processes, label: "Read documents from Solr core"}
+    C2 --> D
+    C3 --> D
+    D --> E@{ shape: docs, label: "Export JSON batches"}
+    E --> F@{ shape: processes, label: "Write local zip archives in --dir"}
+    F --> G[/Documents stored as local zip archives/]
+```
+
+#### Restore Workflow
+
+```mermaid
+flowchart TD
+
+    E[/Local zip archives/] --> F[\Optional: inspect or transform extracted JSON/]
+    F --> G(solrcopy restore)
+    G --> H{Restore options}
+    H --> H1[Select files: --search]
+    H --> H2[Parallelism: --readers / --writers]
+    H --> H3[Target: --url + --core]
+    H1 --> I[[Find local zip archives in --dir]]
+    H2 --> I
+    H3 --> I
+    I --> J@{ shape: processes, label: "Extract documents from archives"}
+    J --> K@{ shape: docs, label: "Upload documents to target core"}
+    K --> L@{ shape: processes, label: "Insert/Update by uniqueKey"}
+    L --> M[(Target Solr core)]
+    M --> N[/Documents persisted in Solr/]
+    N --> O(solrcopy commit: Optional)
+```
 
 ### Environment Variables
 
