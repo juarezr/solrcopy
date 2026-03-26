@@ -1,19 +1,19 @@
-name: 'Report Workflow Information'
-description: 'Reusable action meant to be used in workflow steps'
+name: "Report Workflow Information"
+description: "Reusable action meant to be used in workflow steps"
 branding:
-  icon: 'watch'
-  color: 'green'
+  icon: "watch"
+  color: "green"
 
 inputs:
   title:
-    description: 'A reference to put in the report title'
+    description: "A reference to put in the report title"
     required: true
-    default: 'the Job'
+    default: "the Job"
   parameters:
-    description: 'Input variables used in Job'
+    description: "Input variables used in Job"
     required: false
   content:
-    description: 'Content to put in the report'
+    description: "Content to put in the report"
     required: false
 outputs:
   status:
@@ -24,12 +24,12 @@ runs:
   steps:
     - name: Report Workflow Information
       id: report_workflow_generation
-      env: 
-        REPORT_PARAMS: '${{ inputs.parameters }}'
-        REPORT_CONTENT: '${{ inputs.content }}'
+      env:
+        REPORT_PARAMS: "${{ inputs.parameters }}"
+        REPORT_CONTENT: "${{ inputs.content }}"
       shell: bash
       run: |
-        echo "::group::Generating report" 
+        echo "::group::Generating report"
         echo "status=started" >> "${GITHUB_OUTPUT}";
 
         dump_ctx(){
@@ -60,4 +60,3 @@ runs:
 
         echo "status=finished" >> "${GITHUB_OUTPUT}";
         echo "::endgroup::"
-

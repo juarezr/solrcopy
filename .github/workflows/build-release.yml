@@ -8,11 +8,11 @@ on:
   workflow_dispatch:
     inputs:
       release_version_tag:
-        description: 'Run the workflow with what release tag?'
+        description: "Run the workflow with what release tag?"
         required: true
         type: string
       branch_commit_or_ref:
-        description: 'Run the release workflow in what branch/commit?'
+        description: "Run the release workflow in what branch/commit?"
         required: true
         type: string
         default: master
@@ -24,20 +24,20 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        platform: [ linux, windows, macos ]
+        platform: [linux, windows, macos]
         include:
-        - platform: linux
-          os: ubuntu-latest
-          target: x86_64-unknown-linux-gnu
-          channel: stable
-        - platform: windows
-          os: windows-latest
-          target: x86_64-pc-windows-gnu
-          channel: stable
-        - platform: macos
-          os: macos-latest
-          target: x86_64-apple-darwin
-          channel: stable
+          - platform: linux
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            channel: stable
+          - platform: windows
+            os: windows-latest
+            target: x86_64-pc-windows-gnu
+            channel: stable
+          - platform: macos
+            os: macos-latest
+            target: x86_64-apple-darwin
+            channel: stable
 
     env:
       RELEASE_VERSION: ${{ inputs.release_version_tag || github.event.release.tag_name }}
@@ -49,7 +49,7 @@ jobs:
       # region Workflow information
 
       - name: Checkout sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.branch_commit_or_ref || '' }}
 
@@ -57,8 +57,8 @@ jobs:
         id: workflow_report
         uses: ./.github/actions/workflow-info
         with:
-          title: '${{ github.ref_name }}'
-          parameters: '${{ toJson(inputs) }}'
+          title: "${{ github.ref_name }}"
+          parameters: "${{ toJson(inputs) }}"
           content: |
             ### Release information
             - Tag Name: ${{ github.event.release.tag_name }}
@@ -148,11 +148,11 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         shell: bash
         run: |
-           CARGO_VERSION=$(cargo get package.version --pretty)
-           echo "CARGO_VERSION=$CARGO_VERSION"
-           echo "RELEASE_VERSION=${{ env.RELEASE_VERSION }}"
+          CARGO_VERSION=$(cargo get package.version --pretty)
+          echo "CARGO_VERSION=$CARGO_VERSION"
+          echo "RELEASE_VERSION=${{ env.RELEASE_VERSION }}"
 
-           test "$CARGO_VERSION" = "${{ env.RELEASE_VERSION }}"
+          test "$CARGO_VERSION" = "${{ env.RELEASE_VERSION }}"
 
       - name: Upload Debian, RPM and tar.gz Packages
         if: matrix.platform == 'linux'

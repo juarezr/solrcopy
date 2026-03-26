@@ -91,7 +91,6 @@ configs:
       alias l='ls --escape --dereference-command-line --human-readable --time-style=iso --no-group --color=auto -CF'
       # END OF SCRIPT #
 
-
   solr-setup-precreate.sh:
     content: |
       #!/bin/bash
