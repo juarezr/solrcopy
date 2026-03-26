@@ -23,11 +23,11 @@ jobs:
       # region Environment setup
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.branch_commit_or_ref || '' }}
 
-      - name: Update Rust toolchain from channel ${{ matrix.channel }} 
+      - name: Update Rust toolchain from channel ${{ matrix.channel }}
         shell: bash
         run: |
           rustup self update
@@ -43,7 +43,7 @@ jobs:
           rustup show
 
       # endregion
-      
+
       # region Run security audit
 
       - name: Intall cargo-audit from channel ${{ matrix.channel }}

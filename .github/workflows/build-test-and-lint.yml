@@ -31,7 +31,7 @@ jobs:
       JOB_GITHUB_REF: ${{ github.head_ref || github.ref }}
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.branch_commit_or_ref || '' }}
 
@@ -57,7 +57,7 @@ jobs:
       # region Checkout and Install
 
       - name: Checkout sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.branch_commit_or_ref || '' }}
 
@@ -230,7 +230,7 @@ jobs:
       # region Environment setup
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.branch_commit_or_ref || '' }}
 
