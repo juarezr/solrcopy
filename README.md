@@ -258,6 +258,23 @@ Options:
 $ solrcopy restore --url http://localhost:8983/solr  --dir ./tmp --core demo
 ```
 
+#### solrcopy info
+
+``` text
+Get information about the Solr instance
+
+Usage: solrcopy info [OPTIONS] --core <core>
+
+Options:
+  -u, --url <URL>               Url pointing to the Solr cluster [env: SOLR_COPY_URL=] [default: http://localhost:8983/solr]
+  -c, --core <core>             Case sensitive name of the core in the Solr server
+      --log-level <level>       What level of detail should print messages [default: INFO]
+      --log-mode <mode>         Terminal output to print messages [default: mixed]
+      --log-file-path <path>    Write messages to a local file
+      --log-file-level <level>  What level of detail should write messages to the file [default: DEBUG]
+  -h, --help                    Print help
+```
+
 #### solrcopy delete
 
 ``` text
