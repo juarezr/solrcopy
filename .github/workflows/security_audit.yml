@@ -3,11 +3,11 @@
 name: Monthly Security Audit
 on:
   schedule:
-    - cron: '3 2 1 * *'
+    - cron: "3 2 1 * *"
   workflow_dispatch:
     inputs:
       branch_commit_or_ref:
-        description: 'Run this workflow in what branch/commit?'
+        description: "Run this workflow in what branch/commit?"
         required: true
         type: string
         default: master
@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        channel: [ stable ]
+        channel: [stable]
     steps:
       # region Environment setup
 

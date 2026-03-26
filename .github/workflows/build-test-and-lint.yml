@@ -6,17 +6,17 @@ name: build-test-and-lint
 
 on:
   push:
-    branches: [ "master", "release/*" ]
+    branches: ["master", "release/*"]
   pull_request:
-    branches: [ master ]
+    branches: [master]
     types: [opened, reopened, synchronize, ready_for_review]
   schedule:
     # Run on the 3rd of every month at 2:01
-    - cron:  '1 2 3 * *'
+    - cron: "1 2 3 * *"
   workflow_dispatch:
     inputs:
       branch_commit_or_ref:
-        description: 'Run this workflow in what branch/commit?'
+        description: "Run this workflow in what branch/commit?"
         required: true
         type: string
         default: master
@@ -39,8 +39,8 @@ jobs:
         id: workflow_report
         uses: ./.github/actions/workflow-info
         with:
-          title: '${{ github.ref_name }}'
-          parameters: '${{ toJson(inputs) }}'
+          title: "${{ github.ref_name }}"
+          parameters: "${{ toJson(inputs) }}"
           content: |
             - Ref: ${{ github.head_ref }}
 
@@ -50,8 +50,8 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
-        channel: [ stable ]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        channel: [stable]
 
     steps:
       # region Checkout and Install
@@ -141,7 +141,7 @@ jobs:
 
       - name: Run cargo clippy
         if: matrix.os == 'ubuntu-latest'
-        continue-on-error: true   # show all errors
+        continue-on-error: true # show all errors
         shell: bash
         run: cargo clippy --all-features
 
@@ -200,7 +200,7 @@ jobs:
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: './lcov.info'
+          path-to-lcov: "./lcov.info"
 
       - name: Stop Solr server after tests
         if: matrix.os == 'ubuntu-latest'
@@ -225,7 +225,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        channel: [ stable ]
+        channel: [stable]
     steps:
       # region Environment setup
 
