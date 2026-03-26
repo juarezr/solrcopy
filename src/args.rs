@@ -450,23 +450,23 @@ fn parse_solr_url(src: &str) -> Result<String, String> {
         return Err(format!("Error parsing Solr: {}", reason));
     }
     let parsed = parsing.unwrap();
-    if parsed.scheme() != "http" {
-        return Err("Solr url scheme must be http or https as in: http:://server.domain:8983/solr"
+    if parsed.scheme() != "http" && parsed.scheme() != "https" {
+        return Err("Solr url scheme must be http or https as in: http://server.domain:8983/solr"
             .to_string());
     }
     if parsed.query().is_some() {
         return Err("Solr url scheme must be a base url without query parameters as in: \
-                    http:://server.domain:8983/solr"
+                    http://server.domain:8983/solr"
             .to_string());
     }
     if parsed.path_segments().is_none() {
-        return Err("Solr url path must be 'api' or 'solr' as in: http:://server.domain:8983/solr"
+        return Err("Solr url path must be 'api' or 'solr' as in: http://server.domain:8983/solr"
             .to_string());
     } else {
         let paths = parsed.path_segments();
         if paths.iter().count() != 1 {
             return Err("Solr url path must not include core name as in: \
-                        http:://server.domain:8983/solr"
+                        http://server.domain:8983/solr"
                 .to_string());
         }
     }
